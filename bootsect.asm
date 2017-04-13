@@ -11,8 +11,24 @@ call begin
 begin:
   mov bx, msg_startup
   call print
+  call print_nl
+
+  ; Load 20 sectors from disk
+  mov dh, 20
+  mov dl, 0
+  call disk_load
+
+;[bits 32]
+;BEGIN_PM: ; after the switch, we get here
+;  mov ebx, MSG_PROT_MODE
+;  call print_string_pm
+;  jmp $
+
 
 %include "utilities/16bit/print.asm"
+%include "disk.asm"
+;%include "utilities/32bit/32bit-gdt.asm"
+;%include "utilities/32bit/32bit-switch.asm"
 %include "data/strings.asm"
 
 times 510 - ($-$$) db 0
