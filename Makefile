@@ -5,12 +5,18 @@ ifneq ($(findstring MINGW, $(SYSTEM)),MINGW)
 	DDFLAGS=iflag=fullblock
 endif
 
-all: bootsect
-	echo Building HD image on $(SYSTEM) with $(DDFLAGS)
-	cat bootsect.bin /dev/zero | dd $(DDFLAGS) bs=512 count=2880 of=hd.img
+all: bootsect infosect
+	@echo Building HD image on $(SYSTEM) with $(DDFLAGS)
+	cat bootsect.bin infosect.bin /dev/zero | dd $(DDFLAGS) bs=512 count=2880 of=hd.img
 
 bootsect:
 	nasm -f bin bootsect.asm -o bootsect.bin
+
+mkinfosect: mkinfosect.c
+	gcc -o mkinfosect mkinfosect.c
+
+infosect: mkinfosect
+	./mkinfosect
 
 loader.bin: loader.asm
 	nasm -f bin loader.asm -o loader.bin

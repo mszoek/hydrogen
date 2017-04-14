@@ -9,10 +9,6 @@ resetdrive:
   int 0x13
   jc resetdrive
 
-  xor ax,ax ; clear ax
-  mov es, ax
-  mov bx, KERNEL_ADDR
-
   mov ah, 0x02
   mov al, dh
   mov cl, 0x02

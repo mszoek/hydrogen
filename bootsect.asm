@@ -12,12 +12,41 @@ begin:
   call print
   call print_nl
 
-  ; Load 20 sectors from disk
-  mov dh, 20
+  ; Read the info sector to get our stage2 location
+  xor ax, ax
+  mov es, ax
+  mov bx, INFOSECTOR
+  mov dh, 1
   mov dl, 0x80
   call disk_load
 
+  mov dx, [ISMarker]
+  mov ax, [ISMagic]
+  cmp dx, ax
+  jne ISLoadError
+  mov dx, [ISMarker+2]
+  mov ax, [ISMagic+2]
+  cmp dx, ax
+  jne ISLoadError
+
+; Info Sector has been loaded!
+  mov bx, MSG_LOAD_STG2
+  call print
+  mov dx, [ISStage2Start]
+  call print_hex
+  mov bx, MSG_SLASH
+  call print
+  mov dx, [ISStage2Len]
+  call print_hex
+  call print_nl
+
   jmp KERNEL_ADDR
+
+ISLoadError:
+  mov bx, MSG_INFOSECT_BAD_MAGIC
+  call print
+  jmp $   ; halt and catch fire
+
 
 ;[bits 32]
 ;BEGIN_PM: ; after the switch, we get here
@@ -31,6 +60,7 @@ begin:
 ;%include "utilities/32bit/32bit-gdt.asm"
 ;%include "utilities/32bit/32bit-switch.asm"
 %include "data/strings.asm"
+%include "data/infosect.asm"
 
 KERNEL_ADDR equ 0x1000
 
