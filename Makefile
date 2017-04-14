@@ -1,13 +1,13 @@
 SYSTEM := $(shell uname -s)
-DDFLAGS=""
+DDFLAGS=
 
-ifneq ($(findstring "CYGWIN", $(SYSTEM)),"CYGWIN")
+ifneq ($(findstring MINGW, $(SYSTEM)),MINGW)
 	DDFLAGS=iflag=fullblock
 endif
 
 all: bootsect
 	echo Building HD image on $(SYSTEM) with $(DDFLAGS)
-	cat bootsect.bin /dev/zero | dd iflag=fullblock bs=512 count=2880 of=hd.img
+	cat bootsect.bin /dev/zero | dd $(DDFLAGS) bs=512 count=2880 of=hd.img
 
 bootsect:
 	nasm -f bin bootsect.asm -o bootsect.bin
