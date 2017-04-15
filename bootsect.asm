@@ -56,25 +56,15 @@ loop0:
   inc si
   loop loop0
 
-  jmp $ ; KERNEL_ADDR
+  jmp KERNEL_ADDR
 
 ISLoadError:
   mov bx, MSG_INFOSECT_BAD_MAGIC
   call print
   jmp $   ; halt and catch fire
 
-
-;[bits 32]
-;BEGIN_PM: ; after the switch, we get here
-;  mov ebx, MSG_PROT_MODE
-;  call print_string_pm
-;  jmp $
-
-
 %include "utilities/16bit/print.asm"
 %include "disk.asm"
-;%include "utilities/32bit/32bit-gdt.asm"
-;%include "utilities/32bit/32bit-switch.asm"
 %include "data/strings.asm"
 %include "data/infosect.asm"
 

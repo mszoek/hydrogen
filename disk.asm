@@ -37,6 +37,5 @@ sectors_error:
   call print_nl
   jmp disk_done
 
-DISK_READ: db "Disk successfully read!", 0
 DISK_ERROR: db "Disk read error", 0
-SECTORS_ERROR: db "Incorrect number of sectors read", 0
+SECTORS_ERROR: db "Disk: short read", 0
