@@ -13,11 +13,10 @@ begin:
   call print_nl
 
   ; Read the info sector to get our stage2 location
-  xor ax, ax
-  mov es, ax
   mov bx, INFOSECTOR
   mov dh, 1
   mov dl, 0x80
+  mov cl, 2
   call disk_load
 
   mov dx, [ISMarker]
@@ -40,7 +39,24 @@ begin:
   call print_hex
   call print_nl
 
-  jmp KERNEL_ADDR
+  mov bx, KERNEL_ADDR
+  mov dh, [ISStage2Len]
+  mov dl, 0x80
+  mov cl, [ISStage2Start]
+  call disk_load
+
+  mov cx, 20
+  mov si, KERNEL_ADDR
+loop0:
+  mov dx, [si]
+  call print_hex
+  mov bx, MSG_SPACE
+  call print
+  inc si
+  inc si
+  loop loop0
+
+  jmp $ ; KERNEL_ADDR
 
 ISLoadError:
   mov bx, MSG_INFOSECT_BAD_MAGIC
