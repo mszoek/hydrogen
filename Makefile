@@ -2,6 +2,9 @@ SYSTEM := $(shell uname -s)
 DDFLAGS=
 EXT=.exe
 
+# Size of the hard disk image in 512-byte sectors (i.e. 10MB)
+HDSIZE=20480
+
 ifneq ($(findstring MINGW, $(SYSTEM)),MINGW)
 	DDFLAGS=iflag=fullblock
 	EXT=
@@ -9,7 +12,10 @@ endif
 
 all: cleanup bootsect infosect kernel.bin
 	@echo Building HD image on $(SYSTEM) with $(DDFLAGS)
-	cat bootsect.bin infosect.bin kernel.bin /dev/zero | dd $(DDFLAGS) bs=512 count=2880 of=hd.img
+	dd if=/dev/zero $(DDFLAGS) bs=512 count=$(HDSIZE) of=hd.img
+	mkfs.hfsplus -v "H2OS HD" hd.img
+	cat bootsect.bin infosect.bin | dd $(DDFLAGS) conv=notrunc bs=512 count=2 of=hd.img
+	fsck.hfsplus hd.img
 
 bootsect:
 	nasm -f bin bootsect.asm -o bootsect.bin
