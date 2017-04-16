@@ -23,11 +23,13 @@ infosect: mkinfosect
 stage2: bootloader_s2.asm
 	nasm -f bin bootloader_s2.asm -o bootloader_s2.bin
 
-CFLAGS=-ffreestanding -m32
-kernel.bin: kernel.c
-	gcc $(CFLAGS) -o kernel.o -c kernel.c
-#	ld -m elf_i386 -o kernel.bin -Ttext 0x0 --oformat binary kernel.o
-	objcopy -O binary -j .text kernel.o kernel.bin
+.c.o:
+	$(CC) -ffreestanding -m32 $(CFLAGS) -o $@ -c $<
+
+KERNEL_OBJS=kernel.o kmem.o drivers/video_ports.o drivers/screen.o
+
+kernel.bin: $(KERNEL_OBJS)
+	ld -m elf_i386 -o kernel.bin -Ttext 0x0 --oformat binary $(KERNEL_OBJS)
 
 cleanup:
 	rm -f bootloader_s2.bin bootsect.bin infosect.bin kernel.o hd.img

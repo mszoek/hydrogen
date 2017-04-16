@@ -37,3 +37,8 @@ void kernel_main(void) {
 
   while(1) ;
 }
+
+void _start(void)
+{
+  kernel_main();
+}
