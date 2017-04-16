@@ -10,24 +10,22 @@ ifneq ($(findstring MINGW, $(SYSTEM)),MINGW)
 	EXT=
 endif
 
-all: cleanup bootsect infosect kernel.bin
+all: cleanup kernel.bin bootsect
+
+boot: bootsect
+	@echo Installing bootsector to hd.img on $(SYSTEM) with $(DDFLAGS)
+	cat bootsect.bin | dd $(DDFLAGS) conv=notrunc bs=512 count=2 of=hd.img
+	fsck.hfsplus hd.img
+
+image: bootsect
 	@echo Building HD image on $(SYSTEM) with $(DDFLAGS)
 	dd if=/dev/zero $(DDFLAGS) bs=512 count=$(HDSIZE) of=hd.img
 	mkfs.hfsplus -v "H2OS HD" hd.img
-	cat bootsect.bin infosect.bin | dd $(DDFLAGS) conv=notrunc bs=512 count=2 of=hd.img
+	cat bootsect.bin | dd $(DDFLAGS) conv=notrunc bs=512 count=2 of=hd.img
 	fsck.hfsplus hd.img
 
 bootsect:
 	nasm -f bin bootsect.asm -o bootsect.bin
-
-mkinfosect: mkinfosect.c
-	gcc -o mkinfosect mkinfosect.c
-
-infosect: mkinfosect
-	./mkinfosect
-
-stage2: bootloader_s2.asm
-	nasm -f bin bootloader_s2.asm -o bootloader_s2.bin
 
 .c.o:
 	$(CC) -g -Iincludes -ffreestanding -m32 $(CFLAGS) -o $@ -c $<
@@ -48,5 +46,5 @@ debug: kernel.bin
 	gdb -ex "target remote localhost:1234" -ex "symbol-file kernel.elf"
 
 cleanup:
-	rm -f bootloader_s2.bin bootsect.bin infosect.bin kernel.bin kernel.o hd.img
-	rm -f mkinfosect$(EXT) kernel$(EXT) $(KERNEL_OBJS)
+	rm -f bootsect.bin kernel.bin kernel.o
+	rm -f kernel$(EXT) $(KERNEL_OBJS)
