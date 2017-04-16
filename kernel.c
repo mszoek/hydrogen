@@ -3,6 +3,7 @@
 #define TEXTCOLOR 0x0f  // white on black
 
 #include "drivers/video_ports.h"
+#include "drivers/screen.h"
 #include "kstring.h"
 #include "kmem.h"
 
