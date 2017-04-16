@@ -21,7 +21,8 @@ infosect: mkinfosect
 stage2: bootloader_s2.asm
 	nasm -f bin bootloader_s2.asm -o bootloader_s2.bin
 
-CFLAGS=-fno-builtin -O0 -nostartfiles -nostdlib -nodefaultlibs
+CFLAGS=-ffreestanding -m32
 kernel.bin: kernel.c
-	gcc $(CFLAGS) -m32 -o kernel.o -c kernel.c
+	gcc $(CFLAGS) -o kernel.o -c kernel.c
+#	ld -m elf_i386 -o kernel.bin -Ttext 0x0 --oformat binary kernel.o
 	objcopy -O binary -j .text kernel.o kernel.bin

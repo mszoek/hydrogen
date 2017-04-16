@@ -83,6 +83,7 @@ ISLoadError:
 BEGIN_PM: ; after the switch we will get here
     mov ebx, MSG_PROT_MODE
     call print_string_pm ; Note that this will be written at the top left corner
+    call STG2_ADDR
     jmp $
 
 MSG_PROT_MODE db "ProtMode", 0
