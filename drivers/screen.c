@@ -22,8 +22,8 @@ void kprint_at(char *message, int col, int row)
     offset = get_offset(col, row);
   } else {
     offset = get_cursor_offset();
-    row = get_offset_row();
-    col = get_offset_col();
+    row = get_offset_row(offset);
+    col = get_offset_col(offset);
   }
 
   int i = 0;
@@ -95,19 +95,18 @@ void set_cursor_offset(int offset) {
 }
 
 void clear_screen() {
-   int screen_size = MAX_COLS * MAX_ROWS;
-   int i;
-   char *screen = VIDEO_ADDRESS;
+  char *vidmem = (char*)VIDEO_ADDRESS; // Start of video memory
+  unsigned int j = 0;
 
-   for (i = 0; i < screen_size; i++) {
-       screen[i*2] = ' ';
-       screen[i*2+1] = WHITE_ON_BLACK;
-   }
-   set_cursor_offset(get_offset(0, 0));
+  while (j < MAX_COLS * MAX_ROWS * 2)
+  {
+    vidmem[j++] = ' ';
+    vidmem[j++] = WHITE_ON_BLACK;
+  }
+  set_cursor_offset(0); // no need to calc - it is always zero :)
 }
 
 
 int get_offset(int col, int row) { return 2 * (row * MAX_COLS + col); }
 int get_offset_row(int offset) { return offset / (2 * MAX_COLS); }
 int get_offset_col(int offset) { return (offset - (get_offset_row(offset)*2*MAX_COLS))/2; }
-}

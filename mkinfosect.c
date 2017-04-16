@@ -9,7 +9,7 @@ int main(void)
   int fd, pos=0;
   unsigned char null=0;
   char *fname = "/kernel";
-  unsigned char data[] = { 'H', '2', 'O', 'S', 3, 0, 2, 0 };
+  unsigned char data[] = { 'H', '2', 'O', 'S', 3, 0, 18, 0 };
 
   fd = open("infosect.bin", O_CREAT|O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
   pos += write(fd, data, 8);

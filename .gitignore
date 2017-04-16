@@ -1,0 +1,6 @@
+*.o
+*.bin
+hd.img
+*.elf
+mkinfosect
+mkinfosect.exe
