@@ -37,5 +37,5 @@ else
 endif
 
 cleanup:
-	rm -f bootloader_s2.bin bootsect.bin infosect.bin kernel.o hd.img
-	rm -f mkinfosect$(EXT) $(KERNEL_OBJS)
+	rm -f bootloader_s2.bin bootsect.bin infosect.bin kernel.bin kernel.o hd.img
+	rm -f mkinfosect$(EXT) kernel$(EXT) $(KERNEL_OBJS)

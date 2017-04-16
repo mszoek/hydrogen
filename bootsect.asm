@@ -71,10 +71,10 @@ ISLoadError:
     jmp $   ; halt and catch fire
 
 
-%include "disk.asm"
 %include "data/strings.asm"
 %include "data/infosect.asm"
 %include "utilities/16bit/print.asm"
+%include "utilities/16bit/disk.asm"
 %include "utilities/32bit/32bit-gdt.asm"
 %include "utilities/32bit/32bit-print.asm"
 %include "utilities/32bit/32bit-switch.asm"
