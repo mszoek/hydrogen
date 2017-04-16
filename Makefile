@@ -1,11 +1,13 @@
 SYSTEM := $(shell uname -s)
 DDFLAGS=
+DELEXES=
 
 ifneq ($(findstring MINGW, $(SYSTEM)),MINGW)
 	DDFLAGS=iflag=fullblock
+	DELEXES=mkinfosect.exe
 endif
 
-all: bootsect infosect stage2 kernel.bin
+all: cleanup bootsect infosect stage2 kernel.bin
 	@echo Building HD image on $(SYSTEM) with $(DDFLAGS)
 	cat bootsect.bin infosect.bin kernel.bin /dev/zero | dd $(DDFLAGS) bs=512 count=2880 of=hd.img
 
@@ -26,3 +28,6 @@ kernel.bin: kernel.c
 	gcc $(CFLAGS) -o kernel.o -c kernel.c
 #	ld -m elf_i386 -o kernel.bin -Ttext 0x0 --oformat binary kernel.o
 	objcopy -O binary -j .text kernel.o kernel.bin
+
+cleanup:
+	rm -f bootloader_s2.bin bootsect.bin infosect.bin kernel.o hd.img $(DELEXES)
