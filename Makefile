@@ -7,7 +7,7 @@ endif
 
 all: bootsect infosect stage2 kernel.bin
 	@echo Building HD image on $(SYSTEM) with $(DDFLAGS)
-	cat bootsect.bin infosect.bin bootloader_s2.bin kernel.bin /dev/zero | dd $(DDFLAGS) bs=512 count=2880 of=hd.img
+	cat bootsect.bin infosect.bin kernel.bin /dev/zero | dd $(DDFLAGS) bs=512 count=2880 of=hd.img
 
 bootsect:
 	nasm -f bin bootsect.asm -o bootsect.bin
@@ -23,5 +23,5 @@ stage2: bootloader_s2.asm
 
 CFLAGS=-fno-builtin -O0 -nostartfiles -nostdlib -nodefaultlibs
 kernel.bin: kernel.c
-	gcc $(CFLAGS) -m16 -o kernel.o -c kernel.c
+	gcc $(CFLAGS) -m32 -o kernel.o -c kernel.c
 	objcopy -O binary -j .text kernel.o kernel.bin

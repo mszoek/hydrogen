@@ -1,74 +1,92 @@
 ; This file contains the main bootloader for
 ; H2OS. It is minimal and still needs lots of work.
 ;
-; Alexis Knox
+; Alexis Knox & Zoe Knox
 ; Created April 12, 2017
 
-[bits 16]
-[org 0x7c00]
+STG2_ADDR equ 0x1000
 
-begin:
-  mov bx, msg_startup
-  call print
-  call print_nl
+[org 0x7c00] ; bootloader offset
+    mov bp, 0x9000 ; set the stack
+    mov sp, bp
 
-  ; Read the info sector to get our stage2 location
-  mov bx, INFOSECTOR
-  mov dh, 1
-  mov dl, 0x80
-  mov cl, 2
-  call disk_load
+;    mov ax,3  ; VGA text mode
+;    int 0x10
 
-  mov dx, [ISMarker]
-  mov ax, [ISMagic]
-  cmp dx, ax
-  jne ISLoadError
-  mov dx, [ISMarker+2]
-  mov ax, [ISMagic+2]
-  cmp dx, ax
-  jne ISLoadError
+;    mov bx, msg_startup
+;    call print
+;    call print_nl
+
+; Read the info sector to get our stage2 location
+    mov bx, INFOSECTOR
+    mov dh, 1
+    mov dl, 0x80
+    mov cl, 2
+    call disk_load
+
+    mov dx, [ISMarker]
+    mov ax, [ISMagic]
+    cmp dx, ax
+    jne ISLoadError
+    mov dx, [ISMarker+2]
+    mov ax, [ISMagic+2]
+    cmp dx, ax
+    jne ISLoadError
 
 ; Info Sector has been loaded!
-  mov bx, MSG_LOAD_STG2
-  call print
-  mov dx, [ISStage2Start]
-  call print_hex
-  mov bx, MSG_SLASH
-  call print
-  mov dx, [ISStage2Len]
-  call print_hex
-  call print_nl
+    mov bx, MSG_LOAD_STG2
+    call print
+    mov dx, [ISStage2Start]
+    call print_hex
+    mov bx, MSG_SLASH
+    call print
+    mov dx, [ISStage2Len]
+    call print_hex
+    call print_nl
 
-  mov bx, KERNEL_ADDR
-  mov dh, [ISStage2Len]
-  mov dl, 0x80
-  mov cl, [ISStage2Start]
-  call disk_load
+    mov bx, STG2_ADDR
+    mov dh, [ISStage2Len]
+    mov dl, 0x80
+    mov cl, [ISStage2Start]
+    call disk_load
 
-  mov cx, 20
-  mov si, KERNEL_ADDR
-loop0:
-  mov dx, [si]
-  call print_hex
-  mov bx, MSG_SPACE
-  call print
-  inc si
-  inc si
-  loop loop0
+; DEBUG - dump the code we just read in as hex
+;    mov cx, 128
+;    mov si, STG2_ADDR
+;  loop0:
+;    mov dx, [si]
+;    call print_hex
+;    mov bx, MSG_SPACE
+;    call print
+;    inc si
+;    inc si
+;    loop loop0
 
-  jmp KERNEL_ADDR
+    call switch_to_pm
+    jmp $ ; this will actually never be executed
 
 ISLoadError:
-  mov bx, MSG_INFOSECT_BAD_MAGIC
-  call print
-  jmp $   ; halt and catch fire
+    mov bx, MSG_INFOSECT_BAD_MAGIC
+    call print
+    jmp $   ; halt and catch fire
 
-%include "utilities/16bit/print.asm"
+
 %include "disk.asm"
 %include "data/strings.asm"
 %include "data/infosect.asm"
+%include "utilities/16bit/print.asm"
+%include "utilities/32bit/32bit-gdt.asm"
+%include "utilities/32bit/32bit-print.asm"
+%include "utilities/32bit/32bit-switch.asm"
 
-KERNEL_ADDR equ 0x1000
+[bits 32]
+BEGIN_PM: ; after the switch we will get here
+    mov ebx, MSG_PROT_MODE
+    call print_string_pm ; Note that this will be written at the top left corner
+    jmp $
 
-times 510 - ($-$$) db 0
+MSG_PROT_MODE db "ProtMode", 0
+
+; bootsector
+times 510-($-$$) db 0
 dw 0xaa55

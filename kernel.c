@@ -1,4 +1,3 @@
-asm(".code16gcc");
 void kernel_main(void) {
   const char *msg_startup = "H2OS Kernel v0.0.1 Started!";
   char *vidmem = (char*)0xb8000; // Start of video memory
