@@ -1,5 +1,8 @@
 // H2OS Kernel! CodeGrlz rule.
 
+#include "kstring.h"
+#include "kmem.h"
+
 #define TEXTCOLOR 0x17  // white on blue
 
 void kernel_main(void)

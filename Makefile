@@ -26,7 +26,7 @@ stage2: bootloader_s2.asm
 .c.o:
 	$(CC) -ffreestanding -m32 $(CFLAGS) -o $@ -c $<
 
-KERNEL_OBJS=kernel.o kmem.o
+KERNEL_OBJS=kernel.o kmem.o kstring.o
 
 kernel.bin: $(KERNEL_OBJS)
 ifneq ($(findstring MINGW, $(SYSTEM)),MINGW)
@@ -38,4 +38,4 @@ endif
 
 cleanup:
 	rm -f bootloader_s2.bin bootsect.bin infosect.bin kernel.o hd.img
-	rm -f mkinfosect$(EXT)
+	rm -f mkinfosect$(EXT) $(KERNEL_OBJS)

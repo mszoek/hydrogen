@@ -11,7 +11,7 @@ int main(void)
   char *fname = "/kernel";
   unsigned char data[] = { 'H', '2', 'O', 'S', 3, 0, 2, 0 };
 
-  fd = open("infosect.bin", O_CREAT|O_RDWR);
+  fd = open("infosect.bin", O_CREAT|O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
   pos += write(fd, data, 8);
   pos += write(fd, fname, strlen(fname)+1); // include terminating null
 
