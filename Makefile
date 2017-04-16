@@ -1,10 +1,10 @@
 SYSTEM := $(shell uname -s)
 DDFLAGS=
-DELEXES=
+EXT=.exe
 
 ifneq ($(findstring MINGW, $(SYSTEM)),MINGW)
 	DDFLAGS=iflag=fullblock
-	DELEXES=mkinfosect.exe
+	EXT=
 endif
 
 all: cleanup bootsect infosect stage2 kernel.bin
@@ -30,4 +30,5 @@ kernel.bin: kernel.c
 	objcopy -O binary -j .text kernel.o kernel.bin
 
 cleanup:
-	rm -f bootloader_s2.bin bootsect.bin infosect.bin kernel.o hd.img $(DELEXES)
+	rm -f bootloader_s2.bin bootsect.bin infosect.bin kernel.o hd.img
+	rm -f mkinfosect$(EXT)
