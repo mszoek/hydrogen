@@ -1,7 +1,10 @@
 // H2OS Kernel! CodeGrlz rule.
 
-#include "drivers/video_ports.h"
 #define TEXTCOLOR 0x0f  // white on black
+
+#include "drivers/video_ports.h"
+#include "kstring.h"
+#include "kmem.h"
 
 void kernel_main(void) {
 

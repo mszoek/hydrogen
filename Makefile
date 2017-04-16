@@ -26,11 +26,16 @@ stage2: bootloader_s2.asm
 .c.o:
 	$(CC) -ffreestanding -m32 $(CFLAGS) -o $@ -c $<
 
-KERNEL_OBJS=kernel.o kmem.o drivers/video_ports.o drivers/screen.o
+KERNEL_OBJS=kernel.o kmem.o kstring.o drivers/video_ports.o drivers/screen.o
 
 kernel.bin: $(KERNEL_OBJS)
+ifneq ($(findstring MINGW, $(SYSTEM)),MINGW)
 	ld -m elf_i386 -o kernel.bin -Ttext 0x0 --oformat binary $(KERNEL_OBJS)
+else
+	ld -o kernel.exe -Ttext 0x0 $(KERNEL_OBJS)
+	objcopy -O binary kernel.exe kernel.bin
+endif
 
 cleanup:
 	rm -f bootloader_s2.bin bootsect.bin infosect.bin kernel.o hd.img
-	rm -f mkinfosect$(EXT)
+	rm -f mkinfosect$(EXT) $(KERNEL_OBJS)
