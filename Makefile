@@ -29,7 +29,12 @@ stage2: bootloader_s2.asm
 KERNEL_OBJS=kernel.o kmem.o
 
 kernel.bin: $(KERNEL_OBJS)
+ifneq ($(findstring MINGW, $(SYSTEM)),MINGW)
 	ld -m elf_i386 -o kernel.bin -Ttext 0x0 --oformat binary $(KERNEL_OBJS)
+else
+	ld -o kernel.exe -Ttext 0x0 $(KERNEL_OBJS)
+	objcopy -O binary kernel.exe kernel.bin
+endif
 
 cleanup:
 	rm -f bootloader_s2.bin bootsect.bin infosect.bin kernel.o hd.img
