@@ -12,10 +12,13 @@ endif
 
 all: cleanup kernel.bin bootsect
 
-boot: bootsect
+boot: bootsect embedkernel
 	@echo Installing bootsector to hd.img on $(SYSTEM) with $(DDFLAGS)
 	cat bootsect.bin | dd $(DDFLAGS) conv=notrunc bs=512 count=2 of=hd.img
 	fsck.hfsplus hd.img
+	./embedkernel
+
+embedkernel: embedkernel.c
 
 image: bootsect
 	@echo Building HD image on $(SYSTEM) with $(DDFLAGS)
