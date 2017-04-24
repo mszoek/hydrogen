@@ -26,7 +26,7 @@ stage2: bootloader_s2.asm
 .c.o:
 	$(CC) -g -Iincludes -ffreestanding -m32 $(CFLAGS) -o $@ -c $<
 
-KERNEL_OBJS=kernel.o kmem.o kstring.o drivers/video_ports.o drivers/screen.o
+KERNEL_OBJS=kernel.o kmem.o kstring.o idt.o isr.o drivers/video_ports.o drivers/screen.o drivers/keyboard.o
 
 kernel.bin: $(KERNEL_OBJS)
 ifneq ($(findstring MINGW, $(SYSTEM)),MINGW)
@@ -43,4 +43,4 @@ debug: kernel.bin
 
 cleanup:
 	rm -f bootloader_s2.bin bootsect.bin infosect.bin kernel.bin kernel.o hd.img
-	rm -f mkinfosect$(EXT) kernel$(EXT) $(KERNEL_OBJS)
+	rm -f mkinfosect$(EXT) kernel.elf kernel.exe $(KERNEL_OBJS)

@@ -11,7 +11,11 @@ int main(void)
   char *fname = "/kernel";
   unsigned char data[] = { 'H', '2', 'O', 'S', 3, 0, 18, 0 };
 
+#ifdef __MINGW32__
+  fd = open("infosect.bin", O_CREAT|O_RDWR );
+#else
   fd = open("infosect.bin", O_CREAT|O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+#endif
   pos += write(fd, data, 8);
   pos += write(fd, fname, strlen(fname)+1); // include terminating null
 
