@@ -1,6 +1,8 @@
 #include "screen.h"
 #include "video_ports.h"
+#include "../includes/kmem.h"
 
+#define COLOR_ERROR 0x4f
 
 // Private functions
 int get_cursor_offset();
@@ -53,7 +55,7 @@ int print_char(char c, int col, int row, char attr)
   if (col >= MAX_COLS || row >= MAX_ROWS)
   {
     vidmem[2*(MAX_COLS)*(MAX_ROWS)-2] = 'E';
-    vidmem[2*(MAX_COLS)*(MAX_ROWS)-1] = 0x04;
+    vidmem[2*(MAX_COLS)*(MAX_ROWS)-1] = COLOR_ERROR;
     return get_offset(col, row);
   }
 
@@ -68,6 +70,27 @@ int print_char(char c, int col, int row, char attr)
        vidmem[offset] = c;
        vidmem[offset+1] = attr;
        offset += 2;
+   }
+
+   // Video scrolling
+   if (offset >= MAX_ROWS * MAX_COLS * 2)
+   {
+     int i;
+     for (i = 1; i < MAX_ROWS; i++)
+     {
+       memcpy(get_offset(0, i) + VIDEO_ADDRESS,
+       get_offset(0, i-1) + VIDEO_ADDRESS,
+       MAX_COLS * 2);
+     }
+
+     // Blank last line
+     char *last_line = get_offset(0, MAX_ROWS-1) + VIDEO_ADDRESS;
+     for (i = 0; i < MAX_COLS * 2; i++)
+     {
+       last_line[i] = 0;
+     }
+
+     offset -= 2 * MAX_COLS;
    }
    set_cursor_offset(offset);
    return offset;
