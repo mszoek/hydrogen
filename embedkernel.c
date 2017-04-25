@@ -407,8 +407,7 @@ int main(void)
 
   printf("Type: %d Created: %x\n", htons(catrec.recordType),
     htonl(catrec.createDate));
-  printf("Fork Data size: %d blocks: %d extents[0] start: %d len: %d\n",
-    htonl(catrec.dataFork.logicalSize),
+  printf("Data Fork blocks: %d extents[0] start: %d len: %d\n",
     htonl(catrec.dataFork.totalBlocks),
     htonl(catrec.dataFork.extents[0].startBlock),
     htonl(catrec.dataFork.extents[0].blockCount));
