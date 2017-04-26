@@ -1,6 +1,7 @@
 SYSTEM := $(shell uname -s)
 DDFLAGS=
 EXT=.exe
+NASM_ARCH=win32
 
 # Size of the hard disk image in 512-byte sectors (i.e. 10MB)
 HDSIZE=20480
@@ -8,6 +9,7 @@ HDSIZE=20480
 ifneq ($(findstring MINGW, $(SYSTEM)),MINGW)
 	DDFLAGS=iflag=fullblock
 	EXT=
+	NASM_ARCH=elf32
 endif
 
 all: cleanup kernel.bin bootsect
@@ -34,7 +36,7 @@ bootsect:
 	$(CC) -g -Iincludes -ffreestanding -m32 $(CFLAGS) -o $@ -c $<
 
 %.o: %.asm
-	nasm -f win32 -o $@ $<
+	nasm -f $(NASM_ARCH) -o $@ $<
 
 KERNEL_OBJS=kernel.o kmem.o kstring.o idt.o isr.o drivers/video_ports.o drivers/screen.o drivers/keyboard.o interrupt.o
 

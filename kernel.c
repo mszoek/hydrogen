@@ -31,8 +31,8 @@ void kernel_main(void)
 
   isr_install();
   /* Test the interrupts */
-  asm volatile("int $2");
-  asm volatile("int $3");
+  //asm volatile("int $2");
+  //asm volatile("int $3");
 
   while(1) ;
 }

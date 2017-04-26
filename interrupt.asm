@@ -1,6 +1,6 @@
 ; Defined in isr.c
-[extern _isr_handler]
-[extern _irq_handler]
+[extern isr_handler]
+[extern irq_handler]
 
 ; Common ISR code
 isr_common_stub:
@@ -15,7 +15,7 @@ isr_common_stub:
 	mov gs, ax
 
     ; 2. Call C handler
-	call _isr_handler
+	call isr_handler
 
     ; 3. Restore state
 	pop eax
@@ -39,7 +39,7 @@ irq_common_stub:
     mov es, ax
     mov fs, ax
     mov gs, ax
-    call _irq_handler ; Different than the ISR code
+    call irq_handler ; Different than the ISR code
     pop ebx  ; Different than the ISR code
     mov ds, bx
     mov es, bx
@@ -58,7 +58,7 @@ irq_common_stub:
 ; we have a consistent stack for all of them.
 
 ; First make the ISRs global
-global _isr0
+global isr0
 global isr1
 global isr2
 global isr3
@@ -109,7 +109,7 @@ global irq14
 global irq15
 
 ; 0: Divide By Zero Exception
-_isr0:
+isr0:
     cli
     push byte 0
     push byte 0
