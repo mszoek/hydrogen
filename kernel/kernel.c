@@ -1,6 +1,5 @@
 // H2OS Kernel! CodeGrlz rule.
 
-#include <kversion.h>
 #include <hw/isr.h>
 #include <hw/idt.h>
 #include <hw/timer.h>
@@ -9,6 +8,7 @@
 #include <drivers/screen.h>
 #include <kstring.h>
 #include <kmem.h>
+#include <kversion.h>
 
 void kernelMain(void)
 {
@@ -21,10 +21,10 @@ void kernelMain(void)
   kprint(".");
   itoa(KERN_MINOR, msgStartup);
   kprint(msgStartup);
-  kprint(".")
+  kprint(".");
   itoa(KERN_SP, msgStartup);
   kprint(msgStartup);
-  kprint(".")
+  kprint(".");
   itoa(KERN_PATCH, msgStartup);
   kprint(msgStartup);
   kprint("\nCopyright (C) 2017 CodeGrlz. All Rights Reserved!\n\n");

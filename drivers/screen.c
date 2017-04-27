@@ -7,7 +7,7 @@
 // Private functions
 int getCursorOffset();
 void setCursorOffset(int offset);
-int print_char(char c, int col, int row, char attr);
+int printChar(char c, int col, int row, char attr);
 int getOffset(int col, int row);
 int getOffsetRow(int offset);
 int getOffsetCol(int offset);
@@ -16,7 +16,7 @@ int getOffsetCol(int offset);
  * Public Kernel API Functions                            *
  **********************************************************/
 
-void kprint_at(char *message, int col, int row)
+void kprintAt(char *message, int col, int row)
 {
   int offset;
   if (col >= 0 && row >= 0)
@@ -31,7 +31,7 @@ void kprint_at(char *message, int col, int row)
   int i = 0;
   while(message[i] != 0)
   {
-    offset = print_char(message[i++], col, row, 0x0f);
+    offset = printChar(message[i++], col, row, 0x0f);
     row = getOffsetRow(offset);
     col = getOffsetCol(offset);
   }
@@ -39,14 +39,14 @@ void kprint_at(char *message, int col, int row)
 
 void kprint(char *message)
 {
-  kprint_at(message, -1, -1);
+  kprintAt(message, -1, -1);
 }
 
 /**********************************************************
  * Private Kernel API Functions                           *
  **********************************************************/
 
-int print_char(char c, int col, int row, char attr)
+int printChar(char c, int col, int row, char attr)
 {
   unsigned char *vidmem = (unsigned char*) VIDEO_ADDRESS;
   if (!attr) attr = 0x0f;
@@ -78,13 +78,13 @@ int print_char(char c, int col, int row, char attr)
      int i;
      for (i = 1; i < MAX_ROWS; i++)
      {
-       memcpy(getOffset(0, i) + VIDEO_ADDRESS,
-       getOffset(0, i-1) + VIDEO_ADDRESS,
+       memcpy(getOffset(0, i) + (unsigned char*)VIDEO_ADDRESS,
+       getOffset(0, i-1) + (unsigned char*)VIDEO_ADDRESS,
        MAX_COLS * 2);
      }
 
      // Blank last line
-     char *last_line = getOffset(0, MAX_ROWS-1) + VIDEO_ADDRESS;
+     char *last_line = getOffset(0, MAX_ROWS-1) + (unsigned char*)VIDEO_ADDRESS;
      for (i = 0; i < MAX_COLS * 2; i++)
      {
        last_line[i] = 0;
@@ -102,9 +102,9 @@ int getCursorOffset() {
     * 2. Ask for low byte (data 15)
     */
    portByteOut(REG_SCREEN_CTRL, 14);
-   int offset = portByte_in(REG_SCREEN_DATA) << 8; /* High byte: << 8 */
+   int offset = portByteIn(REG_SCREEN_DATA) << 8; /* High byte: << 8 */
    portByteOut(REG_SCREEN_CTRL, 15);
-   offset += portByte_in(REG_SCREEN_DATA);
+   offset += portByteIn(REG_SCREEN_DATA);
    return offset * 2; /* Position * size of character cell */
 }
 
@@ -117,7 +117,7 @@ void setCursorOffset(int offset) {
    portByteOut(REG_SCREEN_DATA, (unsigned char)(offset & 0xff));
 }
 
-void clear_screen() {
+void clearScreen() {
   char *vidmem = (char*)VIDEO_ADDRESS; // Start of video memory
   unsigned int j = 0;
 

@@ -6,6 +6,7 @@
 #include <hw/timer.h>
 #include <kstring.h>
 #include <drivers/screen.h>
+#include <drivers/video_ports.h> // for portByteOut()
 
 UInt32 tickCounter = 0;
 

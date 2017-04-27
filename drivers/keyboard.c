@@ -2,10 +2,13 @@
 #include <drivers/video_ports.h>
 #include <drivers/screen.h>
 #include <hw/isr.h>
+#include <kstring.h> // for itoa()
+
+void printLetter(UInt8 scancode);
 
 static void keyboardCallback(registers_t regs)
 {
-  u8 scancode = portByteIn(0x60);
+  UInt8 scancode = portByteIn(0x60);
   char *sc_ascii;
   itoa(scancode, sc_ascii);
   kprint("Keyboard scancode: ");
@@ -20,7 +23,7 @@ void initKeyboard()
   registerInterruptHandler(IRQ1, keyboardCallback);
 }
 
-void printLetter(u8 scancode) {
+void printLetter(UInt8 scancode) {
     switch (scancode) {
         case 0x0:
             kprint("ERROR");

@@ -72,7 +72,7 @@ void isrInstall() {
     setIDTGate(46, (UInt32)irq14);
     setIDTGate(47, (UInt32)irq15);
 
-    set_idt(); // Load with ASM
+    setIDT(); // Load with ASM
 }
 
 /* To print the message which defines every exception */
@@ -114,7 +114,7 @@ char *exceptionMessages[] = {
     "Reserved"
 };
 
-void isr_handler(registers_t r) {
+void isrHandler(registers_t r) {
     kprint("received interrupt: ");
     char s[3];
     itoa(r.int_no, s);
