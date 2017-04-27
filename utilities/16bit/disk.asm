@@ -28,7 +28,7 @@ diskError:
   call print
   call printNL
   mov dh, ah ; ah = error code, dl = disk drive that errored
-  call print_hex
+  call printHex
   pop dx
   jmp diskDone
 sectorsError:

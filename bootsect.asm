@@ -72,7 +72,7 @@ kernAddr equ 0x1000
     mov al, 0x03
     out 0x60, al    ; enable A20 gate for memory >1MB
 
-    call switch_to_pm
+    call switchToPM
     jmp $ ; this will actually never be executed
 
 BadHFSSignature:
