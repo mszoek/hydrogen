@@ -3,30 +3,30 @@
 ; Alexis Knox & Zoe Knox
 ; Created April 12, 2017
 
-STG2_ADDR equ 0x7e00
-KERN_ADDR equ 0x1000
+stage2Addr equ 0x7e00
+kernAddr equ 0x1000
 
 [org 0x7c00] ; bootloader offset
     mov bp, 0x9000 ; set the stack
     mov sp, bp
 
-    mov bx, msg_startup
+    mov bx, msgStartup
     call print
-    call print_nl
+    call printNL
 
 ; Load the stage2 from sector 2
-    mov bx, STG2_ADDR
+    mov bx, stage2Addr
     mov dh, 1
     mov dl, 0x80
     mov cl, 2
-    call disk_load
+    call diskLoad
 
 ; Read the volume header
     mov bx, HFSPSignature
     mov dh, 2
     mov dl, 0x80
     mov cl, 3
-    call disk_load
+    call diskLoad
 
     mov dx, HFSPMagic
     cmp dx, [HFSPSignature]
@@ -40,7 +40,7 @@ KERN_ADDR equ 0x1000
     mov cl, dh
     shl cx, 3   ; convert to 512 byte sectors
     mov word [DAPblocks], cx
-    mov dword [DAPbuffer], KERN_ADDR
+    mov dword [DAPbuffer], kernAddr
 
     mov dx, [HFSPStartupFile+16]
     mov ch, dh  ; ntohs
@@ -76,20 +76,20 @@ KERN_ADDR equ 0x1000
     jmp $ ; this will actually never be executed
 
 BadHFSSignature:
-    mov bx,msg_hfs_sig_bad
+    mov bx,msgHFSSigBad
     call print
     jmp $
 
 KernLoadError:
-    mov bx,msg_kern_load_fail
+    mov bx,msgKernLoadFail
     call print
     mov dl, ah
     xor dh, dh
-    call print_hex
-    call print_nl
+    call printHex
+    call printNL
     mov dx, [DAPblocks]   ; number of blocks read ok
-    call print_hex
-    mov bx, msg_blocks_read
+    call printHex
+    mov bx, msgBlocksRead
     call print
     jmp $
 
@@ -100,9 +100,9 @@ KernLoadError:
 
 [bits 32]
 BEGIN_PM: ; after the switch we will get here
-    mov ebx, MSG_PROT_MODE
-    call print_string_pm ; Note that this will be written at the top left corner
-    call KERN_ADDR
+    mov ebx, msgProtMode
+    call printStringPM ; Note that this will be written at the top left corner
+    call kernAddr
     jmp $
 
 

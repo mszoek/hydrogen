@@ -1,16 +1,10 @@
 SYSTEM := $(shell uname -s)
-DDFLAGS=
-EXT=.exe
-NASM_ARCH=win32
+DDFLAGS=iflag=fullblock
+NASM_ARCH=elf32
 
 # Size of the hard disk image in 512-byte sectors (i.e. 10MB)
 HDSIZE=20480
 
-ifneq ($(findstring MINGW, $(SYSTEM)),MINGW)
-	DDFLAGS=iflag=fullblock
-	EXT=
-	NASM_ARCH=elf32
-endif
 
 all: cleanup kernel.bin bootsect
 
@@ -20,7 +14,8 @@ boot: bootsect embedkernel
 	fsck.hfsplus hd.img
 	./embedkernel
 
-embedkernel: embedkernel.c
+embedkernel:
+	$(CC) -o $@ -Iincludes embedkernel.c
 
 image: bootsect
 	@echo Building HD image on $(SYSTEM) with $(DDFLAGS)
@@ -38,16 +33,13 @@ bootsect:
 %.o: %.asm
 	nasm -f $(NASM_ARCH) -o $@ $<
 
-KERNEL_OBJS=kernel.o kmem.o kstring.o idt.o isr.o drivers/video_ports.o drivers/screen.o drivers/keyboard.o interrupt.o
+KERNEL_SRC=$(wildcard kernel/*.c drivers/*.c hw/*.c)
+KERNEL_INC=$(wildcard includes/*.h includes/hw/*.h includes/drivers/*.h)
+KERNEL_OBJ=${KERNEL_SRC:.c=.o hw/interrupt.o}
 
-kernel.bin: $(KERNEL_OBJS)
-ifneq ($(findstring MINGW, $(SYSTEM)),MINGW)
-	ld -m elf_i386 -o kernel.bin -Ttext 0x1000 --oformat binary $(KERNEL_OBJS)
-	ld -m elf_i386 -o kernel.elf -Ttext 0x1000 $(KERNEL_OBJS)
-else
-	ld -o kernel.exe -Ttext 0x1000 $(KERNEL_OBJS)
-	objcopy -O binary kernel.exe kernel.bin
-endif
+kernel.bin: $(KERNEL_OBJ)
+	ld -m elf_i386 -o kernel.bin -Ttext 0x1000 --oformat binary $(KERNEL_OBJ)
+	ld -m elf_i386 -o kernel.elf -Ttext 0x1000 $(KERNEL_OBJ)
 
 debug: kernel.bin
 	qemu-system-i386 -s -hda hd.img &
@@ -55,4 +47,4 @@ debug: kernel.bin
 
 cleanup:
 	rm -f bootsect.bin kernel.bin kernel.o
-	rm -f kernel$(EXT) $(KERNEL_OBJS)
+	rm -f kernel.elf $(KERNEL_OBJ)

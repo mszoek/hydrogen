@@ -19,7 +19,7 @@ done_print:
   ret
 
 ; New line
-print_nl:
+printNL:
   pusha
   mov ah, 0x0e
   mov al, 0x0a ; newline char
@@ -31,7 +31,7 @@ print_nl:
 
 ; HEX PRINT BELOW
 
-print_hex:
+printHex:
   pusha
   mov cx, 0 ; index variable
 

@@ -1,5 +1,5 @@
 ; load 'dh' sectors from drive 'dl' into ES:BX, starting at sector 'cl'
-disk_load:
+diskLoad:
   pusha
   push dx
 
@@ -14,28 +14,28 @@ resetdrive:
   mov ch, 0x00
   mov dh, 0x00
   int 0x13
-  jc disk_error
+  jc diskError
 
   pop dx
   cmp al, dh
-  jne sectors_error
-disk_done:
+  jne sectorsError
+diskDone:
   popa
   ret
 
-disk_error:
-  mov bx, DISK_ERROR
+diskError:
+  mov bx, msgDiskError
   call print
-  call print_nl
+  call printNL
   mov dh, ah ; ah = error code, dl = disk drive that errored
   call print_hex
   pop dx
-  jmp disk_done
-sectors_error:
-  mov bx, SECTORS_ERROR
+  jmp diskDone
+sectorsError:
+  mov bx, msgSectorsError
   call print
-  call print_nl
-  jmp disk_done
+  call printNL
+  jmp diskDone
 
-DISK_ERROR: db "Disk read error", 0
-SECTORS_ERROR: db "Disk: short read", 0
+msgDiskError: db "Disk read error", 0
+msgSectorsError: db "Disk: short read", 0

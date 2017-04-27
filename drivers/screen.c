@@ -1,16 +1,16 @@
-#include "screen.h"
-#include "video_ports.h"
-#include "../includes/kmem.h"
+#include <drivers/screen.h>
+#include <drivers/video_ports.h>
+#include <kmem.h>
 
 #define COLOR_ERROR 0x4f
 
 // Private functions
-int get_cursor_offset();
-void set_cursor_offset(int offset);
+int getCursorOffset();
+void setCursorOffset(int offset);
 int print_char(char c, int col, int row, char attr);
-int get_offset(int col, int row);
-int get_offset_row(int offset);
-int get_offset_col(int offset);
+int getOffset(int col, int row);
+int getOffsetRow(int offset);
+int getOffsetCol(int offset);
 
 /**********************************************************
  * Public Kernel API Functions                            *
@@ -21,19 +21,19 @@ void kprint_at(char *message, int col, int row)
   int offset;
   if (col >= 0 && row >= 0)
   {
-    offset = get_offset(col, row);
+    offset = getOffset(col, row);
   } else {
-    offset = get_cursor_offset();
-    row = get_offset_row(offset);
-    col = get_offset_col(offset);
+    offset = getCursorOffset();
+    row = getOffsetRow(offset);
+    col = getOffsetCol(offset);
   }
 
   int i = 0;
   while(message[i] != 0)
   {
     offset = print_char(message[i++], col, row, 0x0f);
-    row = get_offset_row(offset);
-    col = get_offset_col(offset);
+    row = getOffsetRow(offset);
+    col = getOffsetCol(offset);
   }
 }
 
@@ -56,16 +56,16 @@ int print_char(char c, int col, int row, char attr)
   {
     vidmem[2*(MAX_COLS)*(MAX_ROWS)-2] = 'E';
     vidmem[2*(MAX_COLS)*(MAX_ROWS)-1] = COLOR_ERROR;
-    return get_offset(col, row);
+    return getOffset(col, row);
   }
 
   int offset;
-   if (col >= 0 && row >= 0) offset = get_offset(col, row);
-   else offset = get_cursor_offset();
+   if (col >= 0 && row >= 0) offset = getOffset(col, row);
+   else offset = getCursorOffset();
 
    if (c == '\n') {
-       row = get_offset_row(offset);
-       offset = get_offset(0, row+1);
+       row = getOffsetRow(offset);
+       offset = getOffset(0, row+1);
    } else {
        vidmem[offset] = c;
        vidmem[offset+1] = attr;
@@ -78,13 +78,13 @@ int print_char(char c, int col, int row, char attr)
      int i;
      for (i = 1; i < MAX_ROWS; i++)
      {
-       memcpy(get_offset(0, i) + VIDEO_ADDRESS,
-       get_offset(0, i-1) + VIDEO_ADDRESS,
+       memcpy(getOffset(0, i) + VIDEO_ADDRESS,
+       getOffset(0, i-1) + VIDEO_ADDRESS,
        MAX_COLS * 2);
      }
 
      // Blank last line
-     char *last_line = get_offset(0, MAX_ROWS-1) + VIDEO_ADDRESS;
+     char *last_line = getOffset(0, MAX_ROWS-1) + VIDEO_ADDRESS;
      for (i = 0; i < MAX_COLS * 2; i++)
      {
        last_line[i] = 0;
@@ -92,29 +92,29 @@ int print_char(char c, int col, int row, char attr)
 
      offset -= 2 * MAX_COLS;
    }
-   set_cursor_offset(offset);
+   setCursorOffset(offset);
    return offset;
 }
 
-int get_cursor_offset() {
+int getCursorOffset() {
    /* Use the VGA ports to get the current cursor position
     * 1. Ask for high byte of the cursor offset (data 14)
     * 2. Ask for low byte (data 15)
     */
-   port_byte_out(REG_SCREEN_CTRL, 14);
-   int offset = port_byte_in(REG_SCREEN_DATA) << 8; /* High byte: << 8 */
-   port_byte_out(REG_SCREEN_CTRL, 15);
-   offset += port_byte_in(REG_SCREEN_DATA);
+   portByteOut(REG_SCREEN_CTRL, 14);
+   int offset = portByte_in(REG_SCREEN_DATA) << 8; /* High byte: << 8 */
+   portByteOut(REG_SCREEN_CTRL, 15);
+   offset += portByte_in(REG_SCREEN_DATA);
    return offset * 2; /* Position * size of character cell */
 }
 
-void set_cursor_offset(int offset) {
-   /* Similar to get_cursor_offset, but instead of reading we write data */
+void setCursorOffset(int offset) {
+   /* Similar to getCursorOffset, but instead of reading we write data */
    offset /= 2;
-   port_byte_out(REG_SCREEN_CTRL, 14);
-   port_byte_out(REG_SCREEN_DATA, (unsigned char)(offset >> 8));
-   port_byte_out(REG_SCREEN_CTRL, 15);
-   port_byte_out(REG_SCREEN_DATA, (unsigned char)(offset & 0xff));
+   portByteOut(REG_SCREEN_CTRL, 14);
+   portByteOut(REG_SCREEN_DATA, (unsigned char)(offset >> 8));
+   portByteOut(REG_SCREEN_CTRL, 15);
+   portByteOut(REG_SCREEN_DATA, (unsigned char)(offset & 0xff));
 }
 
 void clear_screen() {
@@ -126,10 +126,10 @@ void clear_screen() {
     vidmem[j++] = ' ';
     vidmem[j++] = WHITE_ON_BLACK;
   }
-  set_cursor_offset(0); // no need to calc - it is always zero :)
+  setCursorOffset(0); // no need to calc - it is always zero :)
 }
 
 
-int get_offset(int col, int row) { return 2 * (row * MAX_COLS + col); }
-int get_offset_row(int offset) { return offset / (2 * MAX_COLS); }
-int get_offset_col(int offset) { return (offset - (get_offset_row(offset)*2*MAX_COLS))/2; }
+int getOffset(int col, int row) { return 2 * (row * MAX_COLS + col); }
+int getOffsetRow(int offset) { return offset / (2 * MAX_COLS); }
+int getOffsetCol(int offset) { return (offset - (getOffsetRow(offset)*2*MAX_COLS))/2; }

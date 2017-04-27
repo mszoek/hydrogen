@@ -12,7 +12,7 @@ HFSPVersion         equ   HFSPSignature+2
 HFSPFileCount       equ   HFSPVersion+32
 HFSPStartupFile     equ   HFSPSignature+432
 
-msg_hfs_sig_bad     db    "Bad HFS+ signature",0
+msgHFSSigBad        db    "Bad HFS+ signature",0
 
 ;struct HFSPlusVolumeHeader {
 ;    UInt16              signature;

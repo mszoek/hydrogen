@@ -1,26 +1,26 @@
-#include "keyboard.h"
-#include "video_ports.h"
-#include "../includes/isr.h"
-#include "screen.h"
+#include <drivers/keyboard.h>
+#include <drivers/video_ports.h>
+#include <drivers/screen.h>
+#include <hw/isr.h>
 
-static void keyboard_callback(registers_t regs)
+static void keyboardCallback(registers_t regs)
 {
-  u8 scancode = port_byte_in(0x60);
+  u8 scancode = portByteIn(0x60);
   char *sc_ascii;
   itoa(scancode, sc_ascii);
   kprint("Keyboard scancode: ");
   kprint(sc_ascii);
   kprint(", ");
-  print_letter(scancode);
+  printLetter(scancode);
   kprint("\n");
 }
 
-void init_keyboard()
+void initKeyboard()
 {
-  register_interrupt_handler(IRQ1, keyboard_callback);
+  registerInterruptHandler(IRQ1, keyboardCallback);
 }
 
-void print_letter(u8 scancode) {
+void printLetter(u8 scancode) {
     switch (scancode) {
         case 0x0:
             kprint("ERROR");
@@ -201,7 +201,7 @@ void print_letter(u8 scancode) {
                 kprint("Unknown key down");
             } else if (scancode <= 0x39 + 0x80) {
                 kprint("key up ");
-                print_letter(scancode - 0x80);
+                printLetter(scancode - 0x80);
             } else kprint("Unknown key up");
             break;
 }
