@@ -398,12 +398,14 @@ int main(void)
     return -1;
   }
 
-  printf("Type: %d Created: %x\n", htons(catrec.recordType),
-    htonl(catrec.createDate));
-  printf("Data Fork blocks: %d extents[0] start: %d len: %d\n",
-    htonl(catrec.dataFork.totalBlocks),
-    htonl(catrec.dataFork.extents[0].startBlock),
-    htonl(catrec.dataFork.extents[0].blockCount));
+  printf("Type: %d Created: %x Blocks: %d\n", htons(catrec.recordType),
+    htonl(catrec.createDate), htonl(catrec.dataFork.totalBlocks));
+  for(i=0; i<8; ++i)
+  {
+    printf("Data Fork extents[%d] start: %d len: %d\n", i,
+      htonl(catrec.dataFork.extents[i].startBlock),
+      htonl(catrec.dataFork.extents[i].blockCount));
+  }
 
   memcpy(&vhdr.startupFile, &catrec.dataFork, sizeof(HFSPlusForkData));
 

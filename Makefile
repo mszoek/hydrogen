@@ -14,7 +14,7 @@ boot: bootsect embedkernel
 	fsck.hfsplus hd.img
 	./embedkernel
 
-embedkernel:
+embedkernel: embedkernel.c
 	$(CC) -o $@ -Iincludes embedkernel.c
 
 image: bootsect

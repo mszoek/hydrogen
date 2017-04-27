@@ -12,11 +12,10 @@
 
 void kernelMain(void)
 {
-  UInt8 major, minor, patch;
   char msgStartup[] = "H2OS Kernel Started! v";
   clearScreen();
   kprint(msgStartup);
-  itoa(KERN_MAJOR, msgStartup);
+/*  itoa(KERN_MAJOR, msgStartup);
   kprint(msgStartup);
   kprint(".");
   itoa(KERN_MINOR, msgStartup);
@@ -26,13 +25,13 @@ void kernelMain(void)
   kprint(msgStartup);
   kprint(".");
   itoa(KERN_PATCH, msgStartup);
-  kprint(msgStartup);
+  kprint(msgStartup);*/
   kprint("\nCopyright (C) 2017 CodeGrlz. All Rights Reserved!\n\n");
 
   kprint("isrInstall()\n");
-  isrInstall();
+  //isrInstall();
   kprint("initTimer()\n");
-  initTimer(1000);
+  //initTimer(1000);
 
   while(1) ;
 }
