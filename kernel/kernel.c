@@ -36,6 +36,3 @@ void kernelMain(void)
   while(1) ;
 }
 
-void _start(void) {
-  kernelMain();
-}
