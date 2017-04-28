@@ -10,7 +10,28 @@
 #include <kmem.h>
 #include <kversion.h>
 
+// Prototypes
+void displayStartupMsg();
+
+// Kernel entry function
 void kernelMain(void)
+{
+  displayStartupMsg();
+
+  kprint("isrInstall()\n");
+  isrInstall();
+
+  kprint("initKeyboard()\n");
+  initKeyboard();
+  kprint("initTimer()\n");
+  initTimer(50);
+
+  asm volatile("sti"); // Start interrupts!
+
+  while(1) ;
+}
+
+void displayStartupMsg()
 {
   char msgStartup[] = "H2OS Kernel Started! v";
   clearScreen();
@@ -27,17 +48,4 @@ void kernelMain(void)
   itoa(KERN_PATCH, msgStartup);
   kprint(msgStartup);
   kprint("\nCopyright (C) 2017 CodeGrlz. All Rights Reserved!\n\n");
-
-  kprint("isrInstall()\n");
-  isrInstall();
-
-  kprint("initKeyboard()\n");
-  initKeyboard();
-  kprint("initTimer()\n");
-  initTimer(50);
-
-  asm volatile("sti"); // Start interrupts!
-
-  while(1) ;
 }
-

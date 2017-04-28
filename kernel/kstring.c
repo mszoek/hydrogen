@@ -9,6 +9,26 @@ int strlen(char *s)
   return p-s;
 }
 
+int strcmp(char *a, char *b)
+{
+  char *p = a;
+  char *q = b;
+  while(*p && *q)
+  {
+    if(*p < *q)
+    {
+      return -1;
+    }
+    else if(*p > *q)
+    {
+      return 1;
+    }
+    ++p;
+    ++q;
+  }
+  return 0;
+}
+
 int atoi(char *str)
 {
     int res = 0; // Initialize result

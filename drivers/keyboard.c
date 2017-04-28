@@ -2,20 +2,63 @@
 #include <drivers/keyboard.h>
 #include <drivers/screen.h>
 #include <hw/isr.h>
-#include <kstring.h> // for itoa()
+#include <kmem.h>
 
-void printLetter(UInt8 scancode);
+char keyBuffer[1024];
+int keyBufferPos = 0;
+
+// map scan codes 0x00 to 0x58 into en_US layout
+char scanCodesToASCII[] =
+{
+    -1, 0x1B, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 0x08,
+    0x09, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', 0x0D,
+    -1, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`',
+    -1, '\\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', -1, '*',
+    -1, ' ', -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* f1 to f10 keys */
+    -1, -1, '7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3', '0',
+    '.', -1, -1, -1, -1, -1
+};
 
 static void keyboardCallback(registers_t regs)
 {
+  int keyUp = 0;
   UInt8 scancode = portByteIn(0x60);
-  char *sc_ascii;
-  itoa(scancode, sc_ascii);
-  kprint("Keyboard scancode: ");
-  kprint(sc_ascii);
-  kprint(", ");
-  printLetter(scancode);
-  kprint("\n");
+
+  if(scancode & 0x80) // if high bit set, this is a key up event
+  {
+    scancode &= 0x7F; // clear the high bit to get the real code
+    keyUp = 1; // but remember it was set
+  }
+
+  // if scancode outside of mapped range, ignore it
+  if(scancode < 0 || scancode > 0x58)
+  {
+    return;
+  }
+
+  // get the unshifted scancode in ASCII
+  if(keyUp)
+  {
+    char ch = scanCodesToASCII[scancode];
+    char key[2];
+    key[0]=ch;
+    key[1]=0;
+    kprint(key);
+    keyBuffer[keyBufferPos] = ch;
+    ++keyBufferPos;
+    if(keyBufferPos >= 1024)
+    {
+      keyBufferPos = 1023;
+      // FIXME: we should beep here!
+    }
+
+    if(scancode == 0x1C)
+    {
+      keyBuffer[keyBufferPos]=0;
+      kprint(keyBuffer);
+      shellStart();
+    }
+  }
 }
 
 void initKeyboard()
@@ -23,182 +66,30 @@ void initKeyboard()
   registerInterruptHandler(IRQ1, keyboardCallback);
 }
 
-void printLetter(UInt8 scancode) {
-    switch (scancode) {
-        case 0x0:
-            kprint("ERROR");
-            break;
-        case 0x1:
-            kprint("ESC");
-            break;
-        case 0x2:
-            kprint("1");
-            break;
-        case 0x3:
-            kprint("2");
-            break;
-        case 0x4:
-            kprint("3");
-            break;
-        case 0x5:
-            kprint("4");
-            break;
-        case 0x6:
-            kprint("5");
-            break;
-        case 0x7:
-            kprint("6");
-            break;
-        case 0x8:
-            kprint("7");
-            break;
-        case 0x9:
-            kprint("8");
-            break;
-        case 0x0A:
-            kprint("9");
-            break;
-        case 0x0B:
-            kprint("0");
-            break;
-        case 0x0C:
-            kprint("-");
-            break;
-        case 0x0D:
-            kprint("+");
-            break;
-        case 0x0E:
-            kprint("Backspace");
-            break;
-        case 0x0F:
-            kprint("Tab");
-            break;
-        case 0x10:
-            kprint("Q");
-            break;
-        case 0x11:
-            kprint("W");
-            break;
-        case 0x12:
-            kprint("E");
-            break;
-        case 0x13:
-            kprint("R");
-            break;
-        case 0x14:
-            kprint("T");
-            break;
-        case 0x15:
-            kprint("Y");
-            break;
-        case 0x16:
-            kprint("U");
-            break;
-        case 0x17:
-            kprint("I");
-            break;
-        case 0x18:
-            kprint("O");
-            break;
-        case 0x19:
-            kprint("P");
-            break;
-		case 0x1A:
-			kprint("[");
-			break;
-		case 0x1B:
-			kprint("]");
-			break;
-		case 0x1C:
-			kprint("ENTER");
-			break;
-		case 0x1D:
-			kprint("LCtrl");
-			break;
-		case 0x1E:
-			kprint("A");
-			break;
-		case 0x1F:
-			kprint("S");
-			break;
-        case 0x20:
-            kprint("D");
-            break;
-        case 0x21:
-            kprint("F");
-            break;
-        case 0x22:
-            kprint("G");
-            break;
-        case 0x23:
-            kprint("H");
-            break;
-        case 0x24:
-            kprint("J");
-            break;
-        case 0x25:
-            kprint("K");
-            break;
-        case 0x26:
-            kprint("L");
-            break;
-        case 0x27:
-            kprint(";");
-            break;
-        case 0x28:
-            kprint("'");
-            break;
-        case 0x29:
-            kprint("`");
-            break;
-		case 0x2A:
-			kprint("LShift");
-			break;
-		case 0x2B:
-			kprint("\\");
-			break;
-		case 0x2C:
-			kprint("Z");
-			break;
-		case 0x2D:
-			kprint("X");
-			break;
-		case 0x2E:
-			kprint("C");
-			break;
-		case 0x2F:
-			kprint("V");
-			break;
-        case 0x30:
-            kprint("B");
-            break;
-        case 0x31:
-            kprint("N");
-            break;
-        case 0x32:
-            kprint("M");
-            break;
-        case 0x33:
-            kprint(",");
-            break;
-        case 0x34:
-            kprint(".");
-            break;
-        case 0x35:
-            kprint("/");
-            break;
-        case 0x36:
-            kprint("Rshift");
-            break;
-        case 0x37:
-            kprint("Keypad *");
-            break;
-        case 0x38:
-            kprint("LAlt");
-            break;
-        case 0x39:
-            kprint("Spc");
-            break;
+UInt16 getKeyboardBuffer(char *buffer, UInt16 bufferLen)
+{
+  UInt16 pos = keyBufferPos; // grab this because interrupts will change it
+  // read either as much as the buffer will hold or as much as we have
+  UInt16 len = ((bufferLen < pos) ? bufferLen : pos);
+
+  if(buffer == 0)
+  {
+    return 0; // can't read into NULL buffer!
+  }
+  memcpy(buffer, keyBuffer, len);
+
+  // now preserve what's left (if anything) in the input buffer and
+  // reset the write pointer. Quickly, and with interrupts off, of course.
+  asm("cli");
+  memcpy(keyBuffer, &keyBuffer[pos], keyBufferPos - len);
+  keyBufferPos = keyBufferPos - len;
+  asm("sti");
+
+  // return number of bytes stored in buffer
+  return len;
+}
+
+/*
         default:
             if (scancode <= 0x7f) {
                 kprint("Unknown key down");
@@ -207,5 +98,4 @@ void printLetter(UInt8 scancode) {
                 printLetter(scancode - 0x80);
             } else kprint("Unknown key up");
             break;
-}
-}
+*/
