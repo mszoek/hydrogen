@@ -32,7 +32,7 @@ void reverse(char str[]) {
     }
 }
 
-void append(void s[], char n)
+void append(char s[], char n)
 {
 	int len = strlen(s);
 	s[len] = n;

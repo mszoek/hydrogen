@@ -115,11 +115,11 @@ char *exceptionMessages[] = {
 };
 
 void isrHandler(registers_t r) {
-    kprint("received interrupt: ");
+    kprint("CPU Exception ");
     char s[3];
     itoa(r.int_no, s);
     kprint(s);
-    kprint("\n");
+    kprint(": ");
     kprint(exceptionMessages[r.int_no]);
     kprint("\n");
 }
@@ -129,11 +129,6 @@ void registerInterruptHandler(UInt8 n, isr_t handler) {
 }
 
 void irqHandler(registers_t r) {
-    kprint("received IRQ interrupt: ");
-    char s[3];
-    itoa(r.int_no, s);
-    kprint(s);
-    kprint("\n");
     /* After every interrupt we need to send an EOI to the PICs
      * or they will not send another interrupt again */
     if (r.int_no >= 40) portByteOut(0xA0, 0x20); /* slave */

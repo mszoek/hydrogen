@@ -13,6 +13,18 @@ UInt32 tickCounter = 0;
 static void timerCallback(registers_t regs)
 {
   tickCounter++;
+
+  // every 50 ticks (~every second) print the current count
+  // in the bottom right, and restore the previous cursor pos
+  if(tickCounter % 50 == 0)
+  {
+    int pos = getCursorOffset();
+    kprintAt("Uptime: ", 60, 24);
+    char s[32];
+    itoa(tickCounter, s);
+    kprint(s);
+    setCursorOffset(pos);
+  }
 }
 
 void initTimer(UInt32 Hz)
