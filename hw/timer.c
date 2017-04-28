@@ -2,23 +2,17 @@
 // Zoe Knox 2017
 
 #include <hw/types.h>
+#include <hw/port_io.h>
 #include <hw/isr.h>
 #include <hw/timer.h>
 #include <kstring.h>
 #include <drivers/screen.h>
-#include <drivers/video_ports.h> // for portByteOut()
 
 UInt32 tickCounter = 0;
 
 static void timerCallback(registers_t regs)
 {
-  char strTick[256];
-
   tickCounter++;
-  itoa(tickCounter, strTick);
-  kprint("TICK! ");
-  kprint(strTick);
-  kprint("\n");
 }
 
 void initTimer(UInt32 Hz)

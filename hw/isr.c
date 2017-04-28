@@ -1,8 +1,8 @@
+#include <hw/port_io.h>
 #include <hw/isr.h>
 #include <hw/idt.h>
 #include <kstring.h>
 #include <drivers/screen.h>
-#include <drivers/video_ports.h>
 
 isr_t interruptHandlers[256];
 
@@ -129,6 +129,11 @@ void registerInterruptHandler(UInt8 n, isr_t handler) {
 }
 
 void irqHandler(registers_t r) {
+    kprint("received IRQ interrupt: ");
+    char s[3];
+    itoa(r.int_no, s);
+    kprint(s);
+    kprint("\n");
     /* After every interrupt we need to send an EOI to the PICs
      * or they will not send another interrupt again */
     if (r.int_no >= 40) portByteOut(0xA0, 0x20); /* slave */

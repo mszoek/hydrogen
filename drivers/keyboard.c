@@ -1,5 +1,5 @@
+#include <hw/port_io.h>
 #include <drivers/keyboard.h>
-#include <drivers/video_ports.h>
 #include <drivers/screen.h>
 #include <hw/isr.h>
 #include <kstring.h> // for itoa()

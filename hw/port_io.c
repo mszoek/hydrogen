@@ -1,26 +1,26 @@
-#include <drivers/video_ports.h>
+#include <hw/port_io.h>
 
 // Read a byte from a specified port
-unsigned char portByteIn (unsigned short port)
+UInt8 portByteIn (UInt16 port)
 {
-  unsigned char result;
+  UInt8 result;
   asm("in %%dx, %%al" : "=a" (result) : "d" (port));
   return result;
 }
 
-void portByteOut (unsigned short port, unsigned char data)
+void portByteOut (UInt16 port, UInt8 data)
 {
   asm("out %%al, %%dx" : : "a" (data), "d" (port));
 }
 
-unsigned short portWordIn (unsigned short port)
+UInt16 portWordIn (UInt16 port)
 {
-  unsigned short result;
+  UInt16 result;
   asm("in %%dx, %%ax" : "=a" (result) : "d" (port));
   return result;
 }
 
-void portWordOut (unsigned short port, unsigned short data)
+void portWordOut (UInt16 port, UInt16 data)
 {
   asm("out %%ax, %%dx" : : "a" (data), "d" (port));
 }

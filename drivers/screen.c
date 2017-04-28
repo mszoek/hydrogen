@@ -1,5 +1,5 @@
+#include <hw/port_io.h>
 #include <drivers/screen.h>
-#include <drivers/video_ports.h>
 #include <kmem.h>
 
 #define COLOR_ERROR 0x4f
