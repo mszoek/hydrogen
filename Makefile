@@ -8,7 +8,11 @@ HDSIZE=20480
 
 all: cleanup kernel.bin bootsect
 
-boot: bootsect embedkernel
+boot: bootsect kernel.bin embedkernel
+	@echo Installing kernel to hd.img on $(SYSTEM)
+	sudo mount -o loop -t hfsplus hd.img /a
+	sudo cp -vf kernel.bin /a
+	sudo umount /a
 	@echo Installing bootsector to hd.img on $(SYSTEM) with $(DDFLAGS)
 	cat bootsect.bin | dd $(DDFLAGS) conv=notrunc bs=512 count=2 of=hd.img
 	fsck.hfsplus hd.img
