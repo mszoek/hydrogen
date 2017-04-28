@@ -32,6 +32,19 @@ void reverse(char str[]) {
     }
 }
 
+void append(void s[], char n)
+{
+	int len = strlen(s);
+	s[len] = n;
+	s[len+1] = '\0';
+}
+
+void backspace(char s[])
+{
+	int len = strlen(s);
+	s[len-1] = '\0';
+}
+
 void itoa(int n, char str[]) {
     int i, sign;
     if ((sign = n) < 0) n = -n;

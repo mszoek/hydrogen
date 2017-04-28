@@ -3,6 +3,8 @@
 
 int strlen(char *s);
 void reverse(char str[]);
+void append(void s[], char n);
+void backspace(char s[]);
 void itoa(int n, char str[]);
 int atoi(char *str);
 
