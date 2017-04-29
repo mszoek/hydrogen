@@ -2,7 +2,7 @@
  * Zoe Knox 2017
  */
 
-void memcpy(char *src, char *dst, unsigned int len)
+void memcpy(char *dst, char *src, unsigned int len)
 {
   int i;
   for(i=0; i<len; ++i)

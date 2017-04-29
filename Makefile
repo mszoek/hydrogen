@@ -42,7 +42,7 @@ KERNEL_INC=$(wildcard includes/*.h includes/hw/*.h includes/drivers/*.h)
 KERNEL_OBJ=kernel/loader.o ${KERNEL_SRC:.c=.o} hw/interrupt.o
 
 kernel.bin: $(KERNEL_OBJ)
-	ld -m elf_i386 -o kernel.bin -Ttext 0x1000 --oformat binary $(KERNEL_OBJ)
+	ld -m elf_i386 -o kernel.bin -Ttext 0x1000 --oformat binary $(KERNEL_OBJ) 
 	ld -m elf_i386 -o kernel.elf -Ttext 0x1000 $(KERNEL_OBJ)
 
 debug: kernel.bin

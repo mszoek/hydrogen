@@ -4,11 +4,11 @@
 #include <hw/isr.h>
 #include <kmem.h>
 
-char keyBuffer[1024];
-int keyBufferPos = 0;
+static char keyBuffer[1024];
+static int keyBufferPos = 0;
 
 // map scan codes 0x00 to 0x58 into en_US layout
-char scanCodesToASCII[] =
+const char scanCodesToASCII[] =
 {
     -1, 0x1B, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 0x08,
     0x09, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', 0x0D,
@@ -39,6 +39,20 @@ static void keyboardCallback(registers_t regs)
   // get the unshifted scancode in ASCII
   if(keyUp)
   {
+    if(scancode == 0x1C)
+    {
+      kprint("\n");
+      keyBuffer[keyBufferPos]=0;
+      shellStart();
+      return;
+    }
+    if (scancode == 0x0E)
+    {
+      keyBuffer[--keyBufferPos] = 0;
+      printBackspace();
+      return;
+    }
+
     char ch = scanCodesToASCII[scancode];
     char key[2];
     key[0]=ch;
@@ -51,18 +65,12 @@ static void keyboardCallback(registers_t regs)
       keyBufferPos = 1023;
       // FIXME: we should beep here!
     }
-
-    if(scancode == 0x1C)
-    {
-      keyBuffer[keyBufferPos]=0;
-      kprint(keyBuffer);
-      shellStart();
-    }
   }
 }
 
 void initKeyboard()
 {
+  keyBufferPos = 0;
   registerInterruptHandler(IRQ1, keyboardCallback);
 }
 

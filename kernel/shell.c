@@ -6,14 +6,19 @@
 
 void shellStart()
 {
-  kprint("H2OS CodeGrlz Shell\n");
   char charBuffer[1024];
-  int length = getKeyboardBuffer(charBuffer, 1024);
-  charBuffer[length-1] = '\0';
-  kprint(charBuffer);
+  int length = getKeyboardBuffer(&charBuffer, 1023);
 
-  if (strcmp(charBuffer, "exit") == 0)
+  if(length == 0)
   {
-    asm volatile ("hlt");
+    return; // all they did was hit Enter
+  }
+  charBuffer[length] = '\0';
+
+  if(strcmp(charBuffer, "exit") == 0)
+  {
+    kprint("kk, kthxbye!\n");
+    asm("cli");
+    asm("hlt");
   }
 }

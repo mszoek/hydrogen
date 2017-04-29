@@ -37,6 +37,17 @@ void kprintAt(char *message, int col, int row)
   }
 }
 
+void printBackspace()
+{
+  int offset = getCursorOffset() - 2;
+  if(offset < 0)
+  {
+    offset = 0;
+  }
+  *(char *)(VIDEO_ADDRESS + offset) = ' ';
+  setCursorOffset(offset);
+}
+
 void kprint(char *message)
 {
   kprintAt(message, -1, -1);
@@ -78,9 +89,9 @@ int printChar(char c, int col, int row, char attr)
      int i;
      for (i = 1; i < MAX_ROWS; i++)
      {
-       memcpy(getOffset(0, i) + (unsigned char*)VIDEO_ADDRESS,
-       getOffset(0, i-1) + (unsigned char*)VIDEO_ADDRESS,
-       MAX_COLS * 2);
+       memcpy(getOffset(0, i-1) + (unsigned char*)VIDEO_ADDRESS,
+         getOffset(0, i) + (unsigned char*)VIDEO_ADDRESS,
+         MAX_COLS * 2);
      }
 
      // Blank last line

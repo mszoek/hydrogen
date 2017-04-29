@@ -4,6 +4,12 @@
 
 global _start
 extern kernelMain
+;extern _init
 
 _start:
-		jmp	kernelMain
+;		call	_init
+		call 	kernelMain
+
+		cli
+die:		hlt
+		jmp die
