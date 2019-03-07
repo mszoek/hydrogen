@@ -34,7 +34,8 @@ void kernelMain(void)
 void displayStartupMsg()
 {
   char msgStartup[] = "H2OS Kernel Started! v";
-  clearScreen();
+  clearScreen(0x1f);
+  defaultTextAttr(0x1f);
   kprint(msgStartup);
   itoa(KERN_MAJOR, msgStartup);
   kprint(msgStartup);
@@ -47,5 +48,5 @@ void displayStartupMsg()
   kprint("p");
   itoa(KERN_PATCH, msgStartup);
   kprint(msgStartup);
-  kprint("\nCopyright (C) 2017 CodeGrlz. All Rights Reserved!\n\n");
+  kprint("\nCopyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
 }

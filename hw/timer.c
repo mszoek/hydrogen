@@ -19,10 +19,10 @@ static void timerCallback(registers_t regs)
   if(tickCounter % 50 == 0)
   {
     int pos = getCursorOffset();
-    kprintAt("Uptime: ", 60, 24);
+    kprintAt("Uptime: ", 60, 24, 0x1e);
     char s[32];
     itoa(tickCounter, s);
-    kprint(s);
+    kprintAt(s, -1, -1, 0x1e);
     setCursorOffset(pos);
   }
 }

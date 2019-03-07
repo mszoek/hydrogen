@@ -12,11 +12,20 @@ int getOffset(int col, int row);
 int getOffsetRow(int offset);
 int getOffsetCol(int offset);
 
+char g_textAttr = 0x0f;
+
 /**********************************************************
  * Public Kernel API Functions                            *
  **********************************************************/
 
-void kprintAt(char *message, int col, int row)
+char defaultTextAttr(char attr)
+{
+  char a = g_textAttr;
+  if(attr) g_textAttr = attr;
+  return a;
+}
+
+void kprintAt(char *message, int col, int row, char attr)
 {
   int offset;
   if (col >= 0 && row >= 0)
@@ -31,7 +40,7 @@ void kprintAt(char *message, int col, int row)
   int i = 0;
   while(message[i] != 0)
   {
-    offset = printChar(message[i++], col, row, 0x0f);
+    offset = printChar(message[i++], col, row, attr);
     row = getOffsetRow(offset);
     col = getOffsetCol(offset);
   }
@@ -50,7 +59,7 @@ void printBackspace()
 
 void kprint(char *message)
 {
-  kprintAt(message, -1, -1);
+  kprintAt(message, -1, -1, g_textAttr);
 }
 
 /**********************************************************
@@ -128,14 +137,14 @@ void setCursorOffset(int offset) {
    portByteOut(REG_SCREEN_DATA, (unsigned char)(offset & 0xff));
 }
 
-void clearScreen() {
+void clearScreen(char attr) {
   char *vidmem = (char*)VIDEO_ADDRESS; // Start of video memory
   unsigned int j = 0;
 
   while (j < MAX_COLS * MAX_ROWS * 2)
   {
     vidmem[j++] = ' ';
-    vidmem[j++] = WHITE_ON_BLACK;
+    vidmem[j++] = (attr ? attr : WHITE_ON_BLACK);
   }
   setCursorOffset(0); // no need to calc - it is always zero :)
 }
