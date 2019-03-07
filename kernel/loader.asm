@@ -1,15 +1,52 @@
 ; Kernel loader stub to get the right entry point from bootloader
-; This object must be linked first at 0x1000!
-; Zoe Knox 2017
+; Zoe & Alexis Knox 2019
 
-global _start
+[bits 32]
+global start
 extern kernelMain
-;extern _init
 
-_start:
-;		call	_init
-		call 	kernelMain
 
-		cli
-die:		hlt
-		jmp die
+start:
+	lgdt [gdt_descriptor] ; Load the GDT descriptor
+	mov ax, 0x10 ; update the segment registers
+	mov ds, ax
+	mov ss, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	mov esp, _sys_stack
+	jmp 0x08:stublet
+
+align 4
+mboot:
+	multiboot_page_align 	equ 1<<0
+	multiboot_memory_info	equ 1<<1
+	multiboot_aout_kludge	equ 1<<16
+	multiboot_header_magic	equ 0x1badb002
+	multiboot_header_flags	equ multiboot_page_align | multiboot_memory_info | multiboot_aout_kludge
+	multiboot_checksum		equ -(multiboot_header_magic + multiboot_header_flags)
+	extern code, bss, end
+
+	dd multiboot_header_magic
+	dd multiboot_header_flags
+	dd multiboot_checksum
+
+	dd mboot
+	dd code
+	dd bss
+	dd end
+	dd start
+
+stublet:
+	call kernelMain				; Call our C++ kernel
+	cli
+die: hlt
+	jmp die
+
+%include "utilities/32bit/32bit-gdt.asm"
+
+section .bss
+	resb 8192
+
+_sys_stack:
+

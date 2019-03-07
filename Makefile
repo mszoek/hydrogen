@@ -6,27 +6,22 @@ CXX=i686-elf-gcc
 AS=i686-elf-as
 LD=ld
 CC64=gcc
+CFLAGS=-g -Iincludes -m32 -nostdlib -ffreestanding -mno-red-zone -fno-exceptions
+CXXFLAGS=$(CFLAGS) -fno-rtti -fpermissive
 
 # Size of the hard disk image in 512-byte sectors (i.e. 10MB)
 HDSIZE=20480
 
 
-all: cleanup kernel.bin bootsect
+all: clean kernel.bin mkiso
 
-iso:
-	# MooMoo:
-	# You will need to modify the bootloader to contain a GRUB multiboot section.
-	# I have included my boot.asm from SimpleOS as an example.
-	# Link everything together into a kernel file in the iso folder, then
-	# run this command.
-	# Do this however you'd like, but it should only be a few lines to compile
-	# and link everything. I don't think that the ./embedkernel is necessary anymore.
+mkiso:
+	cp -f kernel.bin iso/kernel.bin
 	grub-mkrescue -o hydrogen.iso iso
 
 boot: bootsect kernel.bin embedkernel
-	@echo Installing kernel to hd.img on $(SYSTEM)
+	@echo Installing kernel.bin to hd.img on $(SYSTEM)
 	sudo mount -o loop -t hfsplus hd.img /a
-	sudo cp -vf kernel.bin /a
 	sudo umount /a
 	@echo Installing bootsector to hd.img on $(SYSTEM) with $(DDFLAGS)
 	cat bootsect.bin | dd $(DDFLAGS) conv=notrunc bs=512 count=2 of=hd.img
@@ -47,7 +42,7 @@ bootsect:
 	nasm -f bin bootsect.asm -o bootsect.bin
 
 %.o: %.c
-	$(CC) -g -Iincludes -ffreestanding -m32 $(CFLAGS) -o $@.s -S $<
+	$(CC) $(CFLAGS) -o $@.s -S $<
 	$(AS) -o $@ $@.s
 
 
@@ -59,13 +54,13 @@ KERNEL_INC=$(wildcard includes/*.h includes/hw/*.h includes/drivers/*.h)
 KERNEL_OBJ=kernel/loader.o ${KERNEL_SRC:.c=.o} hw/interrupt.o
 
 kernel.bin: $(KERNEL_OBJ)
-	ld -m elf_i386 -o kernel.bin -Ttext 0x1000 --oformat binary $(KERNEL_OBJ) 
-	ld -m elf_i386 -o kernel.elf -Ttext 0x1000 $(KERNEL_OBJ)
+	ld -m elf_i386 -o kernel.bin -Tlinker.ld $(KERNEL_OBJ) 
 
 debug: kernel.bin
 	qemu-system-i386 -s -hda hd.img &
 	gdb -ex "target remote localhost:1234" -ex "symbol-file kernel.elf"
 
-cleanup:
+clean:
 	rm -f bootsect.bin kernel.bin kernel.o
 	rm -f kernel.elf $(KERNEL_OBJ)
+	find . -name \*.o.s -exec rm {} \;
