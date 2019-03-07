@@ -1,11 +1,20 @@
-# README #
+# HYDROGEN #
 
-H2OS! A brand new operating system written from the ground up in Assembly (and other languages to come soon!)
+**We're back!**
 
-### What is this repository for? ###
+After almost 2 years, Hydrogen (formerly H2OS) is back :)
 
-This repository is responsible for hosting all the code used for H2OS, an OS written while ingesting lots of H2O.
+_Hydrogen: Lighter than air, more essential than water._  
 
-### How do I help? ###
+## Contributing
+Contributing to Hydrogen is not currently possible, as it is closed source. (duh)
 
-It's not currently possible to contribute to H2OS.
+## Build Requirements
+A Linux-based environment (Use Arch for best compatibility.)  
+GCC >= 8.2.1  
+NASM >= 2.14.02  
+CMake or GNU Make  
+The grub-mkrescue tool  
+
+## Running
+Simply run *hydrogen.iso* in your favorite PC emulation software.

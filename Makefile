@@ -13,6 +13,16 @@ HDSIZE=20480
 
 all: cleanup kernel.bin bootsect
 
+iso:
+	# MooMoo:
+	# You will need to modify the bootloader to contain a GRUB multiboot section.
+	# I have included my boot.asm from SimpleOS as an example.
+	# Link everything together into a kernel file in the iso folder, then
+	# run this command.
+	# Do this however you'd like, but it should only be a few lines to compile
+	# and link everything. I don't think that the ./embedkernel is necessary anymore.
+	grub-mkrescue -o hydrogen.iso iso
+
 boot: bootsect kernel.bin embedkernel
 	@echo Installing kernel to hd.img on $(SYSTEM)
 	sudo mount -o loop -t hfsplus hd.img /a
