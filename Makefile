@@ -1,6 +1,11 @@
 SYSTEM := $(shell uname -s)
 DDFLAGS=iflag=fullblock
 NASM_ARCH=elf32
+CC=i686-elf-gcc
+CXX=i686-elf-gcc
+AS=i686-elf-as
+LD=ld
+CC64=gcc
 
 # Size of the hard disk image in 512-byte sectors (i.e. 10MB)
 HDSIZE=20480
@@ -19,7 +24,7 @@ boot: bootsect kernel.bin embedkernel
 	./embedkernel
 
 embedkernel: embedkernel.c
-	$(CC) -o $@ -Iincludes embedkernel.c
+	$(CC64) -o $@ -Iincludes embedkernel.c
 
 image: bootsect
 	@echo Building HD image on $(SYSTEM) with $(DDFLAGS)
@@ -32,7 +37,9 @@ bootsect:
 	nasm -f bin bootsect.asm -o bootsect.bin
 
 %.o: %.c
-	$(CC) -g -Iincludes -ffreestanding -m32 $(CFLAGS) -o $@ -c $<
+	$(CC) -g -Iincludes -ffreestanding -m32 $(CFLAGS) -o $@.s -S $<
+	$(AS) -o $@ $@.s
+
 
 %.o: %.asm
 	nasm -f $(NASM_ARCH) -o $@ $<
