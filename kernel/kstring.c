@@ -43,9 +43,11 @@ int atoi(char *str)
 }
 
 /* A utility function to reverse a string  */
-void reverse(char str[]) {
+void reverse(char str[])
+{
     int c, i, j;
-    for (i = 0, j = strlen(str)-1; i < j; i++, j--) {
+    for (i = 0, j = strlen(str)-1; i < j; i++, j--)
+    {
         c = str[i];
         str[i] = str[j];
         str[j] = c;
@@ -65,11 +67,13 @@ void backspace(char s[])
 	s[len-1] = '\0';
 }
 
-void itoa(int n, char str[]) {
+void itoa(int n, char str[])
+{
     int i, sign;
     if ((sign = n) < 0) n = -n;
     i = 0;
-    do {
+    do
+    {
         str[i++] = n % 10 + '0';
     } while ((n /= 10) > 0);
 

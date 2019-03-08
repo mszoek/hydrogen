@@ -83,7 +83,8 @@ int printChar(char c, int col, int row, char attr)
    if (col >= 0 && row >= 0) offset = getOffset(col, row);
    else offset = getCursorOffset();
 
-   if (c == '\n') {
+   if (c == '\n')
+   {
        row = getOffsetRow(offset);
        offset = getOffset(0, row+1);
    } else {
@@ -116,7 +117,8 @@ int printChar(char c, int col, int row, char attr)
    return offset;
 }
 
-int getCursorOffset() {
+int getCursorOffset()
+{
    /* Use the VGA ports to get the current cursor position
     * 1. Ask for high byte of the cursor offset (data 14)
     * 2. Ask for low byte (data 15)
@@ -128,7 +130,8 @@ int getCursorOffset() {
    return offset * 2; /* Position * size of character cell */
 }
 
-void setCursorOffset(int offset) {
+void setCursorOffset(int offset)
+{
    /* Similar to getCursorOffset, but instead of reading we write data */
    offset /= 2;
    portByteOut(REG_SCREEN_CTRL, 14);
@@ -137,7 +140,8 @@ void setCursorOffset(int offset) {
    portByteOut(REG_SCREEN_DATA, (unsigned char)(offset & 0xff));
 }
 
-void clearScreen(char attr) {
+void clearScreen(char attr)
+{
   char *vidmem = (char*)VIDEO_ADDRESS; // Start of video memory
   unsigned int j = 0;
 

@@ -8,7 +8,8 @@ isr_t interruptHandlers[256];
 
 /* Can't do this with a loop because we need the address
  * of the function names */
-void isrInstall() {
+void isrInstall()
+{
     setIDTGate(0, (UInt32)isr0);
     setIDTGate(1, (UInt32)isr1);
     setIDTGate(2, (UInt32)isr2);
@@ -114,7 +115,8 @@ char *exceptionMessages[] = {
     "Reserved"
 };
 
-void isrHandler(registers_t r) {
+void isrHandler(registers_t r)
+{
     kprint("CPU Exception ");
     char s[3];
     itoa(r.int_no, s);
@@ -124,18 +126,21 @@ void isrHandler(registers_t r) {
     kprint("\n");
 }
 
-void registerInterruptHandler(UInt8 n, isr_t handler) {
+void registerInterruptHandler(UInt8 n, isr_t handler)
+{
     interruptHandlers[n] = handler;
 }
 
-void irqHandler(registers_t r) {
+void irqHandler(registers_t r)
+{
     /* After every interrupt we need to send an EOI to the PICs
      * or they will not send another interrupt again */
     if (r.int_no >= 40) portByteOut(0xA0, 0x20); /* slave */
     portByteOut(0x20, 0x20); /* master */
 
     /* Handle the interrupt in a more modular way */
-    if (interruptHandlers[r.int_no] != 0) {
+    if (interruptHandlers[r.int_no] != 0)
+    {
         isr_t handler = interruptHandlers[r.int_no];
         handler(r);
     }

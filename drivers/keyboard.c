@@ -96,14 +96,3 @@ UInt16 getKeyboardBuffer(char *buffer, UInt16 bufferLen)
   // return number of bytes stored in buffer
   return len;
 }
-
-/*
-        default:
-            if (scancode <= 0x7f) {
-                kprint("Unknown key down");
-            } else if (scancode <= 0x39 + 0x80) {
-                kprint("key up ");
-                printLetter(scancode - 0x80);
-            } else kprint("Unknown key up");
-            break;
-*/
