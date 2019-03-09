@@ -26,6 +26,8 @@ void kernelMain(struct multiboot_info *binf, unsigned int size)
   char buf[10];
   UInt32 mem = 0;
   UInt32 mmap = 0, mmapLen = 0;
+  UInt32 pages[16];
+  int i = 0;
   
   displayStartupMsg(size);
 
@@ -60,16 +62,36 @@ void kernelMain(struct multiboot_info *binf, unsigned int size)
 
   asm volatile("sti"); // Start interrupts!
 
+  memset(pages, 0, sizeof(pages));
   while(1)
   {
-      if(tickCounter % 100 == 0) displayStatusLine();
+      if(tickCounter % 100 == 0)
+      {
+          if(pages[i] != 0)
+          {
+              pmmFree(pages[i]);
+          }
+          void *p = pmmAlloc();
+          if(p != 0)
+          {
+              memset(p, i < 10 ? i+'0' : i-10+'A', PMM_BLOCK_SIZE);
+              pages[i++] = p;
+              if(i > 15)
+              {
+                  i = 0;
+              }
+          }
+          *((char *)p+1840) = 0;
+          kprintAt((char *)p, 0, 0, 0x03);
+          displayStatusLine();
+      }
       asm("hlt"); // sleep until next interrupt
   }
 }
 
 void displayStatusLine()
 {
-  int curpos;
+  int curpos, i;
   char attr;
   char s[25], line[81];
 
@@ -80,8 +102,11 @@ void displayStatusLine()
   itoa(pmmMemFreeBlocks(), s);
   memcpy(line+strlen(line), s, strlen(s));
   memcpy(line+strlen(line), " blocks Uptime: ", 16);
-  itoa(tickCounter, s);
+  itoa(tickCounter/100, s);
   memcpy(line+strlen(line), s, strlen(s));
+  i = strlen(line);
+  line[i] = 's';
+  line[i+1] = 0;
   memset(line+strlen(line), 0x20, sizeof(line)-strlen(line)-2); // space fill to right edge
   kprintAt(line, 0, 24, DEFAULT_STATUS_ATTR);
 
@@ -102,7 +127,7 @@ void displayStartupMsg(unsigned int size)
   kprint(".");
   itoa(KERN_SP, msgStartup);
   kprint(msgStartup);
-  kprint("p");
+  kprint(".");
   itoa(KERN_PATCH, msgStartup);
   kprint(msgStartup);
   kprint(" [");
