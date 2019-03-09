@@ -38,7 +38,11 @@ mboot:
 	dd start
 
 stublet:
-	call kernelMain				; Call our C++ kernel
+	mov eax, end;
+	sub eax, mboot
+	push eax
+	push ebx				; Pass multiboot info block to kernel
+	call kernelMain			; nu kör vi!!
 	cli
 die: hlt
 	jmp die
