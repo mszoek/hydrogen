@@ -5,14 +5,16 @@
 #include "hw/types.h"
 #include "kmem.h"
 
-#define PMM_BLOCKS_PER_BYTE 8
-#define PMM_BLOCK_SIZE 4096
-#define PMM_BLOCK_ALIGN PMM_BLOCK_SIZE
-
 static UInt32 physMemorySize = 0;
 static UInt32 physUsedBlocks = 0;
 static UInt32 physMaxBlocks = 0;
 static UInt32 *physMemoryMap = 0;
+
+const char *regionType[] =
+{     /* 0           1            2              3 */
+    "Available", "Reserved", "ACPI Reclaim", "ACPI NVS"
+};
+
 
 static inline void pmmBitmapSet(int bit)
 {
@@ -73,15 +75,65 @@ int pmmFindFirstFree()
 	return -1;
 }
 
-void pmmInit(UInt32 memSize, UInt32 bitmap)
+void pmmInit(UInt32 memSize, UInt32 kernAddr, UInt32 kernSize, struct regionInfo *regions, UInt32 regionsLen)
 {
+  int i;
+  char buf[64];
+
 	physMemorySize = memSize;
-	physMemoryMap = (UInt32*)bitmap;
+	physMemoryMap = (UInt32*)(kernAddr + kernSize);
 	physMaxBlocks = (pmmMemSize()*1024) / PMM_BLOCK_SIZE;
 	physUsedBlocks = pmmMemSizeBlocks();
  
 	// By default, all of memory is in use
 	memset((char*)physMemoryMap, 0xf, pmmMemSizeBlocks() / PMM_BLOCKS_PER_BYTE);
+
+  if(regions == 0) return;
+
+  for(i = 0; i < (regionsLen / sizeof(struct regionInfo)); ++i)
+  {
+    if(regions[i].type > 3)
+    {
+      regions[i].type = 1; /* mark it reserved if type is unknown */
+    }
+
+    if(i > 0 && regions[i].startLo == 0)
+      break;
+
+    /* display region info */
+    kprint("Region ");
+    itoa(i, buf);
+    kprint(buf);
+    itoa(regions[i].startHi*16 + regions[i].startLo, buf);
+    kprint(": start ");
+    kprint(buf);
+    kprint(", len ");
+    itoa(regions[i].sizeHi*16 + regions[i].sizeLo, buf);
+    kprint(buf);
+    kprint(" ");
+    kprint(regionType[regions[i].type]);
+    kprint("\n");
+
+    /* init any available regions for our use */
+    if(regions[i].type == 1)
+    {
+      pmmInitRegion(regions[i].startLo, regions[i].sizeLo);
+    }
+  }
+
+  /* mark the kernel memory as in use */
+  pmmDropRegion(kernAddr, kernSize);
+
+  kprint("PMM initialized: ");
+  itoa(physMaxBlocks, buf);
+  kprint(buf);
+  kprint(" blocks. Used/reserved: ");
+  itoa(physUsedBlocks, buf);
+  kprint(buf);
+  kprint(" blocks, Free: ");
+  itoa(physMaxBlocks - physUsedBlocks, buf);
+  kprint(buf);
+  kprint(" blocks\n\n");
 }
 
 void pmmInitRegion(UInt32 base, UInt32 size)

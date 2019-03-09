@@ -11,37 +11,41 @@
 #include <kversion.h>
 #include <bootinfo.h>
 
+#define DEFAULT_TEXT_ATTR 0x07    // grey on black
+#define DEFAULT_STATUS_ATTR 0x5e  // yellow on magenta
+
+extern UInt32 tickCounter; // in timer.c
+
 // Prototypes
-void displayStartupMsg();
+void displayStatusLine();
+void displayStartupMsg(unsigned int size);
 
 // Kernel entry function
 void kernelMain(struct multiboot_info *binf, unsigned int size)
 {
   char buf[10];
-  unsigned int m = 0;
-
+  UInt32 mem = 0;
+  UInt32 mmap = 0, mmapLen = 0;
+  
   displayStartupMsg(size);
 
   /* Read data from the multiboot structure */
   if(binf->flags & 0x1)
   {
-    m = binf->memHi + binf->memLo + 1024;
-    itoa(m, buf);
+    mem = binf->memHi + binf->memLo + 1024;
+    itoa(mem, buf);
     kprint(buf);
-    kprint(" KB memory\n");
+    kprint(" KB memory");
   }
-  if(binf->flags & 0x20)
+  if(binf->flags & 0x40) 
   {
+    mmap = binf->mmapAddr;
+    mmapLen = binf->mmapLen;
     itoa(binf->mmapAddr, buf);
-    kprint("Map @ ");
-    kprint(buf);
-    kprint(", Len ");
-    itoa(binf->mmapLen, buf);
-    kprint(buf);
-    kprint("\n");
+    kprint("; memory map loaded");
   }
 
-  kprint("\nisrInstall()\n");
+  kprint("\n\nisrInstall()\n");
   isrInstall();
   kprint("initKeyboard()\n");
   initKeyboard();
@@ -50,18 +54,45 @@ void kernelMain(struct multiboot_info *binf, unsigned int size)
 
   /* Start the memory manager */
   kprint("pmmInit()\n");
-  pmmInit(m, 0x1000000 + size);
+  pmmInit(mem, 0x1000000, size, mmap, mmapLen);
+
+  displayStatusLine();
 
   asm volatile("sti"); // Start interrupts!
 
-  while(1) ;
+  while(1)
+  {
+      if(tickCounter % 100 == 0) displayStatusLine();
+      asm("hlt"); // sleep until next interrupt
+  }
+}
+
+void displayStatusLine()
+{
+  int curpos;
+  char attr;
+  char s[25], line[81];
+
+  curpos = getCursorOffset();
+
+  memset(line, 0, sizeof(line));
+  memcpy(line, "Mem Free: ", 10);
+  itoa(pmmMemFreeBlocks(), s);
+  memcpy(line+strlen(line), s, strlen(s));
+  memcpy(line+strlen(line), " blocks Uptime: ", 16);
+  itoa(tickCounter, s);
+  memcpy(line+strlen(line), s, strlen(s));
+  memset(line+strlen(line), 0x20, sizeof(line)-strlen(line)-2); // space fill to right edge
+  kprintAt(line, 0, 24, DEFAULT_STATUS_ATTR);
+
+  setCursorOffset(curpos);
 }
 
 void displayStartupMsg(unsigned int size)
 {
   char msgStartup[] = "H2OS Kernel Started! v";
-  clearScreen(0x1f);
-  defaultTextAttr(0x1f);
+  clearScreen(DEFAULT_TEXT_ATTR);
+  defaultTextAttr(DEFAULT_TEXT_ATTR);
   kprint(msgStartup);
   itoa(KERN_MAJOR, msgStartup);
   kprint(msgStartup);
