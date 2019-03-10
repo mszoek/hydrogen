@@ -19,35 +19,30 @@ mkiso:
 	cp -f kernel.bin iso/kernel.bin
 	grub-mkrescue -o hydrogen.iso iso
 
-boot: bootsect kernel.bin embedkernel
+boot: hd.img kernel.bin
 	@echo Installing kernel.bin to hd.img on $(SYSTEM)
-	sudo mount -o loop -t hfsplus hd.img /a
-	sudo umount /a
-	@echo Installing bootsector to hd.img on $(SYSTEM) with $(DDFLAGS)
-	cat bootsect.bin | dd $(DDFLAGS) conv=notrunc bs=512 count=2 of=hd.img
-	fsck.hfsplus hd.img
-	./embedkernel
+	sudo mount -o loop -t hfsplus hd.img /mnt
+	sudo cp -fv kernel.bin /mnt
+	sudo umount /mnt
 
-embedkernel: embedkernel.c
-	$(CC64) -o $@ -Iincludes embedkernel.c
+image:
+	$(MAKE) hd.img
 
-image: bootsect
+hd.img: 
 	@echo Building HD image on $(SYSTEM) with $(DDFLAGS)
 	dd if=/dev/zero $(DDFLAGS) bs=512 count=$(HDSIZE) of=hd.img
 	mkfs.hfsplus -v "H2OS HD" hd.img
-	cat bootsect.bin | dd $(DDFLAGS) conv=notrunc bs=512 count=2 of=hd.img
 	fsck.hfsplus hd.img
-
-bootsect:
-	nasm -f bin bootsect.asm -o bootsect.bin
 
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@.s -S $<
 	$(AS) -o $@ $@.s
+	rm -f $@.s
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -o $@.s -S $<
 	$(AS) -o $@ $@.s
+	rm -f $@.s
 
 
 %.o: %.asm
