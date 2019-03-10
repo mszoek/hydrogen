@@ -58,6 +58,8 @@ void kernelMain(struct multiboot_info *binf, unsigned int size)
   kprint("pmmInit()\n");
   pmmInit(mem, 0x1000000, size, mmap, mmapLen);
 
+  kprint("Starting shell\n");
+  shellStart();
   displayStatusLine();
 
   asm volatile("sti"); // Start interrupts!
@@ -81,10 +83,13 @@ void kernelMain(struct multiboot_info *binf, unsigned int size)
                   i = 0;
               }
           }
-          *((char *)p+1840) = 0;
-          kprintAt((char *)p, 0, 0, 0x03);
+          // *((char *)p+1840) = 0;
+          // kprintAt((char *)p, 0, 0, 0x03);
           displayStatusLine();
       }
+
+      shellCheckInput();
+
       asm("hlt"); // sleep until next interrupt
   }
 }
@@ -108,7 +113,7 @@ void displayStatusLine()
   line[i] = 's';
   line[i+1] = 0;
   memset(line+strlen(line), 0x20, sizeof(line)-strlen(line)-2); // space fill to right edge
-  kprintAt(line, 0, 24, DEFAULT_STATUS_ATTR);
+  kprintAt(line, 0, 0, DEFAULT_STATUS_ATTR);
 
   setCursorOffset(curpos);
 }
@@ -118,20 +123,21 @@ void displayStartupMsg(unsigned int size)
   char msgStartup[] = "H2OS Kernel Started! v";
   clearScreen(DEFAULT_TEXT_ATTR);
   defaultTextAttr(DEFAULT_TEXT_ATTR);
-  kprint(msgStartup);
+  kprintAt(msgStartup, 0, 2, 0x0f);
   itoa(KERN_MAJOR, msgStartup);
-  kprint(msgStartup);
+  kprintAt(msgStartup, -1, -1, 0x0f);
   kprint(".");
   itoa(KERN_MINOR, msgStartup);
-  kprint(msgStartup);
+  kprintAt(msgStartup, -1, -1, 0x0f);
   kprint(".");
   itoa(KERN_SP, msgStartup);
-  kprint(msgStartup);
+  kprintAt(msgStartup, -1, -1, 0x0f);
   kprint(".");
   itoa(KERN_PATCH, msgStartup);
-  kprint(msgStartup);
+  kprintAt(msgStartup, -1, -1, 0x0f);
   kprint(" [");
   itoa(size, msgStartup);
   kprint(msgStartup);
-  kprint(" bytes @ 0x1000000]\nCopyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
+  kprint(" bytes @ 0x1000000]\n");
+  kprintAt("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n", -1, -1, 0x0f);
 }

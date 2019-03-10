@@ -11,6 +11,7 @@ int strlen(char *s)
 
 int strcmp(char *a, char *b)
 {
+  if(strlen(a) != strlen(b)) return 1;
   char *p = a;
   char *q = b;
   while(*p && *q)

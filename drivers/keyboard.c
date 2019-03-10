@@ -7,64 +7,24 @@
 static char keyBuffer[1024];
 static int keyBufferPos = 0;
 
-// map scan codes 0x00 to 0x58 into en_US layout
-const char scanCodesToASCII[] =
-{
-    -1, 0x1B, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 0x08,
-    0x09, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', 0x0D,
-    -1, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`',
-    -1, '\\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', -1, '*',
-    -1, ' ', -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* f1 to f10 keys */
-    -1, -1, '7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3', '0',
-    '.', -1, -1, -1, -1, -1
-};
 
 static void keyboardCallback(registers_t regs)
 {
-  int keyUp = 0;
   UInt8 scancode = portByteIn(0x60);
-
-  if(scancode & 0x80) // if high bit set, this is a key up event
-  {
-    scancode &= 0x7F; // clear the high bit to get the real code
-    keyUp = 1; // but remember it was set
-  }
+  UInt8 scanmasked = (scancode & 0x7F); // if high bit is set, this is a key up event
 
   // if scancode outside of mapped range, ignore it
-  if(scancode < 0 || scancode > 0x58)
+  if(scanmasked < 0 || scanmasked > 0x58)
   {
     return;
   }
 
-  // get the unshifted scancode in ASCII
-  if(keyUp)
+  keyBuffer[keyBufferPos] = scancode;
+  ++keyBufferPos;
+  if(keyBufferPos >= 1024)
   {
-    if(scancode == 0x1C)
-    {
-      kprint("\n");
-      keyBuffer[keyBufferPos]=0;
-      shellStart();
-      return;
-    }
-    if (scancode == 0x0E)
-    {
-      keyBuffer[--keyBufferPos] = 0;
-      printBackspace();
-      return;
-    }
-
-    char ch = scanCodesToASCII[scancode];
-    char key[2];
-    key[0]=ch;
-    key[1]=0;
-    kprint(key);
-    keyBuffer[keyBufferPos] = ch;
-    ++keyBufferPos;
-    if(keyBufferPos >= 1024)
-    {
-      keyBufferPos = 1023;
-      // FIXME: we should beep here!
-    }
+    keyBufferPos = 1023;
+    // FIXME: we should beep here!
   }
 }
 
