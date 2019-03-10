@@ -10,6 +10,7 @@
 #include <kmem.h>
 #include <kversion.h>
 #include <bootinfo.h>
+#include <shell.h>
 
 #define DEFAULT_TEXT_ATTR 0x07    // grey on black
 #define DEFAULT_STATUS_ATTR 0x5e  // yellow on magenta
@@ -21,7 +22,7 @@ void displayStatusLine();
 void displayStartupMsg(unsigned int size);
 
 // Kernel entry function
-void kernelMain(struct multiboot_info *binf, unsigned int size)
+extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 {
   char buf[10];
   UInt32 mem = 0;
@@ -64,7 +65,7 @@ void kernelMain(struct multiboot_info *binf, unsigned int size)
 
   asm volatile("sti"); // Start interrupts!
 
-  memset(pages, 0, sizeof(pages));
+  memset((char*)pages, 0, sizeof(pages));
   while(1)
   {
       if(tickCounter % 100 == 0)

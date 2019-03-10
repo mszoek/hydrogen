@@ -3,6 +3,7 @@
 #include <kmem.h>
 #include <kstring.h>
 #include <hw/types.h>
+#include <shell.h>
 
 // map scan codes 0x00 to 0x58 into en_US layout
 const char scanCodesToASCII[] =

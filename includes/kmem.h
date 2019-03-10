@@ -1,6 +1,9 @@
 #ifndef _KMEM_H
 #define _KMEM_H
 
+#include <drivers/screen.h>
+#include <kstring.h>
+
 #define PMM_BLOCKS_PER_BYTE 8
 #define PMM_BLOCK_SIZE 4096
 #define PMM_BLOCK_ALIGN PMM_BLOCK_SIZE

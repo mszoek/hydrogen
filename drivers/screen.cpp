@@ -46,7 +46,7 @@ void kprintAt(char *message, int col, int row, char attr)
   }
 }
 
-void printBackspace()
+void printBackspace() 
 {
   int offset = getCursorOffset() - 2;
   if(offset < 0)

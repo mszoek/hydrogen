@@ -115,7 +115,7 @@ char *exceptionMessages[] = {
     "Reserved"
 };
 
-void isrHandler(registers_t r)
+extern "C" void isrHandler(registers_t r)
 {
     kprint("CPU Exception ");
     char s[3];
@@ -131,7 +131,7 @@ void registerInterruptHandler(UInt8 n, isr_t handler)
     interruptHandlers[n] = handler;
 }
 
-void irqHandler(registers_t r)
+extern "C" void irqHandler(registers_t r)
 {
     /* After every interrupt we need to send an EOI to the PICs
      * or they will not send another interrupt again */
