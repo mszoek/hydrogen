@@ -23,7 +23,6 @@ void displayStartupMsg(unsigned int size);
 // Kernel entry function
 void kernelMain(struct multiboot_info *binf, unsigned int size)
 {
-  char buf[10];
   UInt32 mem = 0;
   UInt32 mmap = 0, mmapLen = 0;
   UInt32 pages[16];
@@ -35,16 +34,13 @@ void kernelMain(struct multiboot_info *binf, unsigned int size)
   if(binf->flags & 0x1)
   {
     mem = binf->memHi + binf->memLo + 1024;
-    itoa(mem, buf);
-    kprint(buf);
-    kprint(" KB memory");
+    kprintf("%d KB memory", mem);
   }
   if(binf->flags & 0x40) 
   {
     mmap = binf->mmapAddr;
     mmapLen = binf->mmapLen;
-    itoa(binf->mmapAddr, buf);
-    kprint("; memory map loaded");
+    kprintf("; memory map loaded @ 0x%x", mmap);
   }
 
   kprint("\n\nisrInstall()\n");
@@ -104,10 +100,10 @@ void displayStatusLine()
 
   memset(line, 0, sizeof(line));
   memcpy(line, "Mem Free: ", 10);
-  itoa(pmmMemFreeBlocks(), s);
+  itoa(pmmMemFreeBlocks(), 10, s);
   memcpy(line+strlen(line), s, strlen(s));
   memcpy(line+strlen(line), " blocks Uptime: ", 16);
-  itoa(tickCounter/100, s);
+  itoa(tickCounter/100, 10, s);
   memcpy(line+strlen(line), s, strlen(s));
   i = strlen(line);
   line[i] = 's';
@@ -120,24 +116,10 @@ void displayStatusLine()
 
 void displayStartupMsg(unsigned int size)
 {
-  char msgStartup[] = "H2OS Kernel Started! v";
   clearScreen(DEFAULT_TEXT_ATTR);
+  defaultTextAttr(0x0f);
+  setCursorOffset(getOffset(0, 2));
+  kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x1000000]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size);
+  kprint("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
   defaultTextAttr(DEFAULT_TEXT_ATTR);
-  kprintAt(msgStartup, 0, 2, 0x0f);
-  itoa(KERN_MAJOR, msgStartup);
-  kprintAt(msgStartup, -1, -1, 0x0f);
-  kprint(".");
-  itoa(KERN_MINOR, msgStartup);
-  kprintAt(msgStartup, -1, -1, 0x0f);
-  kprint(".");
-  itoa(KERN_SP, msgStartup);
-  kprintAt(msgStartup, -1, -1, 0x0f);
-  kprint(".");
-  itoa(KERN_PATCH, msgStartup);
-  kprintAt(msgStartup, -1, -1, 0x0f);
-  kprint(" [");
-  itoa(size, msgStartup);
-  kprint(msgStartup);
-  kprint(" bytes @ 0x1000000]\n");
-  kprintAt("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n", -1, -1, 0x0f);
 }

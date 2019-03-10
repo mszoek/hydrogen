@@ -1,6 +1,8 @@
 #include <hw/port_io.h>
 #include <drivers/screen.h>
 #include <kmem.h>
+#include <kstring.h>
+#include <stdarg.h>
 
 #define COLOR_ERROR 0x4f
 
@@ -25,7 +27,7 @@ char defaultTextAttr(char attr)
   return a;
 }
 
-void kprintAt(char *message, int col, int row, char attr)
+void kprintAt(const char *message, int col, int row, char attr)
 {
   int offset;
   if (col >= 0 && row >= 0)
@@ -57,9 +59,78 @@ void printBackspace()
   setCursorOffset(offset);
 }
 
-void kprint(char *message)
+void kprint(const char *message)
 {
   kprintAt(message, -1, -1, g_textAttr);
+}
+
+
+int kprintf(const char* str, ...)
+{
+  int i;
+  char buf[16];
+
+	if(!str) return 0;
+
+	va_list	args;
+	va_start(args, str);
+
+	for(i = 0; i < strlen(str); i++)
+  {
+		switch(str[i])
+    {
+			case '%':
+				switch (str[i+1])
+        {
+					case 'c':
+          {
+						char c = va_arg(args, int);
+						printChar(c, -1, -1, g_textAttr);
+						i++;
+						break;
+					}
+
+					case 's':
+          {
+						UInt32 c = (int)va_arg(args, char *);
+						kprint((char *)c);
+						i++;
+						break;
+					}
+
+					case 'd':
+					case 'i':
+          {
+						int c = va_arg(args, int);
+						itoa(c, 10, buf);
+						kprint(buf);
+						i++;
+						break;
+					}
+
+					case 'X':
+					case 'x': {
+						int c = va_arg(args, int);
+						itoa(c, 16, buf);
+            kprint(buf);
+						i++;
+						break;
+					}
+
+					default:
+						va_end(args);
+						return 1;
+				}
+				break;
+
+			default:
+				printChar(str[i], -1, -1, g_textAttr);
+				break;
+		}
+	}
+
+	va_end(args);
+	return i;
 }
 
 /**********************************************************

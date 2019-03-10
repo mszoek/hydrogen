@@ -12,9 +12,10 @@
 #define WHITE_ON_BLACK 0x0f
 
 // Public kernel API
-void clearScreen(char attr);
-void kprintAt(char *message, int col, int row, char attr);
-void kprint(char *message);
+void clearScreen(const char attr);
+void kprintAt(const char *message, int col, int row, char attr);
+void kprint(const char *message);
+int kprintf(const char* str, ...);
 
 #endif
 

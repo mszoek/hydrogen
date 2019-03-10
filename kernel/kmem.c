@@ -101,18 +101,9 @@ void pmmInit(UInt32 memSize, UInt32 kernAddr, UInt32 kernSize, struct regionInfo
       break;
 
     /* display region info */
-    kprint("Region ");
-    itoa(i, buf);
-    kprint(buf);
-    itoa(regions[i].startHi*16 + regions[i].startLo, buf);
-    kprint(": start ");
-    kprint(buf);
-    kprint(", len ");
-    itoa(regions[i].sizeHi*16 + regions[i].sizeLo, buf);
-    kprint(buf);
-    kprint(" ");
-    kprint(regionType[regions[i].type]);
-    kprint("\n");
+    kprintf("Region %d: start 0x%x%x, len 0x%x%x  %s\n", i,
+      regions[i].startHi, regions[i].startLo, 
+      regions[i].sizeHi, regions[i].sizeLo, regionType[regions[i].type]);
 
     /* init any available regions for our use */
     if(regions[i].type == 1)
@@ -124,16 +115,8 @@ void pmmInit(UInt32 memSize, UInt32 kernAddr, UInt32 kernSize, struct regionInfo
   /* mark the kernel memory as in use */
   pmmDropRegion(kernAddr, kernSize);
 
-  kprint("PMM initialized: ");
-  itoa(physMaxBlocks, buf);
-  kprint(buf);
-  kprint(" blocks. Used/reserved: ");
-  itoa(physUsedBlocks, buf);
-  kprint(buf);
-  kprint(" blocks, Free: ");
-  itoa(physMaxBlocks - physUsedBlocks, buf);
-  kprint(buf);
-  kprint(" blocks\n\n");
+  kprintf("PMM initialized: %d blocks. Used/reserved: %d blocks. Free: %d blocks\n\n",
+    physMaxBlocks, physUsedBlocks, physMaxBlocks - physUsedBlocks);
 }
 
 void pmmInitRegion(UInt32 base, UInt32 size)

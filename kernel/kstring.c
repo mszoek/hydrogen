@@ -1,5 +1,5 @@
 /* H2OS Kernel string handling
- * Zoe Knox 2017
+ * Zoe Knox 2017-2019
  */
 
 int strlen(char *s)
@@ -68,18 +68,23 @@ void backspace(char s[])
 	s[len-1] = '\0';
 }
 
-void itoa(int n, char str[])
+void itoa(unsigned n, unsigned base, char str[])
 {
-    int i, sign;
-    if ((sign = n) < 0) n = -n;
-    i = 0;
-    do
-    {
-        str[i++] = n % 10 + '0';
-    } while ((n /= 10) > 0);
+  int i = 0;
+  char basechars[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 
-    if (sign < 0) str[i++] = '-';
-    str[i] = '\0';
+  if(base > 16 || n == 0)
+  {
+    str[0] = '0';
+    str[1] = 0;
+    return;
+  }
 
-    reverse(str);
+  do
+  {
+    str[i++] = basechars[n % base];
+  } while ((n /= base) > 0);
+
+  str[i] = '\0';
+  reverse(str);
 }

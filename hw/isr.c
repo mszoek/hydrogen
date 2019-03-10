@@ -117,13 +117,7 @@ char *exceptionMessages[] = {
 
 void isrHandler(registers_t r)
 {
-    kprint("CPU Exception ");
-    char s[3];
-    itoa(r.int_no, s);
-    kprint(s);
-    kprint(": ");
-    kprint(exceptionMessages[r.int_no]);
-    kprint("\n");
+    kprintf("CPU Exception %d: %s\n", r.int_no, exceptionMessages[r.int_no]);
 }
 
 void registerInterruptHandler(UInt8 n, isr_t handler)

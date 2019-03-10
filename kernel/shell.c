@@ -5,7 +5,7 @@
 #include <hw/types.h>
 
 // map scan codes 0x00 to 0x58 into en_US layout
-const char scanCodesToASCII[] =
+const char scanCodesToASCII_base[] =
 {
     -1, 0x1B, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 0x08,
     0x09, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', 0x0D,
@@ -15,6 +15,20 @@ const char scanCodesToASCII[] =
     -1, -1, '7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3', '0',
     '.', -1, -1, -1, -1, -1
 };
+
+const char scanCodesToASCII_shift[] =
+{
+    -1, 0x1B, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', 0x08,
+    0x09, 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', 0x0D,
+    -1, 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '\"', '~',
+    -1, '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', -1, '*',
+    -1, ' ', -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* f1 to f10 keys */
+    -1, -1, '7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3', '0',
+    '.', -1, -1, -1, -1, -1
+};
+
+int shifted = 0;
+
 
 char *PROMPT = "H2> ";
 char shellBuffer[1024];
@@ -56,13 +70,25 @@ void shellCheckInput()
   for(int i = 0; i < length; ++i)
   {
     char code = buf[i];
+
+    if(code == 0xe1 || code == 0x2a)
+    {
+      shifted = 1;
+      continue;
+    }
+    else if(((code & 0x7F) == 0x2A))
+    {
+      shifted = 0;
+      continue;
+    }
+
     if(code & 0x80)
     {
       keyUp = 1;
       code &= 0x7F;
     }
 
-    if(keyUp)
+    if(!keyUp)
     {
       if(code == 0x1C)
       {
@@ -90,7 +116,7 @@ void shellCheckInput()
         // FIXME: we should beep here
       }
 
-      code = scanCodesToASCII[code];
+      code = shifted ? scanCodesToASCII_shift[code] : scanCodesToASCII_base[code];
       shellBuffer[shellBufferPos++] = code;
       char key[2];
       key[0]=code;
