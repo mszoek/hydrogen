@@ -17,5 +17,17 @@ void kprintAt(const char *message, int col, int row, char attr);
 void kprint(const char *message);
 int kprintf(const char* str, ...);
 
+int getCursorOffset();
+void setCursorOffset(int offxset);
+int printChar(char c, int col, int row, char attr);
+int getOffset(int col, int row);
+int getOffsetRow(int offset);
+int getOffsetCol(int offset);
+
+char defaultTextAttr(char attr);
+
+void printBackspace();
+
+
 #endif
 

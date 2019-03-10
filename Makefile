@@ -7,7 +7,7 @@ AS=i686-elf-as
 LD=ld
 CC64=gcc
 CFLAGS=-g -Iincludes -m32 -nostdlib -ffreestanding -mno-red-zone -fno-exceptions
-CXXFLAGS=$(CFLAGS) -fno-rtti -fpermissive
+CXXFLAGS=$(CFLAGS) -fno-rtti -fpermissive -Wno-write-strings
 
 # Size of the hard disk image in 512-byte sectors (i.e. 10MB)
 HDSIZE=20480
@@ -45,13 +45,17 @@ bootsect:
 	$(CC) $(CFLAGS) -o $@.s -S $<
 	$(AS) -o $@ $@.s
 
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -o $@.s -S $<
+	$(AS) -o $@ $@.s
+
 
 %.o: %.asm
 	nasm -f $(NASM_ARCH) -o $@ $<
 
-KERNEL_SRC=$(wildcard kernel/*.c drivers/*.c hw/*.c)
+KERNEL_SRC=$(wildcard kernel/*.cpp drivers/*.cpp hw/*.cpp)
 KERNEL_INC=$(wildcard includes/*.h includes/hw/*.h includes/drivers/*.h)
-KERNEL_OBJ=kernel/loader.o ${KERNEL_SRC:.c=.o} hw/interrupt.o
+KERNEL_OBJ=kernel/loader.o ${KERNEL_SRC:.cpp=.o} hw/interrupt.o
 
 kernel.bin: $(KERNEL_OBJ)
 	ld -m elf_i386 -o kernel.bin -Tlinker.ld $(KERNEL_OBJ) 
