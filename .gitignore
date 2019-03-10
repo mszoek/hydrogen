@@ -1,6 +1,4 @@
+*.o.s
 *.o
+*.iso
 *.bin
-hd.img
-*.elf
-*.exe
-embedkernel
