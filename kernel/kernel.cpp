@@ -4,6 +4,7 @@
 #include <hw/isr.h>
 #include <hw/idt.h>
 #include <hw/timer.h>
+#include <hw/pci.h>
 #include <drivers/keyboard.h>
 #include <drivers/screen.h>
 #include <kstring.h>
@@ -41,21 +42,23 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   {
     mmap = binf->mmapAddr;
     mmapLen = binf->mmapLen;
-    kprintf("; memory map loaded @ 0x%x", mmap);
+    kprintf("; memory map loaded @ 0x%x\n\n", mmap);
   }
 
-  kprint("\n\nisrInstall()\n");
+  // kprint("isrInstall()\n");
   isrInstall();
-  kprint("initKeyboard()\n");
+  // kprint("initKeyboard()\n");
   initKeyboard();
-  kprint("initTimer()\n");
+  // kprint("initTimer()\n");
   initTimer(100);
 
   /* Start the memory manager */
-  kprint("pmmInit()\n");
+  // kprint("pmmInit()\n");
   pmmInit(mem, 0x1000000, size, mmap, mmapLen);
 
-  kprint("Starting shell\n");
+  pciEnumBuses();
+
+  kprint("\nStarting shell\n");
   shellStart();
   displayStatusLine();
 
