@@ -38,8 +38,8 @@ mboot:
 	dd start
 
 stublet:
-	mov eax, end;
-	sub eax, mboot
+	mov eax, end
+	sub eax, 0x100000
 	push eax
 	push ebx				; Pass multiboot info block to kernel
 	call kernelMain			; nu kör vi!!

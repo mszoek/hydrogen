@@ -10,13 +10,14 @@
 
 struct regionInfo
 {
+    UInt32 size;
     UInt32 startLo;
     UInt32 startHi;
     UInt32 sizeLo;
     UInt32 sizeHi;
     UInt32 type;
     UInt32 acpi30;
-};
+} __attribute__((packed));
 
 UInt32 pmmMemSize();
 UInt32 pmmMemSizeBlocks();

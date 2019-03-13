@@ -14,9 +14,11 @@
 #include <shell.h>
 
 #define DEFAULT_TEXT_ATTR 0x07    // grey on black
-#define DEFAULT_STATUS_ATTR 0x5e  // yellow on magenta
+#define DEFAULT_STATUS_ATTR 0x5f  // white on magenta
 
 extern UInt32 tickCounter; // in timer.c
+bool runMemTest = false;
+bool verbose = true;
 
 // Prototypes
 void displayStatusLine();
@@ -42,7 +44,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   {
     mmap = binf->mmapAddr;
     mmapLen = binf->mmapLen;
-    kprintf("; memory map loaded @ 0x%x\n\n", mmap);
+    kprintf("; memory map loaded %d @ 0x%x\n", mmapLen, mmap);
   }
 
   // kprint("isrInstall()\n");
@@ -54,7 +56,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 
   /* Start the memory manager */
   // kprint("pmmInit()\n");
-  pmmInit(mem, 0x1000000, size, mmap, mmapLen);
+  pmmInit(mem, 0x100000, size, (struct regionInfo *)mmap, mmapLen);
 
   pciEnumBuses();
 
@@ -67,25 +69,36 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   memset((char*)pages, 0, sizeof(pages));
   while(1)
   {
-      if(tickCounter % 100 == 0)
+      if(runMemTest && tickCounter % 10 == 0)
       {
-          if(pages[i] != 0)
+        // if(pages[i] != 0)
+        // {
+        //     pmmFree((void*)pages[i]);
+        // }
+        void *p = pmmAlloc();
+        if(p != 0)
+        {
+          memset((char *)p, i < 10 ? i+'0' : i-10+'A', PMM_BLOCK_SIZE);
+          pages[i++] = (UInt32)p;
+          if(i > 15)
           {
-              pmmFree(pages[i]);
+              i = 0;
           }
-          void *p = pmmAlloc();
-          if(p != 0)
-          {
-              memset(p, i < 10 ? i+'0' : i-10+'A', PMM_BLOCK_SIZE);
-              pages[i++] = p;
-              if(i > 15)
-              {
-                  i = 0;
-              }
-          }
-          // *((char *)p+1840) = 0;
-          // kprintAt((char *)p, 0, 0, 0x03);
-          displayStatusLine();
+        } else {
+          kprintAt("!PANIC! Out of memory!", -1, -1, 0x4f);
+          return; // halt system
+        }
+        *((char *)p+1360) = 0;
+        int pos = getCursorOffset();
+        setCursorOffset(getOffset(0, 1));
+        kprintf("Page %d 0x%x         ", i, (UInt32)p);
+        // kprintAt((char *)p, 0, 2, 0x03);
+        setCursorOffset(pos);
+      }
+
+      if(tickCounter % 50 == 0)
+      {
+        displayStatusLine();
       }
 
       shellCheckInput();
@@ -123,7 +136,7 @@ void displayStartupMsg(unsigned int size)
   clearScreen(DEFAULT_TEXT_ATTR);
   defaultTextAttr(0x0f);
   setCursorOffset(getOffset(0, 2));
-  kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x1000000]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size);
+  kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x100000]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size);
   kprint("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
   defaultTextAttr(DEFAULT_TEXT_ATTR);
 }

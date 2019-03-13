@@ -5,15 +5,12 @@
 #include "hw/types.h"
 #include "kmem.h"
 
+extern bool verbose;
+
 static UInt32 physMemorySize = 0;
 static UInt32 physUsedBlocks = 0;
 static UInt32 physMaxBlocks = 0;
 static UInt32 *physMemoryMap = 0;
-
-const char *regionType[] =
-{     /* 0           1            2              3 */
-    "Available", "Reserved", "ACPI Reclaim", "ACPI NVS"
-};
 
 
 static inline void pmmBitmapSet(int bit)
@@ -28,7 +25,7 @@ static inline void pmmBitmapUnset(int bit)
 
 static inline int pmmBitmapTest(int bit)
 {
-  return physMemoryMap[bit / 32] & (1 << (bit % 32));
+    return physMemoryMap[bit / 32] & (1 << (bit % 32));
 }
 
 /* return memory size in KB */
@@ -40,13 +37,13 @@ UInt32 pmmMemSize()
 /* return memory size in blocks */
 UInt32 pmmMemSizeBlocks()
 {
-  return physMemorySize / PMM_BLOCK_SIZE;
+  return physMaxBlocks;
 }
 
 /* return free memory in KB */
 UInt32 pmmMemFree()
 {
-  return (physMemorySize*1024 - (physUsedBlocks*PMM_BLOCK_SIZE)) / 1024;
+  return (pmmMemFreeBlocks() * PMM_BLOCK_SIZE) / 1024;
 }
 
 /* return free memory in blocks */
@@ -68,7 +65,7 @@ int pmmFindFirstFree()
       {
 				int bit = 1 << j;
 				if( !(physMemoryMap[i] & bit))
-					return i*4*8+j;
+					return i*4*8 + j;
 			}
     }
   } 
@@ -77,45 +74,54 @@ int pmmFindFirstFree()
 
 void pmmInit(UInt32 memSize, UInt32 kernAddr, UInt32 kernSize, struct regionInfo *regions, UInt32 regionsLen)
 {
-  int i;
+  int i = 0;
   char buf[64];
+  struct regionInfo *region = regions;
 
 	physMemorySize = memSize;
 	physMemoryMap = (UInt32*)(kernAddr + kernSize);
 	physMaxBlocks = (pmmMemSize()*1024) / PMM_BLOCK_SIZE;
-	physUsedBlocks = pmmMemSizeBlocks();
+	physUsedBlocks = physMaxBlocks;
  
 	// By default, all of memory is in use
-	memset((char*)physMemoryMap, 0xf, pmmMemSizeBlocks() / PMM_BLOCKS_PER_BYTE);
+	memset((char*)physMemoryMap, 0xff, physMaxBlocks / PMM_BLOCKS_PER_BYTE);
 
   if(regions == 0) return;
 
-  for(i = 0; i < (regionsLen / sizeof(struct regionInfo)); ++i)
+  while(region < regions+regionsLen)
   {
-    if(regions[i].type > 3)
-    {
-      regions[i].type = 1; /* mark it reserved if type is unknown */
-    }
-
-    if(i > 0 && regions[i].startLo == 0)
+    if(i > 0 && region->startLo == 0)
       break;
 
     /* display region info */
-    kprintf("Region %d: start 0x%x%x, len 0x%x%x  %s\n", i,
-      regions[i].startHi, regions[i].startLo, 
-      regions[i].sizeHi, regions[i].sizeLo, regionType[regions[i].type]);
+    if(verbose)
+    {
+      kprintf("Region %d: start 0x%x, len 0x%x, type %d\n", i,
+       /*region->startHi,*/ region->startLo, 
+       /*region->sizeHi,*/ region->sizeLo, region->type);
+    }
 
     /* init any available regions for our use */
-    if(regions[i].type == 1)
+    if(region->type == 1)
     {
-      pmmInitRegion(regions[i].startLo, regions[i].sizeLo);
+      pmmInitRegion(region->startLo, region->sizeLo);
     }
+
+    ++i;
+    region = (struct regionInfo *)((UInt32)region + region->size + sizeof(region->size));
   }
 
   /* mark the kernel memory as in use */
-  pmmDropRegion(kernAddr, kernSize);
+  pmmDropRegion(kernAddr, kernSize+regionsLen);
 
-  kprintf("PMM initialized: %d blocks. Used/reserved: %d blocks. Free: %d blocks\n\n",
+  /* drop unusable low memory areas */
+  pmmDropRegion(0, 0x400); // real mode interrupt vectors
+  pmmDropRegion(0x400, 0x100); // bios data area
+  pmmDropRegion(0x7c00, 0x200); // boot sector
+  pmmDropRegion(0x80000, 0x20000); // 128kb extended bios data area
+  pmmDropRegion(0xa0000, 0x60000); // 384kb video, ROMs, etc.
+
+  kprintf("PMM initialized: %d blocks. Used/reserved: %d blocks. Free: %d blocks\n",
     physMaxBlocks, physUsedBlocks, physMaxBlocks - physUsedBlocks);
 }
 
@@ -123,8 +129,11 @@ void pmmInitRegion(UInt32 base, UInt32 size)
 { 
 	int align = base / PMM_BLOCK_SIZE;
 	int blocks = size / PMM_BLOCK_SIZE;
- 
-	for (; blocks > 0; blocks--)
+
+  if(blocks == 0) blocks = 1;
+
+  // kprintf("initRegion(%x, %x) align=%x blocks=%x\n",base,size,align,blocks);
+	for (; blocks >= 0; blocks--)
   {
 		pmmBitmapUnset(align++);
 		physUsedBlocks--;
@@ -136,8 +145,11 @@ void pmmDropRegion(UInt32 base, UInt32 size)
 {
 	int align = base / PMM_BLOCK_SIZE;
 	int blocks = size / PMM_BLOCK_SIZE;
- 
-	for(; blocks > 0; blocks--)
+
+  if(blocks == 0) blocks = 1;
+
+  // kprintf("dropRegion(%x, %x) align=%x blocks=%x\n",base,size,align,blocks); 
+	for(; blocks >= 0; blocks--)
   {
 		pmmBitmapSet(align++);
 		physUsedBlocks++;
