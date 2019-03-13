@@ -30,6 +30,20 @@ int strcmp(char *a, char *b)
   return 0;
 }
 
+int strcpy(char *dst, char *src)
+{
+  char *p=src;
+  char *q=dst;
+  while(*p != 0)
+  {
+    *q = *p;
+    ++p;
+    ++q;
+  }
+  *q = 0;
+  return (q - dst);
+}
+
 int atoi(char *str)
 {
     int res = 0; // Initialize result

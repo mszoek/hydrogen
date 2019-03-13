@@ -3,6 +3,7 @@
 
 int strlen(char *s);
 int strcmp(char *a, char *b);
+int strcpy(char *dst, char *src);
 int atoi(char *str);
 void reverse(char str[]);
 void append(char s[], char n);

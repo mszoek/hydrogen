@@ -31,7 +31,10 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   UInt32 mmap = 0, mmapLen = 0;
   UInt32 pages[16];
   int i = 0;
+  char cmdline[256];
   
+  memset(cmdline, 0, sizeof(cmdline));
+
   displayStartupMsg(size);
 
   /* Read data from the multiboot structure */
@@ -45,6 +48,12 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
     mmap = binf->mmapAddr;
     mmapLen = binf->mmapLen;
     kprintf("; memory map loaded %d @ 0x%x\n", mmapLen, mmap);
+  }
+  if(binf->flags & 0x4)
+  {
+    strcpy(cmdline, (char *)(binf->cmdLine));
+    kprint(cmdline);
+    kprint("\n");
   }
 
   // kprint("isrInstall()\n");

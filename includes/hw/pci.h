@@ -21,6 +21,7 @@ struct pciDeviceEntry
     UInt8 cacheLineSize;
     UInt32 baseAddrReg[5];
 };
+extern struct pciDeviceEntry pciTable[64];
 
 UInt16 pciReadCfgWord(UInt32 bus, UInt32 slot, UInt32 func, UInt32 offset);
 UInt32 pciReadCfgDWord(UInt32 bus, UInt32 slot, UInt32 func, UInt32 offset);
