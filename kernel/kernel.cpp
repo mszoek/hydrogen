@@ -52,8 +52,8 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   if(binf->flags & 0x4)
   {
     strcpy(cmdline, (char *)(binf->cmdLine));
-    kprint(cmdline);
-    kprint("\n");
+
+    // FIXME: parse the command line options to get root disk, verbosity, etc.
   }
 
   // kprint("isrInstall()\n");
