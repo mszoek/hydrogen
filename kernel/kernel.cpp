@@ -14,9 +14,6 @@
 #include <bootinfo.h>
 #include <shell.h>
 
-#define DEFAULT_TEXT_ATTR 0x07    // grey on black
-#define DEFAULT_STATUS_ATTR 0x5f  // white on magenta
-
 extern UInt32 tickCounter; // in timer.c
 bool runMemTest = false;
 bool verbose = true;
@@ -93,10 +90,10 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   {
       if(runMemTest && tickCounter % 100 == 0)
       {
-        // if(pages[i] != 0)
-        // {
-        //     pmmFree((void*)pages[i]);
-        // }
+        if(pages[i] != 0)
+        {
+            pmmFree((void*)pages[i]);
+        }
         void *p = pmmAlloc();
         if(p != 0)
         {
@@ -114,7 +111,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
         int pos = getCursorOffset();
         setCursorOffset(getOffset(0, 1));
         kprintf("Page %d 0x%x         ", i, (UInt32)p);
-        // kprintAt((char *)p, 0, 2, 0x03);
+        kprintAt((char *)p, 0, 2, 0x03);
         setCursorOffset(pos);
       }
 
@@ -161,4 +158,30 @@ void displayStartupMsg(unsigned int size)
   kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x100000]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size);
   kprint("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
   defaultTextAttr(DEFAULT_TEXT_ATTR);
+}
+
+char isprint (unsigned char c)
+{
+    if ( c >= 0x20 && c <= 0x7e )
+        return 1;
+    return 0;
+}
+
+void printdata(UInt8* nodedata, int len)
+{
+  char ascii[20];
+  int i,j=0;
+
+  for(i=0,j=0; i<len; ++i)
+  {
+      if(j==0)
+        kprintf("%x ",i);
+      kprintf("%x ", nodedata[i]);
+      ascii[j++] = isprint(nodedata[i]) ? nodedata[i] : '.';
+      if(j > 15)
+      {
+        kprintf("%s\n",ascii);
+        j=0;
+      }
+  }
 }

@@ -11,23 +11,26 @@
 
 #define WHITE_ON_BLACK 0x0f
 
+// Text Attributes
+#define DEFAULT_TEXT_ATTR 0x07    // grey on black
+#define DEFAULT_STATUS_ATTR 0x5f  // white on magenta
+
 // Public kernel API
 void clearScreen(const char attr);
 void kprintAt(const char *message, int col, int row, char attr);
 void kprint(const char *message);
 int kprintf(const char* str, ...);
+int printChar(char c, int col, int row, char attr);
 
 int getCursorOffset();
-void setCursorOffset(int offxset);
-int printChar(char c, int col, int row, char attr);
 int getOffset(int col, int row);
 int getOffsetRow(int offset);
 int getOffsetCol(int offset);
+void setCursorOffset(int offxset);
 
 char defaultTextAttr(char attr);
 
 void printBackspace();
-
 
 #endif
 
