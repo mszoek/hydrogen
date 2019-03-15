@@ -2,8 +2,13 @@
 #include <drivers/screen.h>
 #include <kmem.h>
 #include <kstring.h>
+#include <kernel.h>
 #include <hw/types.h>
 #include <shell.h>
+#include <hw/pci.h>
+
+extern bool runMemTest;
+extern bool verbose;
 
 // map scan codes 0x00 to 0x58 into en_US layout
 const char scanCodesToASCII_base[] =
@@ -52,9 +57,43 @@ void shellExecCommand()
     asm("cli");
     asm("hlt");
   }
+
   if(strcmp(shellBuffer, "hello") == 0)
   {
     kprint("'ello gorgeous!\n");
+    return;
+  }
+
+  if(strcmp(shellBuffer, "memtest") == 0)
+  {
+    runMemTest = !runMemTest;
+    clearScreen(DEFAULT_TEXT_ATTR);
+    setCursorOffset(getOffset(0, 1));
+    if(runMemTest) kprint("Running memory test\n");
+    setCursorOffset(getOffset(0, 20));
+    return;
+  }
+  if(strcmp(shellBuffer, "clear") == 0)
+  {
+    if(runMemTest) return;
+
+    clearScreen(DEFAULT_TEXT_ATTR);
+    setCursorOffset(getOffset(0, 1));
+    return;
+  }
+
+  if(strcmp(shellBuffer, "lspci") == 0)
+  {
+    bool temp = verbose;
+    verbose = true;
+    pciEnumBuses();
+    verbose = temp;
+    return;
+  }
+
+  if(strcmp(shellBuffer, "printdata") == 0)
+  {
+    printdata(0x100000, 1024);
     return;
   }
 
