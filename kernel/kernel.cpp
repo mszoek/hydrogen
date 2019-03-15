@@ -5,6 +5,7 @@
 #include <hw/idt.h>
 #include <hw/timer.h>
 #include <hw/pci.h>
+#include <hw/ata.h>
 #include <drivers/keyboard.h>
 #include <drivers/screen.h>
 #include <kstring.h>
@@ -61,24 +62,36 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   // kprint("initKeyboard()\n");
   initKeyboard();
   // kprint("initTimer()\n");
-  initTimer(100);
+  initTimer(1000);
 
   /* Start the memory manager */
   // kprint("pmmInit()\n");
   pmmInit(mem, 0x100000, size, (struct regionInfo *)mmap, mmapLen);
-
   pciEnumBuses();
+
+  asm volatile("sti"); // Start interrupts!
+  for(int j = 0; j < 64; j++)
+  {
+    if(pciTable[j].bus == 0xFFFFFFFF)
+      break;
+    if(pciTable[j].classCode == PCI_MASS_STORAGE_CTRL)
+    {
+      kprintf("ideInit(%d/%d.%d)\n", pciTable[j].bus, pciTable[j].slot, pciTable[j].function);
+      ideInit(pciTable[j].baseAddrReg[0], pciTable[j].baseAddrReg[1],
+        pciTable[j].baseAddrReg[2], pciTable[j].baseAddrReg[3],
+        pciTable[j].baseAddrReg[4]);
+    }
+  }
 
   kprint("\nStarting shell\n");
   shellStart();
   displayStatusLine();
 
-  asm volatile("sti"); // Start interrupts!
 
   memset((char*)pages, 0, sizeof(pages));
   while(1)
   {
-      if(runMemTest && tickCounter % 10 == 0)
+      if(runMemTest && tickCounter % 100 == 0)
       {
         // if(pages[i] != 0)
         // {
@@ -105,7 +118,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
         setCursorOffset(pos);
       }
 
-      if(tickCounter % 50 == 0)
+      if(tickCounter % 500 == 0)
       {
         displayStatusLine();
       }

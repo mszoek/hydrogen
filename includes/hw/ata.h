@@ -14,14 +14,14 @@
 #define ATA_SR_ERR  0x01
 
 // ATA error bits
-#define ATA_ER_BBK   0x80
-#define ATA_ER_UNC   0x40
-#define ATA_ER_MC    0x20
-#define ATA_ER_IDNF  0x10
-#define ATA_ER_MCR   0x08
-#define ATA_ER_ABRT  0x04
-#define ATA_ER_TK0NF 0x02
-#define ATA_ER_AMNF  0x01
+#define ATA_ERR_BBK   0x80
+#define ATA_ERR_UNC   0x40
+#define ATA_ERR_MC    0x20
+#define ATA_ERR_IDNF  0x10
+#define ATA_ERR_MCR   0x08
+#define ATA_ERR_ABRT  0x04
+#define ATA_ERR_TK0NF 0x02
+#define ATA_ERR_AMNF  0x01
 
 // ATA commands
 #define ATA_CMD_READ_PIO        0x20
@@ -94,7 +94,7 @@ struct ideChannel
     UInt16 baseIO;      // i/o (data) registers base addr
     UInt16 baseCtrl;    // control registers base addr
     UInt16 baseBM;      // bus master base address
-    UInt8 nIEN; // "No Interrupt Enable"
+    UInt8 nIEN;         // "No Interrupt Enable"
 };
 
 struct ideDevice
@@ -111,7 +111,11 @@ struct ideDevice
 };
 
 
-UInt8 ideRead(UInt8 channel, UInt8 register);
-UInt8 ideWrite(UInt8 channel, UInt8 register, UInt8 data);
+UInt8 ideRead(UInt8 channel, UInt8 reg);
+void ideWrite(UInt8 channel, UInt8 reg, UInt8 data);
+void ideReadBuffer(UInt8 channel, UInt8 reg, UInt32 buffer, UInt32 count);
+UInt8 idePoll(UInt8 channel);
+void ideInit(UInt32 BAR0, UInt32 BAR1, UInt32 BAR2, UInt32 BAR3, UInt32 BAR4);
+
 
 #endif // ATA_H
