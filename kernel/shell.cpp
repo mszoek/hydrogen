@@ -1,11 +1,11 @@
+#include <hw/types.h>
 #include <hw/keyboard.h>
-#include <drivers/screen.h>
+#include <hw/screen.h>
+#include <hw/pci.h>
 #include <kmem.h>
 #include <kstring.h>
 #include <kernel.h>
-#include <hw/types.h>
 #include <shell.h>
-#include <hw/pci.h>
 
 extern bool runMemTest;
 extern bool verbose;

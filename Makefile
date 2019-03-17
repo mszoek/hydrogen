@@ -48,8 +48,8 @@ hd.img:
 %.o: %.asm
 	nasm -f $(NASM_ARCH) -o $@ $<
 
-KERNEL_SRC=$(wildcard kernel/*.cpp drivers/*.cpp hw/*.cpp)
-KERNEL_INC=$(wildcard includes/*.h includes/hw/*.h includes/drivers/*.h)
+KERNEL_SRC=$(wildcard kernel/*.cpp hw/*.cpp)
+KERNEL_INC=$(wildcard includes/*.h includes/hw/*.h)
 KERNEL_OBJ=kernel/loader.o ${KERNEL_SRC:.cpp=.o} hw/interrupt.o
 
 kernel.bin: $(KERNEL_OBJ)

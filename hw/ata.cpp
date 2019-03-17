@@ -3,7 +3,7 @@
 
 #include <hw/port_io.h>
 #include <hw/ata.h>
-#include <drivers/screen.h>
+#include <hw/screen.h>
 #include <kstring.h>
 
 extern UInt32 tickCounter;

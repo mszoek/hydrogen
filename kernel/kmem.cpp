@@ -2,10 +2,11 @@
  * Zoe Knox 2017-2019
  */
 
-#include "hw/types.h"
-#include "kmem.h"
-
-extern bool verbose;
+#include <hw/types.h>
+#include <hw/screen.h>
+#include <kstring.h>
+#include <kmem.h>
+#include <kernel.h>
 
 static UInt32 physMemorySize = 0;
 static UInt32 physUsedBlocks = 0;

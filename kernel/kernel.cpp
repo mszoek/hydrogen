@@ -8,7 +8,7 @@
 #include <hw/pci.h>
 #include <hw/ata.h>
 #include <hw/keyboard.h>
-#include <drivers/screen.h>
+#include <hw/screen.h>
 #include <kstring.h>
 #include <kmem.h>
 #include <kversion.h>

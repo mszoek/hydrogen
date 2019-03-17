@@ -1,5 +1,5 @@
 #include <hw/port_io.h>
-#include <drivers/screen.h>
+#include <hw/screen.h>
 #include <kmem.h>
 #include <kstring.h>
 #include <stdarg.h>

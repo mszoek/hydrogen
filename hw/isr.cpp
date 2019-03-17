@@ -1,8 +1,8 @@
 #include <hw/port_io.h>
 #include <hw/isr.h>
 #include <hw/idt.h>
+#include <hw/screen.h>
 #include <kstring.h>
-#include <drivers/screen.h>
 
 isr_t interruptHandlers[256];
 

@@ -5,8 +5,6 @@
 #include <hw/port_io.h>
 #include <hw/isr.h>
 #include <hw/timer.h>
-#include <kstring.h>
-#include <drivers/screen.h>
 
 UInt32 tickCounter = 0;
 
