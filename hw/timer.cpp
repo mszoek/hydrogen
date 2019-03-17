@@ -1,27 +1,56 @@
-// Kernel timer interrupt
-// Zoe Knox 2017
+/*
+ * H2 Timer Controller
+ * Copyright (C) 2017-2019 Zoe Knox. All rights reserved.
+ */
 
 #include <hw/types.h>
 #include <hw/port_io.h>
 #include <hw/isr.h>
+#include <hw/screen.h>
 #include <hw/timer.h>
-
-UInt32 tickCounter = 0;
+#include <kernel.h>
 
 static void timerCallback(registers_t regs)
 {
-  tickCounter++;
+  if(g_controllers[CTRL_TIMER])
+    ((TimerController *)g_controllers[CTRL_TIMER])->tick();
 }
 
-void initTimer(UInt32 Hz)
+TimerController::TimerController()
 {
+  if(verbose)
+    kprintf("hw/TimerController: 0x%x\n", this);
+  g_controllers[CTRL_TIMER] = (UInt32)this;
+
+  tickCounter = 0;
   registerInterruptHandler(IRQ0, timerCallback);
 
   // Program the PIT! H/w clock is 1193180Hz, which is probably wrong
-  UInt32 divisor = 1193180 / Hz;
+  UInt32 divisor = 1193180 / KERNEL_HZ;
   UInt8 low = (UInt8)(divisor & 0xFF);
   UInt8 high = (UInt8)((divisor >> 8) & 0xFF);
   portByteOut(0x43, 0x36);
   portByteOut(0x40, low);
   portByteOut(0x40, high);
+}
+
+TimerController::~TimerController()
+{
+  registerInterruptHandler(IRQ0, 0);
+  g_controllers[CTRL_TIMER] = 0;
+}
+
+UInt32 TimerController::getTicks()
+{
+  return tickCounter;
+}
+
+UInt32 TimerController::getSeconds()
+{
+  return tickCounter / KERNEL_HZ;
+}
+
+void TimerController::tick()
+{
+  ++tickCounter;
 }

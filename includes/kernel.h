@@ -1,10 +1,16 @@
+/*
+ * H2 Kernel
+ * Copyright (C) 2017-2019 Zoe & Alexis Knox. All rights reserved.
+ */
+
 #ifndef KERNEL_H
 #define KERNEL_H
 
 #include <hw/types.h>
 
-#define CTRL_KEYBOARD 0
-#define CONTROLLER_MAX 1
+#define CTRL_KEYBOARD   0
+#define CTRL_TIMER      1
+#define CONTROLLER_MAX  2
 
 extern UInt32 g_controllers[];
 extern bool verbose;

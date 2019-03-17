@@ -1,3 +1,7 @@
+/*
+ * H2 Keyboard Input Controller
+ * Copyright (C) 2019 Zoe Knox. All rights reserved.
+ */
 #include <kernel.h>
 #include <hw/port_io.h>
 #include <hw/keyboard.h>

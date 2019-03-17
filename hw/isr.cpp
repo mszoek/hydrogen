@@ -1,3 +1,8 @@
+/*
+ * H2 Interrupt Handling
+ * Copyright (C) 2017-2019 Zoe Knox. All rights reserved.
+ */
+
 #include <hw/port_io.h>
 #include <hw/isr.h>
 #include <hw/idt.h>

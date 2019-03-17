@@ -1,4 +1,7 @@
-// H2OS Kernel! CodeGrlz rule.
+/*
+ * H2 Kernel
+ * Copyright (C) 2017-2019 Zoe & Alexis Knox. All rights reserved.
+ */
 
 #include <kernel.h>
 #include <hw/port_io.h>
@@ -17,7 +20,6 @@
 
 UInt32 g_controllers[CONTROLLER_MAX];
 
-extern UInt32 tickCounter; // in timer.c
 bool runMemTest = false;
 bool verbose = true;
 
@@ -33,6 +35,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   UInt32 pages[16];
   int i = 0;
   char cmdline[256];
+  TimerController *timer = 0;
   
   memset(cmdline, 0, sizeof(cmdline));
 
@@ -57,11 +60,10 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
     // FIXME: parse the command line options to get root disk, verbosity, etc.
   }
 
-  // kprint("isrInstall()\n");
   isrInstall();
+  TimerController ctrlTimer;
+  timer = ((TimerController *)g_controllers[CTRL_TIMER]);
   KeyboardController ctrlKbd;
-  // kprint("initTimer()\n");
-  initTimer(1000);
 
   /* Start the memory manager */
   // kprint("pmmInit()\n");
@@ -97,7 +99,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   memset((char*)pages, 0, sizeof(pages));
   while(1)
   {
-      if(runMemTest && tickCounter % 100 == 0)
+      if(runMemTest && timer->getTicks() % 100 == 0)
       {
         if(pages[i] != 0)
         {
@@ -124,7 +126,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
         setCursorOffset(pos);
       }
 
-      if(tickCounter % 500 == 0)
+      if(timer->getTicks() % 500 == 0)
       {
         displayStatusLine();
       }
@@ -148,7 +150,7 @@ void displayStatusLine()
   itoa(pmmMemFreeBlocks(), 10, s);
   memcpy(line+strlen(line), s, strlen(s));
   memcpy(line+strlen(line), " blocks Uptime: ", 16);
-  itoa(tickCounter/1000, 10, s);
+  itoa(((TimerController *)g_controllers[CTRL_TIMER])->getSeconds(), 10, s);
   memcpy(line+strlen(line), s, strlen(s));
   i = strlen(line);
   line[i] = 's';
