@@ -70,11 +70,14 @@ void pciCheckDevice(UInt32 bus, UInt32 slot)
         pciTable[pciTableIndex].latencyTimer = (val & 0xFF00) >> 8;
         pciTable[pciTableIndex].cacheLineSize = val & 0xFF;
 
-    /* read 5 dwords for the BARs. Only header type 0x00 has 5 - the others have 2 or 0
-       so we will be stuffing other data in the BAR space. Can parse it later */
-        for(int j = 0; j < 5; ++j)
+    /* read 6 dwords for the BARs. Only header type 0x00 has all - the others have 2 or 0
+       so we will be stuffing other data in the BAR space. Can parse it later.
+       NOTE: the low bits of BARs need to be masked & 0xFC before using!! Kept
+       here so we can distinguish type: low 00 = mem addr, 01 = I/O addr */
+        for(int j = 0; j < 6; ++j)
         {
-            pciTable[pciTableIndex].baseAddrReg[j] = pciReadCfgDWord(bus, slot, function, 0x10+(4*j));
+            UInt32 val32 = pciReadCfgDWord(bus, slot, function, 0x10+(4*j));
+            pciTable[pciTableIndex].baseAddrReg[j] = val32;
         }
 
         if(verbose)

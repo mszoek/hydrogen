@@ -67,16 +67,23 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   pciEnumBuses();
 
   asm volatile("sti"); // Start interrupts!
+
+  /* interrupts must be enabled for ATA init because we need the timer
+     to create delays after I/O */
   for(int j = 0; j < 64; j++)
   {
     if(pciTable[j].bus == 0xFFFFFFFF)
       break;
     if(pciTable[j].classCode == PCI_MASS_STORAGE_CTRL)
     {
-      kprintf("ideInit(%d/%d.%d)\n", pciTable[j].bus, pciTable[j].slot, pciTable[j].function);
-      ideInit(pciTable[j].baseAddrReg[0], pciTable[j].baseAddrReg[1],
-        pciTable[j].baseAddrReg[2], pciTable[j].baseAddrReg[3],
-        pciTable[j].baseAddrReg[4]);
+      switch(pciTable[j].subclassCode)
+      {
+        case 0x6:
+          probeSATAPort((hbaMem *)(pciTable[j].baseAddrReg[5]));
+          break;
+        default:
+          kprintf("Unsupported storage controller: 0x%x", pciTable[j].subclassCode);
+      }
     }
   }
 
@@ -139,7 +146,7 @@ void displayStatusLine()
   itoa(pmmMemFreeBlocks(), 10, s);
   memcpy(line+strlen(line), s, strlen(s));
   memcpy(line+strlen(line), " blocks Uptime: ", 16);
-  itoa(tickCounter/100, 10, s);
+  itoa(tickCounter/1000, 10, s);
   memcpy(line+strlen(line), s, strlen(s));
   i = strlen(line);
   line[i] = 's';

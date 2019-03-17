@@ -34,7 +34,7 @@ struct pciDeviceEntry
     UInt8 headerType;
     UInt8 latencyTimer;
     UInt8 cacheLineSize;
-    UInt32 baseAddrReg[5];
+    UInt32 baseAddrReg[6];
 };
 extern struct pciDeviceEntry pciTable[64];
 
