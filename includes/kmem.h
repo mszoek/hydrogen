@@ -30,6 +30,8 @@ void pmmDropRegion(UInt32 base, UInt32 size);
 void *pmmAlloc();
 void pmmFree(void *p);
 
+void operator delete(void *p, unsigned long size);
+
 void memcpy(char *dst, char *src, unsigned int len);
 void memset(char *dst, char val, int len);
 

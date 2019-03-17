@@ -52,5 +52,5 @@ void probeSATAPort(hbaMem *abar)
 
 void rebasePort(hbaPort *port, int portNumber)
 {
-    
+        
 }

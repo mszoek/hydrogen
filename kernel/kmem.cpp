@@ -185,6 +185,12 @@ void pmmFree(void *p)
 }
 
 
+void operator delete(void *p, unsigned long size)
+{
+  kprintf("FIXME! delete(0x%x, 0x%x)\n",(UInt32)p,size);
+}
+
+
 void memcpy(char *dst, char *src, unsigned int len)
 {
   int i;

@@ -1,4 +1,4 @@
-#include <drivers/keyboard.h>
+#include <hw/keyboard.h>
 #include <drivers/screen.h>
 #include <kmem.h>
 #include <kstring.h>
@@ -104,8 +104,8 @@ void shellCheckInput()
 {
   char code;
   int keyUp = 0;
-  char buf[1024];
-  int length = getKeyboardBuffer(buf, 1023);
+  UInt8 buf[1024];
+  int length = ((KeyboardController *)g_controllers[CTRL_KEYBOARD])->getKeyboardBuffer(buf, 1023);
 
   for(int i = 0; i < length; ++i)
   {

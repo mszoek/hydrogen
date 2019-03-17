@@ -1,5 +1,4 @@
 #include <hw/idt.h>
-#include <kstring.h>
 
 idt_gate_t idt[IDT_ENTRIES];
 idt_register_t idt_reg;

@@ -118,6 +118,7 @@ char *exceptionMessages[] = {
 extern "C" void isrHandler(registers_t r)
 {
     kprintf("CPU Exception %d: %s\n", r.int_no, exceptionMessages[r.int_no]);
+    // FIXME: print a kernel stack dump here! (panic message)
 }
 
 void registerInterruptHandler(UInt8 n, isr_t handler)

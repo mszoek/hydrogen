@@ -1,18 +1,21 @@
 // H2OS Kernel! CodeGrlz rule.
 
+#include <kernel.h>
 #include <hw/port_io.h>
 #include <hw/isr.h>
 #include <hw/idt.h>
 #include <hw/timer.h>
 #include <hw/pci.h>
 #include <hw/ata.h>
-#include <drivers/keyboard.h>
+#include <hw/keyboard.h>
 #include <drivers/screen.h>
 #include <kstring.h>
 #include <kmem.h>
 #include <kversion.h>
 #include <bootinfo.h>
 #include <shell.h>
+
+UInt32 g_controllers[CONTROLLER_MAX];
 
 extern UInt32 tickCounter; // in timer.c
 bool runMemTest = false;
@@ -56,8 +59,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 
   // kprint("isrInstall()\n");
   isrInstall();
-  // kprint("initKeyboard()\n");
-  initKeyboard();
+  KeyboardController ctrlKbd;
   // kprint("initTimer()\n");
   initTimer(1000);
 
