@@ -5,6 +5,7 @@
 #include <hw/ata.h>
 #include <hw/screen.h>
 #include <kstring.h>
+#include <kstdio.h>
 
 extern UInt32 tickCounter;
 static UInt8 atapiPacket[12] = {0xA8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};

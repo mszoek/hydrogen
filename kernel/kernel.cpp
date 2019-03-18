@@ -14,6 +14,7 @@
 #include <hw/screen.h>
 #include <kstring.h>
 #include <kmem.h>
+#include <kstdio.h>
 #include <kversion.h>
 #include <bootinfo.h>
 #include <shell.h>
@@ -35,10 +36,10 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   UInt32 pages[16];
   int i = 0;
   char cmdline[256];
-  TimerController *timer = 0;
   
   memset(cmdline, 0, sizeof(cmdline));
 
+  ScreenController screen;
   displayStartupMsg(size);
 
   /* Read data from the multiboot structure */
@@ -62,7 +63,6 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 
   isrInstall();
   TimerController ctrlTimer;
-  timer = ((TimerController *)g_controllers[CTRL_TIMER]);
   KeyboardController ctrlKbd;
 
   /* Start the memory manager */
@@ -99,7 +99,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   memset((char*)pages, 0, sizeof(pages));
   while(1)
   {
-      if(runMemTest && timer->getTicks() % 100 == 0)
+      if(runMemTest && ctrlTimer.getTicks() % 100 == 0)
       {
         if(pages[i] != 0)
         {
@@ -119,14 +119,14 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
           return; // halt system
         }
         *((char *)p+1360) = 0;
-        int pos = getCursorOffset();
-        setCursorOffset(getOffset(0, 1));
+        int pos = screen.getCursorOffset();
+        screen.setCursorOffset(ScreenController::getOffset(0, 1));
         kprintf("Page %d 0x%x         ", i, (UInt32)p);
         kprintAt((char *)p, 0, 2, 0x03);
-        setCursorOffset(pos);
+        screen.setCursorOffset(pos);
       }
 
-      if(timer->getTicks() % 500 == 0)
+      if(ctrlTimer.getTicks() % 500 == 0)
       {
         displayStatusLine();
       }
@@ -143,7 +143,11 @@ void displayStatusLine()
   char attr;
   char s[25], line[81];
 
-  curpos = getCursorOffset();
+  ScreenController *screen = (ScreenController *)g_controllers[CTRL_SCREEN];
+  if(!screen)
+    return;
+
+  curpos = screen->getCursorOffset();
 
   memset(line, 0, sizeof(line));
   memcpy(line, "Mem Free: ", 10);
@@ -158,17 +162,21 @@ void displayStatusLine()
   memset(line+strlen(line), 0x20, sizeof(line)-strlen(line)-2); // space fill to right edge
   kprintAt(line, 0, 0, DEFAULT_STATUS_ATTR);
 
-  setCursorOffset(curpos);
+  screen->setCursorOffset(curpos);
 }
 
 void displayStartupMsg(unsigned int size)
 {
-  clearScreen(DEFAULT_TEXT_ATTR);
-  defaultTextAttr(0x0f);
-  setCursorOffset(getOffset(0, 2));
+  ScreenController *screen = ((ScreenController *)g_controllers[CTRL_SCREEN]);
+  if(!screen)
+    return;
+
+  screen->defaultTextAttr(BG_BLACK | FG_GREY | FG_BOLD);
+  screen->clearScreen();
+  screen->setCursorOffset(ScreenController::getOffset(0, 2));
   kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x100000]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size);
   kprint("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
-  defaultTextAttr(DEFAULT_TEXT_ATTR);
+  screen->defaultTextAttr(DEFAULT_TEXT_ATTR);
 }
 
 char isprint (unsigned char c)

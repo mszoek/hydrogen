@@ -4,8 +4,8 @@
 #include <hw/types.h>
 #include <hw/port_io.h>
 #include <hw/pci.h>
-#include <hw/screen.h>
 #include <kmem.h>
+#include <kstdio.h>
 
 extern bool verbose;
 

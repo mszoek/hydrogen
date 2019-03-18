@@ -9,6 +9,7 @@
 #include <hw/screen.h>
 #include <hw/timer.h>
 #include <kernel.h>
+#include <kstdio.h>
 
 static void timerCallback(registers_t regs)
 {
@@ -19,7 +20,7 @@ static void timerCallback(registers_t regs)
 TimerController::TimerController()
 {
   if(verbose)
-    kprintf("hw/TimerController: 0x%x\n", this);
+    kprintf("hw/TimerController: 0x%x @%dHz\n", this, KERNEL_HZ);
   g_controllers[CTRL_TIMER] = (UInt32)this;
 
   tickCounter = 0;

@@ -8,7 +8,7 @@
 #include <hw/screen.h>
 #include <hw/isr.h>
 #include <kmem.h>
-
+#include <kstdio.h>
 
 static void keyboardCallback(registers_t regs)
 {

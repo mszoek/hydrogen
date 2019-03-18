@@ -3,7 +3,7 @@
  */
 
 #include <hw/types.h>
-#include <hw/screen.h>
+#include <kstdio.h>
 #include <kstring.h>
 #include <kmem.h>
 #include <kernel.h>

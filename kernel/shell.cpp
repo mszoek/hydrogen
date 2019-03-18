@@ -2,6 +2,7 @@
 #include <hw/keyboard.h>
 #include <hw/screen.h>
 #include <hw/pci.h>
+#include <kstdio.h>
 #include <kmem.h>
 #include <kstring.h>
 #include <kernel.h>
@@ -49,36 +50,45 @@ void shellStart()
 
 void shellExecCommand()
 {
+  ScreenController *screen = (ScreenController *)g_controllers[CTRL_SCREEN];
+
   if(strlen(shellBuffer) < 1) return;
 
   if(strcmp(shellBuffer, "exit") == 0)
   {
-    kprint("kk, kthxbye!\n");
+    kprintf("kk, kthxbye!\n");
     asm("cli");
     asm("hlt");
   }
 
   if(strcmp(shellBuffer, "hello") == 0)
   {
-    kprint("'ello gorgeous!\n");
+    kprintf("'ello gorgeous!\n");
     return;
   }
 
   if(strcmp(shellBuffer, "memtest") == 0)
   {
     runMemTest = !runMemTest;
-    clearScreen(DEFAULT_TEXT_ATTR);
-    setCursorOffset(getOffset(0, 1));
-    if(runMemTest) kprint("Running memory test\n");
-    setCursorOffset(getOffset(0, 20));
+    if(screen)
+    {
+      screen->clearScreen(DEFAULT_TEXT_ATTR);
+      screen->setCursorOffset(ScreenController::getOffset(0, 1));
+    }
+    if(runMemTest) kprintf("Running memory test\n");
+    if(screen)
+      screen->setCursorOffset(ScreenController::getOffset(0, 20));
     return;
   }
   if(strcmp(shellBuffer, "clear") == 0)
   {
     if(runMemTest) return;
 
-    clearScreen(DEFAULT_TEXT_ATTR);
-    setCursorOffset(getOffset(0, 1));
+    if(screen)
+    {
+      screen->clearScreen(DEFAULT_TEXT_ATTR);
+      screen->setCursorOffset(ScreenController::getOffset(0, 1));
+    }
     return;
   }
 
@@ -93,11 +103,11 @@ void shellExecCommand()
 
   if(strcmp(shellBuffer, "printdata") == 0)
   {
-    printdata(0x100000, 1024);
+    printdata((UInt8 *)0x100000, 1024);
     return;
   }
 
-  kprintAt("Invalid command\n", -1, -1, 0x0c);
+  kprintAt("Invalid command\n", -1, -1, (FG_RED | FG_BOLD | BG_BLACK));
 }
 
 void shellCheckInput()
@@ -132,12 +142,12 @@ void shellCheckInput()
     {
       if(code == 0x1C)
       {
-        kprint("\n");
+        kprintf("\n");
         shellBuffer[shellBufferPos++] = 0;
         shellExecCommand();
         shellBufferPos = 0;
         shellBuffer[0] = 0;
-        kprint(PROMPT);
+        kprintf(PROMPT);
         return;
       }
       if(code == 0x0E)
@@ -145,7 +155,9 @@ void shellCheckInput()
         if(shellBufferPos > 0)
         {
           shellBuffer[--shellBufferPos] = 0;
-          printBackspace();
+          ScreenController *screen = (ScreenController *)g_controllers[CTRL_SCREEN];
+          if(screen)
+            screen->printBackspace();
         }
         return;
       }
@@ -161,7 +173,7 @@ void shellCheckInput()
       char key[2];
       key[0]=code;
       key[1]=0;
-      kprint(key);
+      kprintf(key);
     }
   }
 }

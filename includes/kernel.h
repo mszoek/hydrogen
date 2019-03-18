@@ -10,7 +10,8 @@
 
 #define CTRL_KEYBOARD   0
 #define CTRL_TIMER      1
-#define CONTROLLER_MAX  2
+#define CTRL_SCREEN     2
+#define CONTROLLER_MAX  3
 
 extern UInt32 g_controllers[];
 extern bool verbose;
