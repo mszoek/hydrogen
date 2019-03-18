@@ -1,3 +1,8 @@
+/*
+ * H2 Kernel
+ * Copyright (C) 2017-2019 Zoe & Alexis Knox. All rights reserved.
+ */
+
 #include <hw/idt.h>
 
 idt_gate_t idt[IDT_ENTRIES];

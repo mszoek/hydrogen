@@ -6,6 +6,10 @@ After almost 2 years, Hydrogen (formerly H2OS) is back :)
 
 _Hydrogen: Lighter than air, more essential than water._  
 
+## License
+
+Copyright 2019. All rights reserved.
+
 ## Contributing
 Contributing to Hydrogen is not currently possible, as it is closed source. (duh)
 

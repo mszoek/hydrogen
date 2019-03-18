@@ -1,3 +1,8 @@
+/*
+ * H2 Kernel
+ * Copyright (C) 2017-2019 Zoe & Alexis Knox. All rights reserved.
+ */
+
 #include <hw/port_io.h>
 
 // Read a byte from a specified port

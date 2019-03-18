@@ -1,5 +1,5 @@
 ; Kernel loader stub to get the right entry point from bootloader
-; Zoe & Alexis Knox 2019
+; Copyright (C) 2019 Zoe & Alexis Knox. All rights reserved.
 
 [bits 32]
 global start

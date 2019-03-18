@@ -1,3 +1,8 @@
+/*
+ * H2 Kernel Memory Manager
+ * Copyright (C) 2017-2019 Zoe & Alexis Knox. All rights reserved.
+ */
+
 #ifndef _KMEM_H
 #define _KMEM_H
 

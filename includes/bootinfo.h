@@ -1,3 +1,8 @@
+/*
+ * H2 Kernel
+ * Copyright (C) 2017-2019 Zoe & Alexis Knox. All rights reserved.
+ */
+
 /*    MULTIBOOT INFO STRUCTURE
              +-------------------+
      0       | flags             |    (required)

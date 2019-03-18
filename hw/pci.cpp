@@ -1,5 +1,7 @@
-// H2OS PCI Bus driver
-// Zoe Knox 2019
+/*
+ * H2 PCI Bus Driver
+ * Copyright (C) 2017-2019 Zoe Knox. All rights reserved.
+ */
 
 #include <hw/types.h>
 #include <hw/port_io.h>

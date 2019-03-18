@@ -1,3 +1,8 @@
+/*
+ * H2 AHCI ATA/ATAPI Driver
+ * Copyright (C) 2017-2019 Zoe Knox. All rights reserved.
+ */
+
 #ifndef ATA_H
 #define ATA_H
 

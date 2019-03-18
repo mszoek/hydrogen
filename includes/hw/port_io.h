@@ -1,5 +1,10 @@
-#ifndef VIDEO_PORTS_H
-#define VIDEO_PORTS_H
+/*
+ * H2 Kernel
+ * Copyright (C) 2017-2019 Zoe & Alexis Knox. All rights reserved.
+ */
+
+#ifndef PORTIO_H
+#define PORTIO_H
 
 #include <hw/types.h>
 

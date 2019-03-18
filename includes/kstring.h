@@ -1,3 +1,8 @@
+/*
+ * H2 Kernel string functions
+ * Copyright (C) 2017-2019 Zoe & Alexis Knox. All rights reserved.
+ */
+
 #ifndef _STRING_H
 #define _STRING_H
 

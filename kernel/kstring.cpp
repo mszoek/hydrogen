@@ -1,5 +1,6 @@
-/* H2OS Kernel string handling
- * Zoe Knox 2017-2019
+/*
+ * H2 Kernel string functions
+ * Copyright (C) 2017-2019 Zoe & Alexis Knox. All rights reserved.
  */
 
 int strlen(char *s)

@@ -1,3 +1,8 @@
+/*
+ * H2 Text-mode Video Driver
+ * Copyright (C) 2017-2019 Zoe & Alexis Knox. All rights reserved.
+ */
+
 #include <hw/port_io.h>
 #include <hw/screen.h>
 #include <kmem.h>

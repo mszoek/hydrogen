@@ -1,5 +1,7 @@
-// ATA IDE driver
-// Zoe Knox 2019
+/*
+ * H2 AHCI ATA/ATAPI Driver
+ * Copyright (C) 2017-2019 Zoe Knox. All rights reserved.
+ */
 
 #include <hw/port_io.h>
 #include <hw/ata.h>
