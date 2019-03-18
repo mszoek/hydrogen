@@ -10,28 +10,46 @@
 #define PMM_BLOCK_SIZE 4096
 #define PMM_BLOCK_ALIGN PMM_BLOCK_SIZE
 
-struct regionInfo
+class PhysicalMemoryManager
 {
-    UInt32 size;
-    UInt32 startLo;
-    UInt32 startHi;
-    UInt32 sizeLo;
-    UInt32 sizeHi;
-    UInt32 type;
-    UInt32 acpi30;
-} __attribute__((packed));
+public:
+    typedef struct
+    {
+        UInt32 size;
+        UInt32 startLo;
+        UInt32 startHi;
+        UInt32 sizeLo;
+        UInt32 sizeHi;
+        UInt32 type;
+        UInt32 acpi30;
+    } __attribute__((packed)) RegionInfo;
 
-UInt32 pmmMemSize();
-UInt32 pmmMemSizeBlocks();
-UInt32 pmmMemFree();
-UInt32 pmmMemFreeBlocks();
-int pmmFindFirstFree();
-void pmmInit(UInt32 memSize, UInt32 kernAddr, UInt32 kernSize, struct regionInfo *regions, UInt32 regionsLen);
-void pmmInitRegion(UInt32 base, UInt32 size);
-void pmmDropRegion(UInt32 base, UInt32 size);
-void *pmmAlloc();
-void pmmFree(void *p);
+    PhysicalMemoryManager(UInt32 memSize, UInt32 kernAddr, UInt32 kernSize,
+        RegionInfo *regions, UInt32 regionsLen);
+    virtual ~PhysicalMemoryManager();
 
+    UInt32 memSize();
+    UInt32 memSizeBlocks();
+    UInt32 memFree();
+    UInt32 memFreeBlocks();
+    void *alloc();
+    void free(void *p);
+
+private:
+    UInt32 physMemorySize;
+    UInt32 physUsedBlocks;
+    UInt32 physMaxBlocks;
+    UInt32 *physMemoryMap;
+
+    inline void pmmBitmapSet(int bit);
+    inline void pmmBitmapUnset(int bit);
+    inline int pmmBitmapTest(int bit);
+    int findFirstFree();
+    void initRegion(UInt32 base, UInt32 size);
+    void dropRegion(UInt32 base, UInt32 size);
+};
+
+/* standard memory functions */
 void operator delete(void *p, unsigned long size);
 
 void memcpy(char *dst, char *src, unsigned int len);

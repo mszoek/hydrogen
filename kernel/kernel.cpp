@@ -19,6 +19,7 @@
 #include <bootinfo.h>
 #include <shell.h>
 
+PhysicalMemoryManager *pmm = 0;
 UInt32 g_controllers[CONTROLLER_MAX];
 
 bool runMemTest = false;
@@ -64,10 +65,9 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   isrInstall();
   TimerController ctrlTimer;
   KeyboardController ctrlKbd;
-
-  /* Start the memory manager */
-  // kprint("pmmInit()\n");
-  pmmInit(mem, 0x100000, size, (struct regionInfo *)mmap, mmapLen);
+  PhysicalMemoryManager physMM(mem, KERN_ADDRESS, size,
+    (PhysicalMemoryManager::RegionInfo *)mmap, mmapLen);
+  pmm = &physMM;
   pciEnumBuses();
 
   asm volatile("sti"); // Start interrupts!
@@ -103,9 +103,9 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
       {
         if(pages[i] != 0)
         {
-            pmmFree((void*)pages[i]);
+            pmm->free((void*)pages[i]);
         }
-        void *p = pmmAlloc();
+        void *p = pmm->alloc();
         if(p != 0)
         {
           memset((char *)p, i < 10 ? i+'0' : i-10+'A', PMM_BLOCK_SIZE);
@@ -151,7 +151,7 @@ void displayStatusLine()
 
   memset(line, 0, sizeof(line));
   memcpy(line, "Mem Free: ", 10);
-  itoa(pmmMemFreeBlocks(), 10, s);
+  itoa(pmm->memFreeBlocks(), 10, s);
   memcpy(line+strlen(line), s, strlen(s));
   memcpy(line+strlen(line), " blocks Uptime: ", 16);
   itoa(((TimerController *)g_controllers[CTRL_TIMER])->getSeconds(), 10, s);
@@ -174,7 +174,7 @@ void displayStartupMsg(unsigned int size)
   screen->defaultTextAttr(BG_BLACK | FG_GREY | FG_BOLD);
   screen->clearScreen();
   screen->setCursorOffset(ScreenController::getOffset(0, 2));
-  kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x100000]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size);
+  kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x%x]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size, KERN_ADDRESS);
   kprint("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
   screen->defaultTextAttr(DEFAULT_TEXT_ATTR);
 }
