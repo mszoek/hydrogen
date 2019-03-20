@@ -85,6 +85,9 @@ private:
 /* standard memory functions */
 void operator delete(void *p, unsigned long size);
 
+void *malloc(unsigned int size);
+void free(void *p);
+
 void memcpy(char *dst, char *src, unsigned int len);
 void memset(char *dst, char val, int len);
 
