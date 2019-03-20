@@ -1,3 +1,8 @@
+/*
+ * H2 PCI Bus Driver
+ * Copyright (C) 2017-2019 Zoe Knox. All rights reserved.
+ */
+
 #ifndef HW_PCI_H
 #define HW_PCI_H
 
