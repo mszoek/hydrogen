@@ -372,6 +372,16 @@ void PhysicalMemoryManager::free(void *p)
   return;
 }
 
+void *malloc(const unsigned int size)
+{
+  return pmm->malloc(size);
+}
+
+void free(void *p)
+{
+  return pmm->free(p);
+}
+
 void memcpy(char *dst, char *src, unsigned int len)
 {
   int i;

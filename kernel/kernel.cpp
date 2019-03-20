@@ -55,19 +55,23 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
     mmapLen = binf->mmapLen;
     kprintf("; memory map loaded %d @ 0x%x\n", mmapLen, mmap);
   }
+
+  PhysicalMemoryManager physMM(mem, KERN_ADDRESS, size,
+    (PhysicalMemoryManager::RegionInfo *)mmap, mmapLen);
+  pmm = &physMM;
+
   if(binf->flags & 0x4)
   {
     strcpy(cmdline, (char *)(binf->cmdLine));
     // FIXME: parse the command line options to get root disk, verbosity, etc.
-    kprintf("%s\n", strtok(cmdline, " "));
+    char *s = strtok(cmdline, " ");
+    kprintf("cmdline s=%s\n",s);
+    free(s);
   }
 
   isrInstall();
   TimerController ctrlTimer;
   KeyboardController ctrlKbd;
-  PhysicalMemoryManager physMM(mem, KERN_ADDRESS, size,
-    (PhysicalMemoryManager::RegionInfo *)mmap, mmapLen);
-  pmm = &physMM;
   pciEnumBuses();
 
   asm volatile("sti"); // Start interrupts!
