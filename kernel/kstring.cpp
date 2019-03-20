@@ -3,6 +3,10 @@
  * Copyright (C) 2017-2019 Zoe & Alexis Knox. All rights reserved.
  */
 
+#include <hw/types.h>
+#include <kmem.h>
+#include <kstdio.h>
+
 int strlen(char *s)
 {
   char *p=s;
@@ -102,4 +106,45 @@ void itoa(unsigned n, unsigned base, char str[])
 
   str[i] = '\0';
   reverse(str);
+}
+
+// TODO: implement strstr(), strchr()
+
+char *strcat(char *dest, const char *src)
+{
+  if(!dest || !src) return 0;
+
+  UInt32 i, j;
+  for(i = 0; dest[i] != '\0'; ++i);
+  for(j = 0; src[j] != '\0'; ++i)
+    dest[i+j] = src[j];
+  dest[i+j] = '\0';
+  return dest;
+}
+
+char *strtok(char *src, char *del)
+{
+  static int index = 0;
+  if(!src || !del || src[index] == '\0') return 0;
+  char *W = (char *)malloc(100);
+  memset(W, 0, sizeof(W));
+  int i = index, k = 0, j = 0;
+  while(src[i] != '\0')
+  {
+    j = 0;
+    while(del[j] != '\0')
+    {
+      if(src[i] != del[j])
+      {  
+        W[k] = (char*)src[i];
+      } else {
+        index = i+1;
+        return W;
+      }
+      j++;
+    }
+    i++;
+    k++;
+  }
+  return W;
 }

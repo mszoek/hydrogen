@@ -15,5 +15,7 @@ void append(char s[], char n);
 void backspace(char s[]);
 void itoa(unsigned n, unsigned base, char str[]);
 int atoi(char *str);
+char *strcat(char *dest, const char *src);
+char *strtok(char *src, char *del);
 
 #endif
