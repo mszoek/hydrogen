@@ -23,7 +23,7 @@ PhysicalMemoryManager *pmm = 0;
 UInt32 g_controllers[CONTROLLER_MAX];
 
 bool runMemTest = false;
-bool verbose = true;
+bool verbose = false;
 
 // Prototypes
 void displayStatusLine();
@@ -99,31 +99,34 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   memset((char*)pages, 0, sizeof(pages));
   while(1)
   {
+      static int size = 4;
+
       if(runMemTest && ctrlTimer.getTicks() % 100 == 0)
       {
         if(pages[i] != 0)
         {
             pmm->free((void*)pages[i]);
         }
-        void *p = pmm->alloc();
+        void *p = pmm->malloc(size);
+        size *= 2;
+        if(size > 2048) size = 4;
         if(p != 0)
         {
-          memset((char *)p, i < 10 ? i+'0' : i-10+'A', PMM_BLOCK_SIZE);
-          pages[i++] = (UInt32)p;
-          if(i > 15)
-          {
-              i = 0;
-          }
+          // memset((char *)p, i < 10 ? i+'0' : i-10+'A', PMM_BLOCK_SIZE);
+          // pages[i++] = (UInt32)p;
+          // if(i > 15)
+          // {
+          //     i = 0;
+          // }
         } else {
-          kprintAt("!PANIC! Out of memory!", -1, -1, 0x4f);
-          return; // halt system
+          kprintf("malloc(%d) failed\n", size);
         }
-        *((char *)p+1360) = 0;
-        int pos = screen.getCursorOffset();
-        screen.setCursorOffset(ScreenController::getOffset(0, 1));
-        kprintf("Page %d 0x%x         ", i, (UInt32)p);
-        kprintAt((char *)p, 0, 2, 0x03);
-        screen.setCursorOffset(pos);
+        // *((char *)p+1360) = 0;
+        // int pos = screen.getCursorOffset();
+        // screen.setCursorOffset(ScreenController::getOffset(0, 1));
+        kprintf("Addr 0x%x size %d\n", (UInt32)p, size);
+        // kprintAt((char *)p, 0, 2, 0x03);
+        // screen.setCursorOffset(pos);
       }
 
       if(ctrlTimer.getTicks() % 500 == 0)

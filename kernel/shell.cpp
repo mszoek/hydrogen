@@ -60,16 +60,11 @@ void shellExecCommand()
 
   if(strlen(shellBuffer) < 1) return;
 
-  if(strcmp(shellBuffer, "exit") == 0)
+  if(strcmp(shellBuffer, "help") == 0)
   {
-    kprintf("kk, kthxbye!\n");
-    asm("cli");
-    asm("hlt");
-  }
-
-  if(strcmp(shellBuffer, "hello") == 0)
-  {
-    kprintf("'ello gorgeous!\n");
+    kprintf("Commands:\n  memtest - run a memory page allocation test\n"
+    "  clear - clear the screen\n  lspci - list pci devices\n"
+    "  printdata - print memory contents\n  meminfo - show memory pool info\n\n");
     return;
   }
 
@@ -110,6 +105,12 @@ void shellExecCommand()
   if(strcmp(shellBuffer, "printdata") == 0)
   {
     printdata((UInt8 *)0x100000, 1024);
+    return;
+  }
+
+  if(strcmp(shellBuffer, "meminfo"))
+  {
+    pmm->printStats();
     return;
   }
 
