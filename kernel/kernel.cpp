@@ -55,19 +55,22 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
     mmapLen = binf->mmapLen;
     kprintf("; memory map loaded %d @ 0x%x\n", mmapLen, mmap);
   }
+  if(binf->flags & 0x4)
+  {
+    strcpy(cmdline, (char *)(binf->cmdLine));
+  }
 
   PhysicalMemoryManager physMM(mem, KERN_ADDRESS, size,
     (PhysicalMemoryManager::RegionInfo *)mmap, mmapLen);
   pmm = &physMM;
 
-  if(binf->flags & 0x4)
-  {
-    strcpy(cmdline, (char *)(binf->cmdLine));
-    // FIXME: parse the command line options to get root disk, verbosity, etc.
-    char *s = strtok(cmdline, " ");
-    kprintf("cmdline s=%s\n",s);
-    free(s);
-  }
+  // char *s = 0;
+  // while((s = strtok(cmdline, " ")) != 0)
+  // {
+  //   // FIXME: parse the command line options to get root disk, verbosity, etc.
+  //   kprintf("cmdline=%s s=%s\n",cmdline,s);
+  //   free(s);
+  // }
 
   isrInstall();
   TimerController ctrlTimer;
@@ -99,23 +102,20 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   shellStart();
   displayStatusLine();
 
+  kprintf("token %s\n", strtok(cmdline," "));
 
   memset((char*)pages, 0, sizeof(pages));
   while(1)
   {
       static int size = 8;
 
-      kprintf("token %s\n", strtok(cmdline," "));
-
-      if(runMemTest && ctrlTimer.getTicks() % 800 == 0)
+      if(runMemTest && ctrlTimer.getTicks() % 500 == 0)
       {
         if(pages[i] != 0)
         {
             pmm->free((void*)pages[i]);
         }
         void *p = pmm->malloc(size);
-        size *= 2;
-        if(size > 2048) size = 8;
         if(p != 0)
         {
           memset((char *)p, i < 10 ? i+'0' : i-10+'A', size);
@@ -123,16 +123,14 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
           if(i > 15)
           {
               i = 0;
+              pmm->printStats();
           }
+          size *= 2;
+          if(size > 8192) size = 8;
         } else {
           kprintf("malloc(%d) failed\n", size);
         }
         *((char *)p+size-1) = 0;
-        // int pos = screen.getCursorOffset();
-        // screen.setCursorOffset(ScreenController::getOffset(0, 1));
-        kprintf("Addr 0x%x size %d p=%s\n", (UInt32)p, size, p);
-        // kprintAt((char *)p, 0, 2, 0x03);
-        // screen.setCursorOffset(pos);
       }
 
       if(ctrlTimer.getTicks() % 500 == 0)

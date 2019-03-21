@@ -108,6 +108,15 @@ void shellExecCommand()
     return;
   }
 
+  if(!strcmp(shellBuffer, "alloc"))
+  {
+    void *p = pmm->malloc(16);
+    pmm->free(p);
+    p = pmm->malloc(3000);
+    pmm->free(p);
+    return;
+  }
+
   if(strcmp(shellBuffer, "meminfo"))
   {
     pmm->printStats();

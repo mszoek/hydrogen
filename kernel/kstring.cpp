@@ -122,6 +122,7 @@ char *strcat(char *dest, const char *src)
   return dest;
 }
 
+// FIXME: this doesn't really work like strtok... only returns the first token over and over.
 char *strtok(char *src, char *del)
 {
   static int index = 0;
@@ -136,7 +137,7 @@ char *strtok(char *src, char *del)
     {
       if(src[i] != del[j])
       {  
-        W[k] = (char*)src[i];
+        W[k] = (char)src[i];
       } else {
         index = i+1;
         return W;

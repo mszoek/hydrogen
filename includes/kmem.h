@@ -10,7 +10,7 @@
 #define PMM_BLOCK_SIZE 4096
 #define PMM_BLOCK_ALIGN PMM_BLOCK_SIZE
 
-#define MALLOC_MAGIC 0xC0DEBABE
+#define MALLOC_MAGIC 0x00ADECAF
 
 class PhysicalMemoryManager
 {
