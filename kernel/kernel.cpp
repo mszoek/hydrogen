@@ -21,8 +21,9 @@
 
 PhysicalMemoryManager *pmm = 0;
 UInt32 g_controllers[CONTROLLER_MAX];
+RootDisk rootDisk;
 
-bool runMemTest = true;
+bool runMemTest = false;
 bool verbose = false;
 
 // Prototypes
@@ -63,39 +64,54 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
     (PhysicalMemoryManager::RegionInfo *)mmap, mmapLen);
   pmm = &physMM;
 
-  // char *s = 0;
-  // while((s = strtok(cmdline, " ")) != 0)
-  // {
-  //   // FIXME: parse the command line options to get root disk, verbosity, etc.
-  //   kprintf("cmdline=%s s=%s\n",cmdline,s);
-  //   free(s);
-  // }
+  char *s = 0;
+  int index = 0;
+  while((s = strtok(cmdline, " ", &index)) != 0)
+  {
+    // FIXME: parse the command line options to get root disk, verbosity, etc.
+    if(strcmp(s, "verbose") == 0)
+      verbose = true;
+    else if(strncmp(s, "rd=", 3) == 0)
+    {
+      int x = 0;
+      s = &s[3];
+      while(s[x] != 0)
+      {
+        if(s[x] == '/')
+        {
+          s[x] = 0;
+          rootDisk.bus = atoi(s);
+          s = &s[x + 1];
+          x = 0;
+        } else if(s[x] == '.')
+        {
+          s[x] = 0;
+          rootDisk.slot = atoi(s);
+          s = &s[x + 1];
+          x = 0;
+        } else if(s[x] == ',')
+        {
+          s[x] = 0;
+          rootDisk.func = atoi(s);
+          s = &s[x + 1];
+          rootDisk.part = atoi(s);
+          break;
+        }
+        ++x;
+      }
+      kprintf("root disk: bus=%d slot=%d func=%d part=%d\n",rootDisk.bus,rootDisk.slot,rootDisk.func,rootDisk.part);
+    }
+  }
 
   isrInstall();
   TimerController ctrlTimer;
   KeyboardController ctrlKbd;
-  pciEnumBuses();
+  PCIController ctrlPCI;
 
+  ctrlPCI.pciEnumBuses();
   asm volatile("sti"); // Start interrupts!
 
-  /* interrupts must be enabled for ATA init because we need the timer
-     to create delays after I/O */
-  for(int j = 0; j < 64; j++)
-  {
-    if(pciTable[j].bus == 0xFFFFFFFF)
-      break;
-    if(pciTable[j].classCode == PCI_MASS_STORAGE_CTRL)
-    {
-      switch(pciTable[j].subclassCode)
-      {
-        case 0x6:
-          probeSATAPort((hbaMem *)(pciTable[j].baseAddrReg[5]));
-          break;
-        default:
-          kprintf("Unsupported storage controller: 0x%x", pciTable[j].subclassCode);
-      }
-    }
-  }
+  ctrlPCI.startDevices();
 
   kprint("\nStarting shell\n");
   shellStart();

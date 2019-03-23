@@ -133,11 +133,13 @@ void PhysicalMemoryManager::printStats()
 {
   kprintf("PMM: %d blocks. Used/reserved: %d blocks. Free: %d blocks\n",
     physMaxBlocks, physUsedBlocks, physMaxBlocks - physUsedBlocks);
-  for(int i = 0; i < NR_POOLS; ++i)
-  {
-    kprintf("Pool %d: chunk size %d bytes, %d chunks free\n", i, 
-      pools[i].size, pools[i].nrFreeChunks);
-  }
+
+  if(verbose)
+    for(int i = 0; i < NR_POOLS; ++i)
+    {
+      kprintf("Pool %d: chunk size %d bytes, %d chunks free\n", i, 
+        pools[i].size, pools[i].nrFreeChunks);
+    }
 }
 
 inline void PhysicalMemoryManager::pmmBitmapSet(int bit)
@@ -325,9 +327,14 @@ void PhysicalMemoryManager::freeBlock(void* p, UInt32 size)
 	physUsedBlocks -= size;
 }
 
+void *operator new(unsigned long size)
+{
+  return pmm->malloc(size);
+}
+
 void operator delete(void *p, unsigned long size)
 {
-  kprintf("FIXME! delete(0x%x, 0x%x)\n",(UInt32)p,size);
+  pmm->free(p);
 }
 
 void *PhysicalMemoryManager::malloc(const unsigned int size)

@@ -35,6 +35,28 @@ int strcmp(char *a, char *b)
   return 0;
 }
 
+int strncmp(char *a, char *b, int len)
+{
+  int pos = 0;
+  char *p = a;
+  char *q = b;
+  while(*p && *q && pos < len)
+  {
+    if(*p < *q)
+    {
+      return -1;
+    }
+    else if(*p > *q)
+    {
+      return 1;
+    }
+    ++p;
+    ++q;
+    ++pos;
+  }
+  return 0;
+}
+
 int strcpy(char *dst, char *src)
 {
   char *p=src;
@@ -122,30 +144,33 @@ char *strcat(char *dest, const char *src)
   return dest;
 }
 
-// FIXME: this doesn't really work like strtok... only returns the first token over and over.
-char *strtok(char *src, char *del)
+/* Thread safe version - pass in a pointer to index var, which must hold 0
+ * Destroys the original string in 'src' so make a copy if you need it!
+ */
+char *strtok(char *src, char *del, int *index)
 {
-  static int index = 0;
-  if(!src || !del || src[index] == '\0') return 0;
-  char *W = (char *)malloc(100);
-  memset(W, 0, sizeof(W));
-  int i = index, k = 0, j = 0;
+  if(!src || !del || src[*index] == '\0') return 0;
+
+  // find first delimiter in src after index
+  int i = *index, j;
+  char *tok = &src[*index];
+
   while(src[i] != '\0')
   {
     j = 0;
     while(del[j] != '\0')
     {
-      if(src[i] != del[j])
-      {  
-        W[k] = (char)src[i];
-      } else {
-        index = i+1;
-        return W;
+      if(src[i] == del[j])
+      {
+        src[i] = 0; // terminate string here
+        *index = i + 1; // save next start position
+        return tok;
       }
-      j++;
+      ++j;
     }
-    i++;
-    k++;
+    ++i;
   }
-  return W;
+
+  *index = i;
+  return tok;
 }

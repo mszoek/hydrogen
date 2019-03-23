@@ -3,31 +3,34 @@
  * Copyright (C) 2017-2019 Zoe Knox. All rights reserved.
  */
 
+#include <kernel.h>
 #include <hw/types.h>
 #include <hw/port_io.h>
 #include <hw/pci.h>
+#include <hw/ata.h>
 #include <kmem.h>
 #include <kstdio.h>
 
-extern bool verbose;
-
-char *pciClassCodes[] =
+PCIController::PCIController()
 {
-    "Unclassified", "Mass Storage Controller", "Network Controller", "Display Controller", "Multimedia Controller",
-    "Memory Controller", "Bridge", "Simple Comm Controller", "Base System Peripheral", "Input Device Controller", "Docking Station",
-    "Processor", "Serial Bus Controller", "Wireless Controller", "Intelligent Controller", "Satellite Comm Controller",
-    "Encryption Controller", "Signal Processing Controller", "Processing Accelerator", "Non-essential Instrumentation"
-};
+    if(verbose)
+        kprintf("hw/PCIController: 0x%x\n", this);
+    g_controllers[CTRL_PCI] = (UInt32)this;
+    pciTableIndex = 0;
+    memset((char *)pciTable, 0, sizeof(pciTable));
+}
 
-struct pciDeviceEntry pciTable[64]; // FIXME: should not use a fixed size structure
-int pciTableIndex = 0;
+PCIController::~PCIController()
+{
+    g_controllers[CTRL_PCI] = 0;
+}
 
-UInt16 pciReadCfgWord(UInt32 bus, UInt32 slot, UInt32 func, UInt32 offset)
+UInt16 PCIController::pciReadCfgWord(UInt32 bus, UInt32 slot, UInt32 func, UInt32 offset)
 {
     return (UInt16)(pciReadCfgDWord(bus, slot, func, offset) >> ((offset & 2) * 8) & 0xffff);
 }
 
-UInt32 pciReadCfgDWord(UInt32 bus, UInt32 slot, UInt32 func, UInt32 offset)
+UInt32 PCIController::pciReadCfgDWord(UInt32 bus, UInt32 slot, UInt32 func, UInt32 offset)
 {
     UInt32 address;
 
@@ -41,7 +44,7 @@ UInt32 pciReadCfgDWord(UInt32 bus, UInt32 slot, UInt32 func, UInt32 offset)
     return portDWordIn(PCI_CFG_DATA);
 }
 
-void pciCheckDevice(UInt32 bus, UInt32 slot)
+void PCIController::pciCheckDevice(UInt32 bus, UInt32 slot)
 {
     UInt32 function;
     UInt16 vendor, device, classcode, headertype;
@@ -93,18 +96,51 @@ void pciCheckDevice(UInt32 bus, UInt32 slot)
     }
  }
  
-void pciEnumBuses(void)
+void PCIController::pciEnumBuses(void)
 {
     UInt32 bus, slot;
 
     memset((char *)pciTable, 0xff, sizeof(pciTable));
 
-    kprint("Enumerating PCI buses\n");
+    if(verbose)
+        kprintf("PCI: Enumerating buses\n");
+
     for(bus = 0; bus < 256; bus++)
     {
         for(slot = 0; slot < 32; slot++)
         {
             pciCheckDevice(bus, slot);
+        }
+    }
+}
+
+void PCIController::startDevices(void)
+{
+    /* Call this only with interrupts enabled! The timer is required
+    to create delays after I/O during ATA init. */
+
+    for(int j = 0; j < 64; j++)
+    {
+        if(pciTable[j].bus == 0xFFFFFFFF)
+            break;
+
+        switch(pciTable[j].classCode)
+        {
+            case PCI_MASS_STORAGE_CTRL:
+            {
+                switch(pciTable[j].subclassCode)
+                {
+                    case 0x6:
+                        ::probeSATAPort((hbaMem *)(pciTable[j].baseAddrReg[5]));
+                        break;
+                }
+                break;
+            }
+
+            default:
+                if(verbose)
+                    kprintf("PCI: Unsupported device: Vendor 0x%x Device 0x%x Class 0x%x.%x\n",
+                        pciTable[j].vendorID, pciTable[j].deviceID, pciTable[j].classCode, pciTable[j].subclassCode);
         }
     }
 }

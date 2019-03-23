@@ -8,6 +8,7 @@
 
 int strlen(char *s);
 int strcmp(char *a, char *b);
+int strncmp(char *a, char *b, int len);
 int strcpy(char *dst, char *src);
 int atoi(char *str);
 void reverse(char str[]);
@@ -16,6 +17,6 @@ void backspace(char s[]);
 void itoa(unsigned n, unsigned base, char str[]);
 int atoi(char *str);
 char *strcat(char *dest, const char *src);
-char *strtok(char *src, char *del);
+char *strtok(char *src, char *del, int *index);
 
 #endif

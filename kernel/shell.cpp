@@ -95,9 +95,12 @@ void shellExecCommand()
 
   if(strcmp(shellBuffer, "lspci") == 0)
   {
+    PCIController *pci = (PCIController *)g_controllers[CTRL_PCI];
+    if(!pci) return;
+
     bool temp = verbose;
     verbose = true;
-    pciEnumBuses();
+    pci->pciEnumBuses();
     verbose = temp;
     return;
   }
@@ -108,7 +111,7 @@ void shellExecCommand()
     return;
   }
 
-  if(strcmp(shellBuffer, "meminfo"))
+  if(strcmp(shellBuffer, "meminfo") == 0)
   {
     pmm->printStats();
     return;

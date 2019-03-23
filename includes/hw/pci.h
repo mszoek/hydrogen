@@ -24,28 +24,48 @@
 #define PCI_SERIAL_BUS_CTRL 0x0C
 #define PCI_WIRELESS_CTRL 0x0D
 
-struct pciDeviceEntry
+class PCIController
 {
-    UInt32 bus;
-    UInt32 slot;
-    UInt32 function;
-    UInt16 deviceID;
-    UInt16 vendorID;
-    UInt8 classCode;
-    UInt8 subclassCode;
-    UInt8 progIF;
-    UInt8 revisionID;
-    UInt8 BIST;
-    UInt8 headerType;
-    UInt8 latencyTimer;
-    UInt8 cacheLineSize;
-    UInt32 baseAddrReg[6];
+public:
+    typedef struct
+    {
+        UInt32 bus;
+        UInt32 slot;
+        UInt32 function;
+        UInt16 deviceID;
+        UInt16 vendorID;
+        UInt8 classCode;
+        UInt8 subclassCode;
+        UInt8 progIF;
+        UInt8 revisionID;
+        UInt8 BIST;
+        UInt8 headerType;
+        UInt8 latencyTimer;
+        UInt8 cacheLineSize;
+        UInt32 baseAddrReg[6];
+    } pciDeviceEntry;
+
+    PCIController();
+    virtual ~PCIController();
+
+    void pciEnumBuses(void);
+    void startDevices(void);
+
+private:
+    pciDeviceEntry pciTable[64];
+    int pciTableIndex;
+
+    char *pciClassCodes[20] =
+    {
+        "Unclassified", "Mass Storage Controller", "Network Controller", "Display Controller", "Multimedia Controller",
+        "Memory Controller", "Bridge", "Simple Comm Controller", "Base System Peripheral", "Input Device Controller", "Docking Station",
+        "Processor", "Serial Bus Controller", "Wireless Controller", "Intelligent Controller", "Satellite Comm Controller",
+        "Encryption Controller", "Signal Processing Controller", "Processing Accelerator", "Non-essential Instrumentation"
+    };
+
+    UInt16 pciReadCfgWord(UInt32 bus, UInt32 slot, UInt32 func, UInt32 offset);
+    UInt32 pciReadCfgDWord(UInt32 bus, UInt32 slot, UInt32 func, UInt32 offset);
+    void PCIController::pciCheckDevice(UInt32 bus, UInt32 slot);
 };
-extern struct pciDeviceEntry pciTable[64];
-
-UInt16 pciReadCfgWord(UInt32 bus, UInt32 slot, UInt32 func, UInt32 offset);
-UInt32 pciReadCfgDWord(UInt32 bus, UInt32 slot, UInt32 func, UInt32 offset);
-void pciEnumBuses(void);
-
 
 #endif // HW_PCI_H
