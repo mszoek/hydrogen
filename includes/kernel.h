@@ -26,4 +26,6 @@ void displayStatusLine();
 void displayStartupMsg(unsigned int size);
 extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size);
 
+void panic();
+
 #endif

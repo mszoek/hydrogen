@@ -22,7 +22,7 @@
 PhysicalMemoryManager *pmm = 0;
 UInt32 g_controllers[CONTROLLER_MAX];
 
-bool runMemTest = false;
+bool runMemTest = true;
 bool verbose = false;
 
 // Prototypes
@@ -34,7 +34,6 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 {
   UInt32 mem = 0;
   UInt32 mmap = 0, mmapLen = 0;
-  UInt32 pages[16];
   int i = 0;
   char cmdline[256];
   
@@ -102,35 +101,47 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   shellStart();
   displayStatusLine();
 
-  kprintf("token %s\n", strtok(cmdline," "));
+  UInt32 blocks;
+  UInt32 nrAllocs = 256;
+  UInt32 pages[nrAllocs];
+  int loops = nrAllocs;
 
-  memset((char*)pages, 0, sizeof(pages));
   while(1)
   {
-      static int size = 8;
-
-      if(runMemTest && ctrlTimer.getTicks() % 500 == 0)
+      if(runMemTest && ctrlTimer.getTicks() % 1 == 0)
       {
-        if(pages[i] != 0)
+        static int size = 8;
+        if(loops == nrAllocs)
         {
-            pmm->free((void*)pages[i]);
+          i = 0;
+          memset((char*)pages, 0, sizeof(pages));
+          blocks = pmm->memFreeBlocks();
+          kprintf("Starting memory test. %d allocs. Free Blocks = %d\n", nrAllocs, blocks);
         }
         void *p = pmm->malloc(size);
         if(p != 0)
         {
-          memset((char *)p, i < 10 ? i+'0' : i-10+'A', size);
+          memset((char *)p, 0xC9, size);
           pages[i++] = (UInt32)p;
-          if(i > 15)
-          {
-              i = 0;
-              pmm->printStats();
-          }
-          size *= 2;
-          if(size > 8192) size = 8;
         } else {
           kprintf("malloc(%d) failed\n", size);
         }
-        *((char *)p+size-1) = 0;
+        size *= 2;
+        if(size > 3000) size = 8;
+        if(size == 2048) size = 2032;
+        --loops;
+        if(loops == 0)
+        {
+          runMemTest = false;
+          for(i = 0; i < nrAllocs; ++i)
+            if(pages[i] != 0)
+            {
+              pmm->free((void*)pages[i]);
+              pages[i] = 0;
+            }
+          kprintf("Finished memory test. Free blocks = %d, orig = %d\n", pmm->memFreeBlocks(), blocks);
+          loops = nrAllocs;
+        }
       }
 
       if(ctrlTimer.getTicks() % 500 == 0)
@@ -210,4 +221,11 @@ void printdata(UInt8* nodedata, int len)
         j=0;
       }
   }
+}
+
+
+void panic()
+{
+  kprintf("!PANIC! System halted.\n");
+  asm("cli; hlt;");
 }

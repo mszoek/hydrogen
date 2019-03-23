@@ -71,14 +71,14 @@ void shellExecCommand()
   if(strcmp(shellBuffer, "memtest") == 0)
   {
     runMemTest = !runMemTest;
-    if(screen)
-    {
-      screen->clearScreen(DEFAULT_TEXT_ATTR);
-      screen->setCursorOffset(ScreenController::getOffset(0, 1));
-    }
-    if(runMemTest) kprintf("Running memory test\n");
-    if(screen)
-      screen->setCursorOffset(ScreenController::getOffset(0, 20));
+    // if(screen)
+    // {
+    //   screen->clearScreen(DEFAULT_TEXT_ATTR);
+    //   screen->setCursorOffset(ScreenController::getOffset(0, 1));
+    // }
+    // if(runMemTest) kprintf("Running memory test\n");
+    // if(screen)
+    //   screen->setCursorOffset(ScreenController::getOffset(0, 20));
     return;
   }
   if(strcmp(shellBuffer, "clear") == 0)
@@ -105,15 +105,6 @@ void shellExecCommand()
   if(strcmp(shellBuffer, "printdata") == 0)
   {
     printdata((UInt8 *)0x100000, 1024);
-    return;
-  }
-
-  if(!strcmp(shellBuffer, "alloc"))
-  {
-    void *p = pmm->malloc(16);
-    pmm->free(p);
-    p = pmm->malloc(3000);
-    pmm->free(p);
     return;
   }
 

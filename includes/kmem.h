@@ -66,7 +66,7 @@ private:
     } poolHeader;
 
     // pools are held in a static list by size. grows horizontally.
-#define NR_POOLS 8
+#define NR_POOLS 9
     poolHeader pools[NR_POOLS];
 
     inline void pmmBitmapSet(int bit);

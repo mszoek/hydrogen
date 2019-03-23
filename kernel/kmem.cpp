@@ -98,14 +98,14 @@ PhysicalMemoryManager::PhysicalMemoryManager(UInt32 memSize, UInt32 kernAddr,
     pools[i].free->next = 0;
 
     // carve the block into 'size' chunks on the free list
-    int count = PMM_BLOCK_SIZE / (size + sizeof(mallocHeader));
+    int count = PMM_BLOCK_SIZE / (size + sizeof(mallocHeader)) - 1;
 
     pools[i].free->chunk = (UInt8 *)block + (count * (size + sizeof(mallocHeader)));
     pools[i].nrFreeChunks++;
     count--;
     initptr += sizeof(poolNode);
 
-    while(count > 0)
+    while(count >= 0)
     {
       poolNode *tmp = (poolNode *)initptr;
       tmp->chunk = (UInt8 *)block + (count * (size + sizeof(mallocHeader)));
@@ -349,8 +349,8 @@ void *PhysicalMemoryManager::malloc(const unsigned int size)
         memset((char *)block, 0, PMM_BLOCK_SIZE);
 
         // carve the block into 'size' chunks on the free list
-        int count = PMM_BLOCK_SIZE / (pools[i].size + sizeof(mallocHeader));
-        while(count > 0)
+        int count = PMM_BLOCK_SIZE / (pools[i].size + sizeof(mallocHeader)) - 1;
+        while(count >= 0)
         {
           poolNode *tmp = (poolNode *)initptr;
           tmp->chunk = (UInt8 *)block + (count * (pools[i].size + sizeof(mallocHeader)));
@@ -388,22 +388,24 @@ void *PhysicalMemoryManager::malloc(const unsigned int size)
         tmp->magic = ((i & 0xFF) << 24) | (MALLOC_MAGIC & 0xFFFFFF);
         tmp->node = pools[i].used;
 
-        kprintf("malloc(%d) = %x header(%x) %x\n",size,tmp,sizeof(mallocHeader),(UInt32)tmp+sizeof(mallocHeader));
         tmp = (mallocHeader *)((UInt32)tmp + sizeof(mallocHeader));
-        kprintf("return %x\n",tmp);
+        // kprintf("malloc(%d)=%x p=%x POOL %d\n",size,(UInt32)tmp-sizeof(mallocHeader),tmp,i);
         return (void *)tmp;
       }
     }
   } else {
     int newsize = size + sizeof(mallocHeader);
-    void *p = allocBlock(newsize / PMM_BLOCK_SIZE + (newsize % PMM_BLOCK_SIZE ? 1 : 0));
+    int blocks = newsize / PMM_BLOCK_SIZE + (newsize % PMM_BLOCK_SIZE ? 1 : 0);
+    void *p = allocBlock(blocks);
     ((mallocHeader *)p)->magic = 0xEE000000 | MALLOC_MAGIC;
-    ((mallocHeader *)p)->node = 0;
-    kprintf("malloc(%d) = %x header(%x) %x\n",size,p,sizeof(mallocHeader),(UInt32)p+sizeof(mallocHeader));
+    ((mallocHeader *)p)->node = (poolNode *)size; // we need this to free!
+    // kprintf("malloc(%d)=%x p=%x blocks=%d magic=%x\n",size,p,(UInt32)p+sizeof(mallocHeader),blocks,((mallocHeader *)p)->magic);
     p = (void *)((UInt32)p + sizeof(mallocHeader));
-    kprintf("return %x\n",p);
     return (void *)p;
   }
+
+  kprintf("malloc(): no pool for alloc of %d bytes\n",size);
+  return (void *)0;
 }
 
 void PhysicalMemoryManager::free(void *p)
@@ -411,7 +413,7 @@ void PhysicalMemoryManager::free(void *p)
   // first, is this a full block without header or a pool chunk?
   void *hdr = (char *)p - sizeof(mallocHeader);
   UInt32 magic = ((mallocHeader *)hdr)->magic;
-  kprintf("free() %x magic=%x\n", p,magic);
+
   if((magic & 0xFFFFFF) == (MALLOC_MAGIC & 0xFFFFFF))
   {
     int poolID = (magic & 0xFF000000) >> 24;
@@ -420,22 +422,26 @@ void PhysicalMemoryManager::free(void *p)
     {
       // this is a full block header
       ((mallocHeader *)hdr)->magic = 0;
+      void *q = p;
       p = (void *)((UInt32)p - sizeof(mallocHeader));
+      int len = (UInt32)((mallocHeader *)hdr)->node + sizeof(mallocHeader);
+      int blocks = len / PMM_BLOCK_SIZE + (len % PMM_BLOCK_SIZE ? 1 : 0);
+      // kprintf("free(%d)=%x p=%x blocks %d magic=%x (now 0)\n", len - sizeof(mallocHeader), (UInt32)p, (UInt32)q, blocks, magic);
       if((UInt32)p % PMM_BLOCK_ALIGN)
       {
         // not block aligned? something's weird.
-        kprintf("free: freeing block %x which is not aligned\n", (UInt32)p);
+        kprintf("free: freeing %d blocks at %x which is not aligned\n", blocks, (UInt32)p);
       }
-      freeBlock(p);
+      freeBlock(p, blocks);
       return;
     }
 
+    // not a full block so this is a pool header
     if(poolID < 0 || poolID > NR_POOLS)
     {
       kprintf("free: %x has invalid pool ID %d - leaking memory!\n", p, poolID);
       return;
     }
-    // it's a pool header
     ((mallocHeader *)hdr)->magic = 0;
 
     // remove our chunk's node from the used list
@@ -456,7 +462,8 @@ void PhysicalMemoryManager::free(void *p)
 
     pools[poolID].nrFreeChunks++;
   } else {
-    kprintf("free: invalid malloc header! Memory corrupt?\n");
+    // kprintf("free() %x magic=%x INVALID\n", p, magic);
+    kprintf("free: %x invalid malloc header! Memory corrupt or double free?\n",p);
   }  
 }
 
