@@ -8,6 +8,59 @@
 
 #include <hw/types.h>
 
+#define SATA_SIG_ATA 0x00000101     // SATA drive
+#define SATA_SIG_ATAPI 0xEB140101   // SATAPI drive
+#define SATA_SIG_SEMB 0xC33C0101    // enclosure management bridge
+#define SATA_SIG_PM 0x96690101      // port multiplier
+
+#define AHCI_DEV_NULL   0
+#define AHCI_DEV_SATA   1
+#define AHCI_DEV_SEMB   2
+#define AHCI_DEV_PM     3
+#define AHCI_DEV_SATAPI 4
+
+#define HBA_PORT_IPM_ACTIVE 1
+#define HBA_PORT_DET_PRESENT 3
+
+// ATA status bits
+#define ATA_SR_BSY  0x80
+#define ATA_SR_DRDY 0x40
+#define ATA_SR_DF   0x20
+#define ATA_SR_DSC  0x10
+#define ATA_SR_DRQ  0x08
+#define ATA_SR_CORR 0x04
+#define ATA_SR_IDX  0x02
+#define ATA_SR_ERR  0x01
+
+// ATA error bits
+#define ATA_ERR_BBK   0x80
+#define ATA_ERR_UNC   0x40
+#define ATA_ERR_MC    0x20
+#define ATA_ERR_IDNF  0x10
+#define ATA_ERR_MCR   0x08
+#define ATA_ERR_ABRT  0x04
+#define ATA_ERR_TK0NF 0x02
+#define ATA_ERR_AMNF  0x01
+
+// ATA commands
+#define ATA_CMD_READ_PIO        0x20
+#define ATA_CMD_READ_PIO_EXT    0x24
+#define ATA_CMD_READ_DMA        0xC8
+#define ATA_CMD_READ_DMA_EXT    0x25
+#define ATA_CMD_WRITE_PIO       0x30
+#define ATA_CMD_WRITE_PIO_EXT   0x34
+#define ATA_CMD_WRITE_DMA       0xCA
+#define ATA_CMD_WRITE_DMA_EXT   0x35
+#define ATA_CMD_CACHE_FLUSH     0xE7
+#define ATA_CMD_CACHE_FLUSH_EXT 0xEA
+#define ATA_CMD_PACKET          0xA0
+#define ATA_CMD_IDENTIFY_PACKET 0xA1
+#define ATA_CMD_IDENTIFY        0xEC
+
+// ATAPI commands
+#define ATAPI_CMD_READ  0xA8
+#define ATAPI_CMD_EJECT 0x1B
+
 // SATA FIS types
 typedef enum
 {
@@ -284,7 +337,7 @@ typedef struct
     UInt32 dbc:22;      // byte count, 4M max
     UInt32 rsv1:9;      // reserved
     UInt32 i:1;         // interrupt when complete
-} hdaPRDTEntry;
+} hbaPRDTEntry;
 
 typedef struct
 {
@@ -298,63 +351,20 @@ typedef struct
     UInt8 rsv[48];      // reserved
 
     // 0x80
-    hdaPRDTEntry prdtEntry[1];  // PRDT entries 0-65535
-} hdaCmdTable;
+    hbaPRDTEntry prdtEntry[1];  // PRDT entries 0-65535
+} hbaCmdTable;
 
-#define SATA_SIG_ATA 0x00000101     // SATA drive
-#define SATA_SIG_ATAPI 0xEB140101   // SATAPI drive
-#define SATA_SIG_SEMB 0xC33C0101    // enclosure management bridge
-#define SATA_SIG_PM 0x96690101      // port multiplier
+class AHCIController
+{
+public:
+    AHCIController();
+    virtual ~AHCIController();
 
-#define AHCI_DEV_NULL   0
-#define AHCI_DEV_SATA   1
-#define AHCI_DEV_SEMB   2
-#define AHCI_DEV_PM     3
-#define AHCI_DEV_SATAPI 4
+    void probeSATAPort(hbaMem *abar);
 
-#define HBA_PORT_IPM_ACTIVE 1
-#define HBA_PORT_DET_PRESENT 3
-
-// ATA status bits
-#define ATA_SR_BSY  0x80
-#define ATA_SR_DRDY 0x40
-#define ATA_SR_DF   0x20
-#define ATA_SR_DSC  0x10
-#define ATA_SR_DRQ  0x08
-#define ATA_SR_CORR 0x04
-#define ATA_SR_IDX  0x02
-#define ATA_SR_ERR  0x01
-
-// ATA error bits
-#define ATA_ERR_BBK   0x80
-#define ATA_ERR_UNC   0x40
-#define ATA_ERR_MC    0x20
-#define ATA_ERR_IDNF  0x10
-#define ATA_ERR_MCR   0x08
-#define ATA_ERR_ABRT  0x04
-#define ATA_ERR_TK0NF 0x02
-#define ATA_ERR_AMNF  0x01
-
-// ATA commands
-#define ATA_CMD_READ_PIO        0x20
-#define ATA_CMD_READ_PIO_EXT    0x24
-#define ATA_CMD_READ_DMA        0xC8
-#define ATA_CMD_READ_DMA_EXT    0x25
-#define ATA_CMD_WRITE_PIO       0x30
-#define ATA_CMD_WRITE_PIO_EXT   0x34
-#define ATA_CMD_WRITE_DMA       0xCA
-#define ATA_CMD_WRITE_DMA_EXT   0x35
-#define ATA_CMD_CACHE_FLUSH     0xE7
-#define ATA_CMD_CACHE_FLUSH_EXT 0xEA
-#define ATA_CMD_PACKET          0xA0
-#define ATA_CMD_IDENTIFY_PACKET 0xA1
-#define ATA_CMD_IDENTIFY        0xEC
-
-// ATAPI commands
-#define ATAPI_CMD_READ  0xA8
-#define ATAPI_CMD_EJECT 0x1B
-
-void probeSATAPort(hbaMem *abar);
-
+private:
+    int checkDriveType(hbaPort *port);
+    void rebasePort(hbaPort *port, int portNumber);
+};
 
 #endif // ATA_H

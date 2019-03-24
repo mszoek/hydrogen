@@ -131,7 +131,9 @@ void PCIController::startDevices(void)
                 switch(pciTable[j].subclassCode)
                 {
                     case 0x6:
-                        ::probeSATAPort((hbaMem *)(pciTable[j].baseAddrReg[5]));
+                        if(g_controllers[CTRL_AHCI] == 0)
+                            new AHCIController();
+                        ((AHCIController *)g_controllers[CTRL_AHCI])->probeSATAPort((hbaMem *)(pciTable[j].baseAddrReg[5]));
                         break;
                 }
                 break;

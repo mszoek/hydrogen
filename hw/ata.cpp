@@ -8,12 +8,25 @@
 #include <hw/screen.h>
 #include <kstring.h>
 #include <kstdio.h>
+#include <kernel.h>
 
 extern UInt32 tickCounter;
 static UInt8 atapiPacket[12] = {0xA8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
+AHCIController::AHCIController()
+{
+    if(verbose)
+        kprintf("hw/AHCIController: 0x%x\n", this);
+    g_controllers[CTRL_AHCI] = (UInt32)this;
+}
 
-static int checkDriveType(hbaPort *port)
+AHCIController::~AHCIController()
+{
+    g_controllers[CTRL_AHCI] = 0;
+}
+
+
+int AHCIController::checkDriveType(hbaPort *port)
 {
     UInt32 tssts = port->ssts;
 
@@ -32,7 +45,7 @@ static int checkDriveType(hbaPort *port)
     }
 }
 
-void probeSATAPort(hbaMem *abar)
+void AHCIController::probeSATAPort(hbaMem *abar)
 {
     UInt32 pi = abar->pi;
     int i = 0;
@@ -53,7 +66,7 @@ void probeSATAPort(hbaMem *abar)
     }
 }
 
-void rebasePort(hbaPort *port, int portNumber)
+void AHCIController::rebasePort(hbaPort *port, int portNumber)
 {
         
 }

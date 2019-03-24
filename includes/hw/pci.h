@@ -65,7 +65,7 @@ private:
 
     UInt16 pciReadCfgWord(UInt32 bus, UInt32 slot, UInt32 func, UInt32 offset);
     UInt32 pciReadCfgDWord(UInt32 bus, UInt32 slot, UInt32 func, UInt32 offset);
-    void PCIController::pciCheckDevice(UInt32 bus, UInt32 slot);
+    void pciCheckDevice(UInt32 bus, UInt32 slot);
 };
 
 #endif // HW_PCI_H

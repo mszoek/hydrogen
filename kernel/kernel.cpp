@@ -104,14 +104,14 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   }
 
   isrInstall();
-  TimerController ctrlTimer;
-  KeyboardController ctrlKbd;
-  PCIController ctrlPCI;
+  TimerController *ctrlTimer = new TimerController();
+  new KeyboardController();
+  PCIController *ctrlPCI = new PCIController();
+  ctrlPCI->pciEnumBuses();
 
-  ctrlPCI.pciEnumBuses();
   asm volatile("sti"); // Start interrupts!
 
-  ctrlPCI.startDevices();
+  ctrlPCI->startDevices();
 
   kprint("\nStarting shell\n");
   shellStart();
@@ -124,7 +124,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 
   while(1)
   {
-      if(runMemTest && ctrlTimer.getTicks() % 1 == 0)
+      if(runMemTest && ctrlTimer->getTicks() % 1 == 0)
       {
         static int size = 8;
         if(loops == nrAllocs)
@@ -160,7 +160,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
         }
       }
 
-      if(ctrlTimer.getTicks() % 500 == 0)
+      if(ctrlTimer->getTicks() % 500 == 0)
       {
         displayStatusLine();
       }
