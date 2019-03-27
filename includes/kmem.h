@@ -37,6 +37,7 @@ public:
     UInt32 memFreeBlocks();
     void *malloc(unsigned int size);
     void free(void *p);
+    void dropRegion(UInt32 base, UInt32 size); // allow drivers to reserve memory areas
 
 private:
     UInt32 physMemorySize;
@@ -75,7 +76,6 @@ private:
     int findFirstFree();
     int findFirstFree(UInt32 size);
     void initRegion(UInt32 base, UInt32 size);
-    void dropRegion(UInt32 base, UInt32 size);
     void *allocBlock(); // alloc one block
     void *allocBlock(UInt32 size); // alloc size blocks
     void freeBlock(void *p); // free one block

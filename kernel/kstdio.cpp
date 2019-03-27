@@ -48,6 +48,7 @@ int kprintf(const char* str, ...)
 
     int i;
     char buf[16];
+	int width = 0;
 
     va_list	args;
     va_start(args, str);
@@ -57,6 +58,11 @@ int kprintf(const char* str, ...)
         switch(str[i])
         {
 			case '%':
+				if(str[i+1] >= '1' && str[i+1] <= '9')
+				{
+					width = str[i+1] - '0';
+					++i;
+				}
 				switch (str[i+1])
                 {
 					case 'c':
@@ -80,6 +86,9 @@ int kprintf(const char* str, ...)
                     {
 						int c = va_arg(args, int);
 						itoa(c, 10, buf);
+						int q = strlen(buf);
+						for(int c = 0; c < width-q; ++c)
+							screen->printChar('0', -1, -1, screen->getTextAttr());
 						kprint(buf);
 						i++;
 						break;
@@ -90,6 +99,9 @@ int kprintf(const char* str, ...)
                     {
 						int c = va_arg(args, int);
 						itoa(c, 16, buf);
+						int q = strlen(buf);
+						for(int c = 0; c < width-q; ++c)
+							screen->printChar('0', -1, -1, screen->getTextAttr());
                         kprint(buf);
 						i++;
 						break;

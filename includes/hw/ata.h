@@ -8,6 +8,8 @@
 
 #include <hw/types.h>
 
+#define AHCI_BASE 0x800000 // 8 MB
+
 #define SATA_SIG_ATA 0x00000101     // SATA drive
 #define SATA_SIG_ATAPI 0xEB140101   // SATAPI drive
 #define SATA_SIG_SEMB 0xC33C0101    // enclosure management bridge
@@ -60,6 +62,12 @@
 // ATAPI commands
 #define ATAPI_CMD_READ  0xA8
 #define ATAPI_CMD_EJECT 0x1B
+
+// HBA commands
+#define PORT_CMD_ST (1 << 0)
+#define PORT_CMD_FRE (1 << 4)
+#define PORT_CMD_FR (1 << 14)
+#define PORT_CMD_CR (1 << 15)
 
 // SATA FIS types
 typedef enum
@@ -228,7 +236,7 @@ typedef struct {
     UInt32 rsv3;        // reserved
 } SataFISDMASetup;
 
-typedef volatile struct
+typedef volatile struct hbaPort_tag
 {
     UInt32 clbLo;       // 0x00 command list base addr (1K aligned) bits 31-0
     UInt32 clbHi;       // 0x04 command list base addr bits 63-32
@@ -274,7 +282,7 @@ typedef struct
     UInt8 vendor[0x100 - 0xA0];
 
     // 0x100 - 0x10FF, Port control registers
-    hbaPort ports[1];   // 1 - 32
+    hbaPort ports[32];   // 1 - 32
 } hbaMem;
 
 typedef struct
@@ -351,20 +359,403 @@ typedef struct
     UInt8 rsv[48];      // reserved
 
     // 0x80
-    hbaPRDTEntry prdtEntry[1];  // PRDT entries 0-65535
+    hbaPRDTEntry prdtEntry[8];  // PRDT entries 0-65535
 } hbaCmdTable;
+
+typedef struct {
+  struct {
+    UInt16 Reserved1 : 1;
+    UInt16 Retired3 : 1;
+    UInt16 ResponseIncomplete : 1;
+    UInt16 Retired2 : 3;
+    UInt16 FixedDevice : 1;
+    UInt16 RemovableMedia : 1;
+    UInt16 Retired1 : 7;
+    UInt16 DeviceType : 1;
+  } GeneralConfiguration;
+  UInt16 NumCylinders;
+  UInt16 SpecificConfiguration;
+  UInt16 NumHeads;
+  UInt16 Retired1[2];
+  UInt16 NumSectorsPerTrack;
+  UInt16 VendorUnique1[3];
+  UInt8  SerialNumber[20];
+  UInt16 Retired2[2];
+  UInt16 Obsolete1;
+  UInt8  FirmwareRevision[8];
+  UInt8  ModelNumber[40];
+  UInt8  MaximumBlockTransfer;
+  UInt8  VendorUnique2;
+  struct {
+    UInt16 FeatureSupported : 1;
+    UInt16 Reserved : 15;
+  } TrustedComputing;
+  struct {
+    UInt8  CurrentLongPhysicalSectorAlignment : 2;
+    UInt8  ReservedByte49 : 6;
+    UInt8  DmaSupported : 1;
+    UInt8  LbaSupported : 1;
+    UInt8  IordyDisable : 1;
+    UInt8  IordySupported : 1;
+    UInt8  Reserved1 : 1;
+    UInt8  StandybyTimerSupport : 1;
+    UInt8  Reserved2 : 2;
+    UInt16 ReservedWord50;
+  } Capabilities;
+  UInt16 ObsoleteWords51[2];
+  UInt16 TranslationFieldsValid : 3;
+  UInt16 Reserved3 : 5;
+  UInt16 FreeFallControlSensitivity : 8;
+  UInt16 NumberOfCurrentCylinders;
+  UInt16 NumberOfCurrentHeads;
+  UInt16 CurrentSectorsPerTrack;
+  UInt32  CurrentSectorCapacity;
+  UInt8  CurrentMultiSectorSetting;
+  UInt8  MultiSectorSettingValid : 1;
+  UInt8  ReservedByte59 : 3;
+  UInt8  SanitizeFeatureSupported : 1;
+  UInt8  CryptoScrambleExtCommandSupported : 1;
+  UInt8  OverwriteExtCommandSupported : 1;
+  UInt8  BlockEraseExtCommandSupported : 1;
+  UInt32  UserAddressableSectors;
+  UInt16 ObsoleteWord62;
+  UInt16 MultiWordDMASupport : 8;
+  UInt16 MultiWordDMAActive : 8;
+  UInt16 AdvancedPIOModes : 8;
+  UInt16 ReservedByte64 : 8;
+  UInt16 MinimumMWXferCycleTime;
+  UInt16 RecommendedMWXferCycleTime;
+  UInt16 MinimumPIOCycleTime;
+  UInt16 MinimumPIOCycleTimeIORDY;
+  struct {
+    UInt16 ZonedCapabilities : 2;
+    UInt16 NonVolatileWriteCache : 1;
+    UInt16 ExtendedUserAddressableSectorsSupported : 1;
+    UInt16 DeviceEncryptsAllUserData : 1;
+    UInt16 ReadZeroAfterTrimSupported : 1;
+    UInt16 Optional28BitCommandsSupported : 1;
+    UInt16 IEEE1667 : 1;
+    UInt16 DownloadMicrocodeDmaSupported : 1;
+    UInt16 SetMaxSetPasswordUnlockDmaSupported : 1;
+    UInt16 WriteBufferDmaSupported : 1;
+    UInt16 ReadBufferDmaSupported : 1;
+    UInt16 DeviceConfigIdentifySetDmaSupported : 1;
+    UInt16 LPSAERCSupported : 1;
+    UInt16 DeterministicReadAfterTrimSupported : 1;
+    UInt16 CFastSpecSupported : 1;
+  } AdditionalSupported;
+  UInt16 ReservedWords70[5];
+  UInt16 QueueDepth : 5;
+  UInt16 ReservedWord75 : 11;
+  struct {
+    UInt16 Reserved0 : 1;
+    UInt16 SataGen1 : 1;
+    UInt16 SataGen2 : 1;
+    UInt16 SataGen3 : 1;
+    UInt16 Reserved1 : 4;
+    UInt16 NCQ : 1;
+    UInt16 HIPM : 1;
+    UInt16 PhyEvents : 1;
+    UInt16 NcqUnload : 1;
+    UInt16 NcqPriority : 1;
+    UInt16 HostAutoPS : 1;
+    UInt16 DeviceAutoPS : 1;
+    UInt16 ReadLogDMA : 1;
+    UInt16 Reserved2 : 1;
+    UInt16 CurrentSpeed : 3;
+    UInt16 NcqStreaming : 1;
+    UInt16 NcqQueueMgmt : 1;
+    UInt16 NcqReceiveSend : 1;
+    UInt16 DEVSLPtoReducedPwrState : 1;
+    UInt16 Reserved3 : 8;
+  } SerialAtaCapabilities;
+  struct {
+    UInt16 Reserved0 : 1;
+    UInt16 NonZeroOffsets : 1;
+    UInt16 DmaSetupAutoActivate : 1;
+    UInt16 DIPM : 1;
+    UInt16 InOrderData : 1;
+    UInt16 HardwareFeatureControl : 1;
+    UInt16 SoftwareSettingsPreservation : 1;
+    UInt16 NCQAutosense : 1;
+    UInt16 DEVSLP : 1;
+    UInt16 HybridInformation : 1;
+    UInt16 Reserved1 : 6;
+  } SerialAtaFeaturesSupported;
+  struct {
+    UInt16 Reserved0 : 1;
+    UInt16 NonZeroOffsets : 1;
+    UInt16 DmaSetupAutoActivate : 1;
+    UInt16 DIPM : 1;
+    UInt16 InOrderData : 1;
+    UInt16 HardwareFeatureControl : 1;
+    UInt16 SoftwareSettingsPreservation : 1;
+    UInt16 DeviceAutoPS : 1;
+    UInt16 DEVSLP : 1;
+    UInt16 HybridInformation : 1;
+    UInt16 Reserved1 : 6;
+  } SerialAtaFeaturesEnabled;
+  UInt16 MajorRevision;
+  UInt16 MinorRevision;
+  struct {
+    UInt16 SmartCommands : 1;
+    UInt16 SecurityMode : 1;
+    UInt16 RemovableMediaFeature : 1;
+    UInt16 PowerManagement : 1;
+    UInt16 Reserved1 : 1;
+    UInt16 WriteCache : 1;
+    UInt16 LookAhead : 1;
+    UInt16 ReleaseInterrupt : 1;
+    UInt16 ServiceInterrupt : 1;
+    UInt16 DeviceReset : 1;
+    UInt16 HostProtectedArea : 1;
+    UInt16 Obsolete1 : 1;
+    UInt16 WriteBuffer : 1;
+    UInt16 ReadBuffer : 1;
+    UInt16 Nop : 1;
+    UInt16 Obsolete2 : 1;
+    UInt16 DownloadMicrocode : 1;
+    UInt16 DmaQueued : 1;
+    UInt16 Cfa : 1;
+    UInt16 AdvancedPm : 1;
+    UInt16 Msn : 1;
+    UInt16 PowerUpInStandby : 1;
+    UInt16 ManualPowerUp : 1;
+    UInt16 Reserved2 : 1;
+    UInt16 SetMax : 1;
+    UInt16 Acoustics : 1;
+    UInt16 BigLba : 1;
+    UInt16 DeviceConfigOverlay : 1;
+    UInt16 FlushCache : 1;
+    UInt16 FlushCacheExt : 1;
+    UInt16 WordValid83 : 2;
+    UInt16 SmartErrorLog : 1;
+    UInt16 SmartSelfTest : 1;
+    UInt16 MediaSerialNumber : 1;
+    UInt16 MediaCardPassThrough : 1;
+    UInt16 StreamingFeature : 1;
+    UInt16 GpLogging : 1;
+    UInt16 WriteFua : 1;
+    UInt16 WriteQueuedFua : 1;
+    UInt16 WWN64Bit : 1;
+    UInt16 URGReadStream : 1;
+    UInt16 URGWriteStream : 1;
+    UInt16 ReservedForTechReport : 2;
+    UInt16 IdleWithUnloadFeature : 1;
+    UInt16 WordValid : 2;
+  } CommandSetSupport;
+  struct {
+    UInt16 SmartCommands : 1;
+    UInt16 SecurityMode : 1;
+    UInt16 RemovableMediaFeature : 1;
+    UInt16 PowerManagement : 1;
+    UInt16 Reserved1 : 1;
+    UInt16 WriteCache : 1;
+    UInt16 LookAhead : 1;
+    UInt16 ReleaseInterrupt : 1;
+    UInt16 ServiceInterrupt : 1;
+    UInt16 DeviceReset : 1;
+    UInt16 HostProtectedArea : 1;
+    UInt16 Obsolete1 : 1;
+    UInt16 WriteBuffer : 1;
+    UInt16 ReadBuffer : 1;
+    UInt16 Nop : 1;
+    UInt16 Obsolete2 : 1;
+    UInt16 DownloadMicrocode : 1;
+    UInt16 DmaQueued : 1;
+    UInt16 Cfa : 1;
+    UInt16 AdvancedPm : 1;
+    UInt16 Msn : 1;
+    UInt16 PowerUpInStandby : 1;
+    UInt16 ManualPowerUp : 1;
+    UInt16 Reserved2 : 1;
+    UInt16 SetMax : 1;
+    UInt16 Acoustics : 1;
+    UInt16 BigLba : 1;
+    UInt16 DeviceConfigOverlay : 1;
+    UInt16 FlushCache : 1;
+    UInt16 FlushCacheExt : 1;
+    UInt16 Resrved3 : 1;
+    UInt16 Words119_120Valid : 1;
+    UInt16 SmartErrorLog : 1;
+    UInt16 SmartSelfTest : 1;
+    UInt16 MediaSerialNumber : 1;
+    UInt16 MediaCardPassThrough : 1;
+    UInt16 StreamingFeature : 1;
+    UInt16 GpLogging : 1;
+    UInt16 WriteFua : 1;
+    UInt16 WriteQueuedFua : 1;
+    UInt16 WWN64Bit : 1;
+    UInt16 URGReadStream : 1;
+    UInt16 URGWriteStream : 1;
+    UInt16 ReservedForTechReport : 2;
+    UInt16 IdleWithUnloadFeature : 1;
+    UInt16 Reserved4 : 2;
+  } CommandSetActive;
+  UInt16 UltraDMASupport : 8;
+  UInt16 UltraDMAActive : 8;
+  struct {
+    UInt16 TimeRequired : 15;
+    UInt16 ExtendedTimeReported : 1;
+  } NormalSecurityEraseUnit;
+  struct {
+    UInt16 TimeRequired : 15;
+    UInt16 ExtendedTimeReported : 1;
+  } EnhancedSecurityEraseUnit;
+  UInt16 CurrentAPMLevel : 8;
+  UInt16 ReservedWord91 : 8;
+  UInt16 MasterPasswordID;
+  UInt16 HardwareResetResult;
+  UInt16 CurrentAcousticValue : 8;
+  UInt16 RecommendedAcousticValue : 8;
+  UInt16 StreamMinRequestSize;
+  UInt16 StreamingTransferTimeDMA;
+  UInt16 StreamingAccessLatencyDMAPIO;
+  UInt32  StreamingPerfGranularity;
+  UInt32  Max48BitLBA[2];
+  UInt16 StreamingTransferTime;
+  UInt16 DsmCap;
+  struct {
+    UInt16 LogicalSectorsPerPhysicalSector : 4;
+    UInt16 Reserved0 : 8;
+    UInt16 LogicalSectorLongerThan256Words : 1;
+    UInt16 MultipleLogicalSectorsPerPhysicalSector : 1;
+    UInt16 Reserved1 : 2;
+  } PhysicalLogicalSectorSize;
+  UInt16 InterSeekDelay;
+  UInt16 WorldWideName[4];
+  UInt16 ReservedForWorldWideName128[4];
+  UInt16 ReservedForTlcTechnicalReport;
+  UInt16 WordsPerLogicalSector[2];
+  struct {
+    UInt16 ReservedForDrqTechnicalReport : 1;
+    UInt16 WriteReadVerify : 1;
+    UInt16 WriteUncorrectableExt : 1;
+    UInt16 ReadWriteLogDmaExt : 1;
+    UInt16 DownloadMicrocodeMode3 : 1;
+    UInt16 FreefallControl : 1;
+    UInt16 SenseDataReporting : 1;
+    UInt16 ExtendedPowerConditions : 1;
+    UInt16 Reserved0 : 6;
+    UInt16 WordValid : 2;
+  } CommandSetSupportExt;
+  struct {
+    UInt16 ReservedForDrqTechnicalReport : 1;
+    UInt16 WriteReadVerify : 1;
+    UInt16 WriteUncorrectableExt : 1;
+    UInt16 ReadWriteLogDmaExt : 1;
+    UInt16 DownloadMicrocodeMode3 : 1;
+    UInt16 FreefallControl : 1;
+    UInt16 SenseDataReporting : 1;
+    UInt16 ExtendedPowerConditions : 1;
+    UInt16 Reserved0 : 6;
+    UInt16 Reserved1 : 2;
+  } CommandSetActiveExt;
+  UInt16 ReservedForExpandedSupportandActive[6];
+  UInt16 MsnSupport : 2;
+  UInt16 ReservedWord127 : 14;
+  struct {
+    UInt16 SecuritySupported : 1;
+    UInt16 SecurityEnabled : 1;
+    UInt16 SecurityLocked : 1;
+    UInt16 SecurityFrozen : 1;
+    UInt16 SecurityCountExpired : 1;
+    UInt16 EnhancedSecurityEraseSupported : 1;
+    UInt16 Reserved0 : 2;
+    UInt16 SecurityLevel : 1;
+    UInt16 Reserved1 : 7;
+  } SecurityStatus;
+  UInt16 ReservedWord129[31];
+  struct {
+    UInt16 MaximumCurrentInMA : 12;
+    UInt16 CfaPowerMode1Disabled : 1;
+    UInt16 CfaPowerMode1Required : 1;
+    UInt16 Reserved0 : 1;
+    UInt16 Word160Supported : 1;
+  } CfaPowerMode1;
+  UInt16 ReservedForCfaWord161[7];
+  UInt16 NominalFormFactor : 4;
+  UInt16 ReservedWord168 : 12;
+  struct {
+    UInt16 SupportsTrim : 1;
+    UInt16 Reserved0 : 15;
+  } DataSetManagementFeature;
+  UInt16 AdditionalProductID[4];
+  UInt16 ReservedForCfaWord174[2];
+  UInt16 CurrentMediaSerialNumber[30];
+  struct {
+    UInt16 Supported : 1;
+    UInt16 Reserved0 : 1;
+    UInt16 WriteSameSuported : 1;
+    UInt16 ErrorRecoveryControlSupported : 1;
+    UInt16 FeatureControlSuported : 1;
+    UInt16 DataTablesSuported : 1;
+    UInt16 Reserved1 : 6;
+    UInt16 VendorSpecific : 4;
+  } SCTCommandTransport;
+  UInt16 ReservedWord207[2];
+  struct {
+    UInt16 AlignmentOfLogicalWithinPhysical : 14;
+    UInt16 Word209Supported : 1;
+    UInt16 Reserved0 : 1;
+  } BlockAlignment;
+  UInt16 WriteReadVerifySectorCountMode3Only[2];
+  UInt16 WriteReadVerifySectorCountMode2Only[2];
+  struct {
+    UInt16 NVCachePowerModeEnabled : 1;
+    UInt16 Reserved0 : 3;
+    UInt16 NVCacheFeatureSetEnabled : 1;
+    UInt16 Reserved1 : 3;
+    UInt16 NVCachePowerModeVersion : 4;
+    UInt16 NVCacheFeatureSetVersion : 4;
+  } NVCacheCapabilities;
+  UInt16 NVCacheSizeLSW;
+  UInt16 NVCacheSizeMSW;
+  UInt16 NominalMediaRotationRate;
+  UInt16 ReservedWord218;
+  struct {
+    UInt8 NVCacheEstimatedTimeToSpinUpInSeconds;
+    UInt8 Reserved;
+  } NVCacheOptions;
+  UInt16 WriteReadVerifySectorCountMode : 8;
+  UInt16 ReservedWord220 : 8;
+  UInt16 ReservedWord221;
+  struct {
+    UInt16 MajorVersion : 12;
+    UInt16 TransportType : 4;
+  } TransportMajorVersion;
+  UInt16 TransportMinorVersion;
+  UInt16 ReservedWord224[6];
+  UInt32  ExtendedNumberOfUserAddressableSectors[2];
+  UInt16 MinBlocksPerDownloadMicrocodeMode03;
+  UInt16 MaxBlocksPerDownloadMicrocodeMode03;
+  UInt16 ReservedWord236[19];
+  UInt16 Signature : 8;
+  UInt16 CheckSum : 8;
+} ATAIdentifyData;
 
 class AHCIController
 {
 public:
-    AHCIController();
+    AHCIController(hbaMem *p);
     virtual ~AHCIController();
 
-    void probeSATAPort(hbaMem *abar);
+    hbaPort *getPort(int i);
+    bool read(hbaPort *port, UInt16 *buf, UInt32 lba, UInt16 sectors);
 
 private:
+    void probeSATAPorts();
     int checkDriveType(hbaPort *port);
     void rebasePort(hbaPort *port, int portNumber);
+    void stopCommand(hbaPort *port);
+    void startCommand(hbaPort *port);
+    int findCmdSlot(hbaPort *port);
+    void swapBytes(UInt8 *buf, UInt32 len);
+    void identifyPort(hbaPort *port);
+
+    hbaMem *abar; // AHCI Base Address Register = PCI BAR5
+    UInt8 nrPorts; // number of ports implemented on this controller
+    UInt8 nrCmdSlots; // number of command slots per port
 };
 
 #endif // ATA_H

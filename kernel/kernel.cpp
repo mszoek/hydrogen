@@ -122,6 +122,16 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   UInt32 pages[nrAllocs];
   int loops = nrAllocs;
 
+  UInt16 diskbuf[512*1024]; // 512KB
+  hbaPort *port = ((AHCIController *)g_controllers[CTRL_AHCI])->getPort(0);
+  if(((AHCIController *)g_controllers[CTRL_AHCI])->read(port, diskbuf, 0, 1024))
+  {
+    kprint("\n");
+    printdata((UInt8 *)diskbuf, 256);
+  } else {
+    kprint("Disk error\n");
+  }
+
   while(1)
   {
       if(runMemTest && ctrlTimer->getTicks() % 1 == 0)
@@ -228,8 +238,8 @@ void printdata(UInt8* nodedata, int len)
   for(i=0,j=0; i<len; ++i)
   {
       if(j==0)
-        kprintf("%x ",i);
-      kprintf("%x ", nodedata[i]);
+        kprintf("%8x ",i);
+      kprintf("%2x ", nodedata[i]);
       ascii[j++] = isprint(nodedata[i]) ? nodedata[i] : '.';
       if(j > 15)
       {
