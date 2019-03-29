@@ -501,3 +501,15 @@ void memset(char *dst, char val, int len)
     *tmp++ = val;
   }
 }
+
+int memcmp(char *a, char *b, int len)
+{
+  int i = 0;
+  while(i < len)
+  {
+    if(*(a+i) > *(b+i)) return -1;
+    if(*(a+i) < *(b+i)) return 1;
+    ++i;
+  }
+  return 0;
+}

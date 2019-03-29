@@ -18,6 +18,7 @@
 #include <kversion.h>
 #include <bootinfo.h>
 #include <shell.h>
+#include <fs/gpt.h>
 
 PhysicalMemoryManager *pmm = 0;
 UInt32 g_controllers[CONTROLLER_MAX];
@@ -113,27 +114,21 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 
   ctrlPCI->startDevices();
 
-  kprint("\nStarting shell\n");
-  shellStart();
-  displayStatusLine();
+  // kprint("\nStarting shell\n");
+  // shellStart();
+  // displayStatusLine();
+
+  if(g_controllers[CTRL_AHCI])
+    GUIDPartitionTable gpt((AHCIController *)g_controllers[CTRL_AHCI], 0);
 
   UInt32 blocks;
   UInt32 nrAllocs = 256;
   UInt32 pages[nrAllocs];
   int loops = nrAllocs;
 
-  UInt16 diskbuf[512*1024]; // 512KB
-  hbaPort *port = ((AHCIController *)g_controllers[CTRL_AHCI])->getPort(0);
-  if(((AHCIController *)g_controllers[CTRL_AHCI])->read(port, diskbuf, 0, 1024))
-  {
-    kprint("\n");
-    printdata((UInt8 *)diskbuf, 256);
-  } else {
-    kprint("Disk error\n");
-  }
-
   while(1)
   {
+
       if(runMemTest && ctrlTimer->getTicks() % 1 == 0)
       {
         static int size = 8;

@@ -57,6 +57,19 @@ int strncmp(char *a, char *b, int len)
   return 0;
 }
 
+/* Turn a byte into two hex ASCII digits */
+UInt16 hexdigit(UInt8 byte)
+{
+  UInt16 result = 0;
+
+  UInt8 nibble = byte & 0xF;
+  result = (nibble <= 9 ? nibble + '0' : nibble - 10 + 'A') << 8;
+  nibble = byte >> 4;
+  result |= (nibble <= 9 ? nibble + '0' : nibble - 10 + 'A');
+
+  return result;
+}
+
 int strcpy(char *dst, char *src)
 {
   char *p=src;

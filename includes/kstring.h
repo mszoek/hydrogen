@@ -6,6 +6,9 @@
 #ifndef _STRING_H
 #define _STRING_H
 
+#include <hw/types.h>
+
+UInt16 hexdigit(UInt8 byte);
 int strlen(char *s);
 int strcmp(char *a, char *b);
 int strncmp(char *a, char *b, int len);

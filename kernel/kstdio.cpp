@@ -55,6 +55,7 @@ int kprintf(const char* str, ...)
 
     for(i = 0; i < strlen((char *)str); i++)
     {
+		width = 0;
         switch(str[i])
         {
 			case '%':

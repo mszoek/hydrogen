@@ -91,5 +91,6 @@ void free(void *p);
 
 void memcpy(char *dst, char *src, unsigned int len);
 void memset(char *dst, char val, int len);
+int memcmp(char *a, char *b, int len);
 
 #endif
