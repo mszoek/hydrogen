@@ -7,6 +7,15 @@
 #include <kmem.h>
 #include <kstdio.h>
 
+
+int toupper(int c)
+{
+    if(c >= 'a' && c <= 'z')
+        return c - 'a' + 'A';
+    return c;
+}
+
+
 int strlen(char *s)
 {
   char *p=s;
@@ -95,6 +104,20 @@ int atoi(char *str)
 
     // return result.
     return res;
+}
+
+// same thing but parses hex strings
+int atoi16(char *s)
+{
+    int result = 0;
+    while(*s != 0)
+    {
+        char ch = toupper(*s);
+        if(ch < '0' || (ch > '9' && ch < 'A') || ch > 'F') return result;
+        result = result * 16 + ((ch >= 'A') ? ch - 'A' + 10 : ch - '0');
+        ++s;
+    }
+    return result;
 }
 
 /* A utility function to reverse a string  */
@@ -187,3 +210,4 @@ char *strtok(char *src, char *del, int *index)
   *index = i;
   return tok;
 }
+

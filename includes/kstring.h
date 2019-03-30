@@ -8,12 +8,14 @@
 
 #include <hw/types.h>
 
+int toupper(int c);
 UInt16 hexdigit(UInt8 byte);
 int strlen(char *s);
 int strcmp(char *a, char *b);
 int strncmp(char *a, char *b, int len);
 int strcpy(char *dst, char *src);
 int atoi(char *str);
+int atoi16(char *s);
 void reverse(char str[]);
 void append(char s[], char n);
 void backspace(char s[]);

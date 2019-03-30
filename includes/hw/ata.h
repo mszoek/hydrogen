@@ -359,7 +359,7 @@ typedef struct
     UInt8 rsv[48];      // reserved
 
     // 0x80
-    hbaPRDTEntry prdtEntry[8];  // PRDT entries 0-65535
+    hbaPRDTEntry prdtEntry[1];  // PRDT entries 0-65535
 } hbaCmdTable;
 
 typedef struct {

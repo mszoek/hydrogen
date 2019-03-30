@@ -28,7 +28,7 @@ AHCIController::AHCIController(hbaMem *p)
     abar = p;
 
     // reserve 75 blocks starting at AHCI_BASE
-    pmm->dropRegion(AHCI_BASE, 75);
+    pmm->dropRegion(AHCI_BASE, 75*PMM_BLOCK_SIZE);
 
     nrCmdSlots = ((abar->cap >> 8) & 0x1F) + 1;
     probeSATAPorts();
@@ -220,7 +220,7 @@ bool AHCIController::read(hbaPort *port, UInt16 *buf, UInt32 lba, UInt16 sectors
     hdr->cfl = sizeof(SataFISRegH2D) / sizeof(UInt32);
     hdr->w = 0; // this is a read
     hdr->prdtLen = ((sectors - 1) >> 4) + 1; // count of PRDT entries
-
+ 
     hbaCmdTable *tbl = (hbaCmdTable *)hdr->ctbaLo;
     memset((char *)tbl, 0, sizeof(hbaCmdTable) + hdr->prdtLen * sizeof(hbaPRDTEntry));
 
@@ -241,7 +241,7 @@ bool AHCIController::read(hbaPort *port, UInt16 *buf, UInt32 lba, UInt16 sectors
     SataFISRegH2D *fis = (SataFISRegH2D *)(&tbl->cFIS);
     fis->fisType = eFISTypeRegH2D;
     fis->cc = 1; // command
-    fis->command = ATA_CMD_READ_DMA;
+    fis->command = ATA_CMD_READ_PIO;
     fis->lba0 = (UInt8)lba;
     fis->lba1 = (UInt8)(lba >> 8);
     fis->lba2 = (UInt8)(lba >> 16);
