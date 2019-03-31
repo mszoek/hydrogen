@@ -16,7 +16,6 @@
 #include <shell.h>
 
 extern bool runMemTest;
-extern bool verbose;
 
 // map scan codes 0x00 to 0x58 into en_US layout
 const char scanCodesToASCII_base[] =

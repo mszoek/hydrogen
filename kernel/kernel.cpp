@@ -22,10 +22,12 @@
 
 PhysicalMemoryManager *pmm = 0;
 UInt32 g_controllers[CONTROLLER_MAX];
-RootDisk rootDisk;
+char rootGUID[40]; // root filesystem GUID from cmdline
+Partition *rootPartition = 0;
 
 bool runMemTest = false;
 bool verbose = false;
+bool debug = false;
 
 // Prototypes
 void displayStatusLine();
@@ -40,6 +42,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   char cmdline[256];
   
   memset(cmdline, 0, sizeof(cmdline));
+  memset(rootGUID, 0, sizeof(rootGUID));
 
   ScreenController screen;
   displayStartupMsg(size);
@@ -69,39 +72,12 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   int index = 0;
   while((s = strtok(cmdline, " ", &index)) != 0)
   {
-    // FIXME: parse the command line options to get root disk, verbosity, etc.
     if(strcmp(s, "verbose") == 0)
       verbose = true;
+    if(strcmp(s, "debug") == 0)
+      debug = true;
     else if(strncmp(s, "rd=", 3) == 0)
-    {
-      int x = 0;
-      s = &s[3];
-      while(s[x] != 0)
-      {
-        if(s[x] == '/')
-        {
-          s[x] = 0;
-          rootDisk.bus = atoi(s);
-          s = &s[x + 1];
-          x = 0;
-        } else if(s[x] == '.')
-        {
-          s[x] = 0;
-          rootDisk.slot = atoi(s);
-          s = &s[x + 1];
-          x = 0;
-        } else if(s[x] == ',')
-        {
-          s[x] = 0;
-          rootDisk.func = atoi(s);
-          s = &s[x + 1];
-          rootDisk.part = atoi(s);
-          break;
-        }
-        ++x;
-      }
-      kprintf("root disk: bus=%d slot=%d func=%d part=%d\n",rootDisk.bus,rootDisk.slot,rootDisk.func,rootDisk.part);
-    }
+      strcpy(rootGUID, &s[3]);
   }
 
   isrInstall();
@@ -113,58 +89,28 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   asm volatile("sti"); // Start interrupts!
 
   ctrlPCI->startDevices();
+  if(!g_controllers[CTRL_AHCI]) // we didn't find any disk controllers
+    panic();
 
-  // kprint("\nStarting shell\n");
-  // shellStart();
-  // displayStatusLine();
+  GUIDPartitionTable gpt((AHCIController *)g_controllers[CTRL_AHCI], 0);
 
-  if(g_controllers[CTRL_AHCI])
-    GUIDPartitionTable gpt((AHCIController *)g_controllers[CTRL_AHCI], 0);
+  if(rootGUID[0] != 0)
+  {
+    if(!gpt.isValid())
+      panic();
+    rootPartition = gpt.getPartitionByGUID(rootGUID);
+    if(rootPartition == 0)
+        panic();
+    if(verbose)
+      kprintf("Mounting %s root partition %s on /\n",
+        (rootPartition->getTypeEntry())->name, rootPartition->getGUIDA());
+  }
 
-  UInt32 blocks;
-  UInt32 nrAllocs = 256;
-  UInt32 pages[nrAllocs];
-  int loops = nrAllocs;
+  shellStart();
+  displayStatusLine();
 
   while(1)
   {
-
-      if(runMemTest && ctrlTimer->getTicks() % 1 == 0)
-      {
-        static int size = 8;
-        if(loops == nrAllocs)
-        {
-          i = 0;
-          memset((char*)pages, 0, sizeof(pages));
-          blocks = pmm->memFreeBlocks();
-          kprintf("Starting memory test. %d allocs. Free Blocks = %d\n", nrAllocs, blocks);
-        }
-        void *p = pmm->malloc(size);
-        if(p != 0)
-        {
-          memset((char *)p, 0xC9, size);
-          pages[i++] = (UInt32)p;
-        } else {
-          kprintf("malloc(%d) failed\n", size);
-        }
-        size *= 2;
-        if(size > 3000) size = 8;
-        if(size == 2048) size = 2032;
-        --loops;
-        if(loops == 0)
-        {
-          runMemTest = false;
-          for(i = 0; i < nrAllocs; ++i)
-            if(pages[i] != 0)
-            {
-              pmm->free((void*)pages[i]);
-              pages[i] = 0;
-            }
-          kprintf("Finished memory test. Free blocks = %d, orig = %d\n", pmm->memFreeBlocks(), blocks);
-          loops = nrAllocs;
-        }
-      }
-
       if(ctrlTimer->getTicks() % 500 == 0)
       {
         displayStatusLine();
@@ -218,35 +164,10 @@ void displayStartupMsg(unsigned int size)
   screen->defaultTextAttr(DEFAULT_TEXT_ATTR);
 }
 
-char isprint (unsigned char c)
-{
-    if ( c >= 0x20 && c <= 0x7e )
-        return 1;
-    return 0;
-}
-
-void printdata(UInt8* nodedata, int len)
-{
-  char ascii[20];
-  int i,j=0;
-
-  for(i=0,j=0; i<len; ++i)
-  {
-      if(j==0)
-        kprintf("%8x ",i);
-      kprintf("%2x ", nodedata[i]);
-      ascii[j++] = isprint(nodedata[i]) ? nodedata[i] : '.';
-      if(j > 15)
-      {
-        kprintf("%s\n",ascii);
-        j=0;
-      }
-  }
-}
-
-
 void panic()
 {
-  kprintf("!PANIC! System halted.\n");
-  asm("cli; hlt;");
+  asm("cli");
+  kprintf("PANIC! at the disco. System halted.\n");
+  // FIXME: dump registers and stack here
+  asm("hlt");
 }

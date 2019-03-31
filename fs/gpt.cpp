@@ -148,27 +148,36 @@ GUIDPartitionTable::GUIDPartitionTable(AHCIController *ahci, int port)
         return;
     }
 
-    for(int i = 0; i < 32; ++i)
+    int j = 0;
+    memset((char *)parts, 0, sizeof(parts));
+    for(int i = 0; i < header.nrPartEntries; ++i)
     {
-        TypeGUIDEntry *t = getPartType((char *)diskbuf+sizeof(GPTEntry)*i);
+        TypeGUIDEntry *t = getPartType((char *)diskbuf + sizeof(GPTEntry) * i);
         if(!t)
             continue;   // skip - we don't recognize the type
 
-        memcpy((char *)&parts[i], (char *)diskbuf+sizeof(GPTEntry)*i, sizeof(GPTEntry));
+        GPTEntry *gpte = (GPTEntry *)((char *)diskbuf + sizeof(GPTEntry) * i);
+        parts[j] = new Partition(ahci, port, gpte, t);
+
         if(verbose)
         {
-            char partGUID[40];
-
-            stringifyGUID(parts[i].partGUID, partGUID);
             kprintf("Partition %d GUID %s\nType %s Start LBA %d End LBA %d\n", i,
-                partGUID, t->name, parts[i].startLBALo, parts[i].endLBALo);
+                parts[j]->getGUIDA(), t->name, parts[j]->getStartLBA(), parts[j]->getEndLBA());
         }
+
+        ++j;
+        if(j > 31) break;
     }
     free(diskbuf);
 }
 
 GUIDPartitionTable::~GUIDPartitionTable()
 {
+    for(int i = 0; i < 32; ++i)
+    {
+        if(parts[i] != 0)
+            delete parts[i];
+    }
 }
 
 bool GUIDPartitionTable::isValid()
@@ -176,3 +185,114 @@ bool GUIDPartitionTable::isValid()
     return gptValid;
 }
 
+Partition *GUIDPartitionTable::getPartition(int index)
+{
+    if(index < 0 || index >= 32 || parts[index] == 0)
+        return 0;
+    return parts[index];
+}
+
+Partition *GUIDPartitionTable::getPartitionByGUID(char *strGUID)
+{
+    if(strGUID == 0 || strGUID[0] == 0)
+        return 0;
+
+    for(int x = 0; x < 32; ++x)
+    {
+        if(parts[x] == 0)
+            continue;
+        if(!strcmp(strGUID, parts[x]->getGUIDA()))
+            return parts[x];
+    }
+    return 0;
+}
+
+Partition *GUIDPartitionTable::getPartitionByGUID(UInt8 *GUID)
+{
+    if(GUID == 0)
+        return 0;
+    for(int x = 0; x < 32; ++x)
+    {
+        if(parts[x] == 0)
+            continue;
+        if(!memcmp((char *)GUID, (char *)parts[x]->getGUID(), 16))
+            return parts[x];
+    }
+    return 0;
+}
+
+
+Partition::Partition(AHCIController *c, int p, GPTEntry *entry, TypeGUIDEntry *type)
+{
+    ahci = c;
+    port = p;
+    typeEntry = type;
+    memcpy((char *)partGUID, (char *)entry->partGUID, 16);
+    startLBALo = entry->startLBALo;
+    startLBAHi = entry->startLBAHi;
+    endLBALo = entry->endLBALo;
+    endLBAHi = entry->endLBAHi;
+    flagsLo = entry->flagsLo;
+    flagsHi = entry->flagsHi;
+    memcpy((char *)partName, (char *)entry->partName, 36);
+    memset(asciiName, 0, 19);
+    int j = 0;
+    for(int i = 0; i < 36; i += 2)
+        asciiName[j++] = partName[i];
+    GUIDPartitionTable::stringifyGUID(partGUID, asciiGUID);
+    // printdata((UInt8 *)this, sizeof(Partition));
+}
+
+Partition::~Partition()
+{
+}
+
+AHCIController *Partition::getController()
+{
+    return ahci;
+}
+
+int Partition::getPort()
+{
+    return port;
+}
+
+TypeGUIDEntry *Partition::getTypeEntry()
+{
+    return typeEntry;
+}
+
+UInt8 *Partition::getGUID()
+{
+    return partGUID;
+}
+
+char *Partition::getGUIDA()
+{
+    return asciiGUID;
+}
+
+UInt32 Partition::getStartLBA()
+{
+    return startLBALo;
+}
+
+UInt32 Partition::getEndLBA()
+{
+    return endLBALo;
+}
+
+UInt32 Partition::getFlags()
+{
+    return flagsLo;
+}
+
+char *Partition::getNameA()
+{
+    return asciiName;
+}
+
+UInt16 *Partition::getName()
+{
+    return partName;
+}

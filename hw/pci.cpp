@@ -139,7 +139,7 @@ void PCIController::startDevices(void)
             }
 
             default:
-                if(verbose)
+                if(debug)
                     kprintf("PCI: Unsupported device: Vendor 0x%x Device 0x%x Class 0x%x.%x\n",
                         pciTable[j].vendorID, pciTable[j].deviceID, pciTable[j].classCode, pciTable[j].subclassCode);
         }

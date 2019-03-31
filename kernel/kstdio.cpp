@@ -123,3 +123,22 @@ int kprintf(const char* str, ...)
 	va_end(args);
 	return i;
 }
+
+void printdata(UInt8* nodedata, int len)
+{
+  char ascii[20];
+  int i,j=0;
+
+  for(i=0,j=0; i<len; ++i)
+  {
+      if(j==0)
+        kprintf("%8x ",i);
+      kprintf("%2x ", nodedata[i]);
+      ascii[j++] = isprint(nodedata[i]) ? nodedata[i] : '.';
+      if(j > 15)
+      {
+        kprintf("%s\n",ascii);
+        j=0;
+      }
+  }
+}

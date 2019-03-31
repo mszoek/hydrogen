@@ -18,24 +18,17 @@
 #define CTRL_AHCI       4
 #define CONTROLLER_MAX  5
 
-typedef struct
-{
-    UInt8 bus;
-    UInt8 slot;
-    UInt8 func;
-    UInt8 part;
-} RootDisk;
-
 extern PhysicalMemoryManager *pmm;
 extern UInt32 g_controllers[];
 extern bool verbose;
+extern bool debug;
+
+extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size);
 
 char isprint (unsigned char c);
 void printdata(UInt8* nodedata, int len);
 void displayStatusLine();
 void displayStartupMsg(unsigned int size);
-
-extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size);
 
 void panic();
 

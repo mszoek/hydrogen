@@ -7,6 +7,12 @@
 #include <kmem.h>
 #include <kstdio.h>
 
+char isprint(unsigned char c)
+{
+    if ( c >= 0x20 && c <= 0x7e )
+        return 1;
+    return 0;
+}
 
 int toupper(int c)
 {
@@ -14,7 +20,6 @@ int toupper(int c)
         return c - 'a' + 'A';
     return c;
 }
-
 
 int strlen(char *s)
 {

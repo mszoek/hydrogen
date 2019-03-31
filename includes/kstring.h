@@ -8,6 +8,7 @@
 
 #include <hw/types.h>
 
+char isprint(unsigned char c);
 int toupper(int c);
 UInt16 hexdigit(UInt8 byte);
 int strlen(char *s);

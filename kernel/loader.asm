@@ -21,9 +21,10 @@ align 4
 mboot:
 	multiboot_page_align 	equ 1<<0
 	multiboot_memory_info	equ 1<<1
+	multiboot_gfx_info		equ 1<<2
 	multiboot_aout_kludge	equ 1<<16
 	multiboot_header_magic	equ 0x1badb002
-	multiboot_header_flags	equ multiboot_page_align | multiboot_memory_info | multiboot_aout_kludge
+	multiboot_header_flags	equ multiboot_page_align | multiboot_memory_info | multiboot_gfx_info | multiboot_aout_kludge
 	multiboot_checksum		equ -(multiboot_header_magic + multiboot_header_flags)
 	extern code, bss, end
 
@@ -36,6 +37,10 @@ mboot:
 	dd bss
 	dd end
 	dd start
+	dd 0	; mode = graphical
+	dd 0	; auto width (no preference)
+	dd 0	; auto height (no preference)
+	dd 0	; auto depth (no preference)
 
 stublet:
 	mov eax, end

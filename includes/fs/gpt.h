@@ -58,6 +58,39 @@ typedef struct _TypeGUIDEntry
     char *name;
 } TypeGUIDEntry;
 
+class Partition
+{
+public:
+    Partition(AHCIController *c, int port, GPTEntry *entry, TypeGUIDEntry *type);
+    virtual ~Partition();
+
+    AHCIController *getController();
+    int getPort();
+    TypeGUIDEntry *getTypeEntry();
+    UInt8 *getGUID();
+    char *getGUIDA(); // get the ASCII GUID string
+    UInt32 getStartLBA();
+    UInt32 getEndLBA();
+    UInt32 getFlags();
+    char *getNameA(); // converts UTF-16 to ASCII
+    UInt16 *getName();
+
+private:
+    AHCIController *ahci;
+    int port;
+    TypeGUIDEntry *typeEntry;
+    UInt8 partGUID[16];
+    UInt32 startLBALo;
+    UInt32 startLBAHi;
+    UInt32 endLBALo;
+    UInt32 endLBAHi;
+    UInt32 flagsLo;
+    UInt32 flagsHi;
+    UInt16 partName[36]; // UTF-16LE code units
+    char asciiName[19];
+    char asciiGUID[40];
+};
+
 class GUIDPartitionTable
 {
 public:
@@ -68,14 +101,15 @@ public:
     virtual ~GUIDPartitionTable();
 
     bool isValid(); // true if we read a valid GPT
-
+    Partition *getPartition(int index);
+    Partition *getPartitionByGUID(char *strGUID);
+    Partition *getPartitionByGUID(UInt8 *GUID);
 
 private:
     TypeGUIDEntry *getPartType(char *guid);
     
     bool gptValid;
     GPTHeader header;
-    GPTEntry parts[32]; // we will only support 32 partitions per disk for now
     TypeGUIDEntry typeGUIDs[2] = {
         {"48465300-0000-11AA-AA11-00306543ECAC",
         {0x00,0x53,0x46,0x48,0x00,0x00,0xAA,0x11,0xAA,0x11,0x00,0x30,0x65,0x43,0xEC,0xAC},
@@ -85,6 +119,7 @@ private:
         "EFI System"}
     };
     int nrTypeGUIDs;
+    Partition *parts[32];
 };
 
 #endif // GPT_H
