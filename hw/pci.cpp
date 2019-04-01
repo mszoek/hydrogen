@@ -8,6 +8,7 @@
 #include <hw/port_io.h>
 #include <hw/pci.h>
 #include <hw/ata.h>
+#include <hw/screen.h>
 #include <kmem.h>
 #include <kstdio.h>
 
@@ -85,11 +86,17 @@ void PCIController::pciCheckDevice(UInt32 bus, UInt32 slot)
             pciTable[pciTableIndex].baseAddrReg[j] = val32;
         }
 
-        if(verbose)
+        if(verbose || debug)
         {
             kprintf("%d/%d.%d %x:%x class %x type %x %s\n", bus, slot, function,
                 vendor, device, classcode /*& 0x7fff*/, headertype & 0x7f,
                 pciClassCodes[((classcode & 0xFF00) >> 8) % 13]);
+            if(debug)
+            {
+                for(int x = 0; x < 6; ++x)
+                    kprintf("BAR%d=%x ", x, pciTable[pciTableIndex].baseAddrReg[x]);
+                kprintf("\n");
+            }
         }
         ++pciTableIndex;
         if(headertype & 0x80 == 0) break;
@@ -137,6 +144,9 @@ void PCIController::startDevices(void)
                 }
                 break;
             }
+
+            case PCI_DISPLAY_CTRL:
+                break;
 
             default:
                 if(debug)

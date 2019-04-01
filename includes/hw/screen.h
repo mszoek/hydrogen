@@ -6,7 +6,6 @@
 #ifndef SCREEN_H
 #define SCREEN_H
 
-#define VIDEO_ADDRESS 0xb8000
 #define MAX_ROWS 25
 #define MAX_COLS 80
 
@@ -48,6 +47,8 @@ public:
     ScreenController();
     virtual ~ScreenController();
 
+    void putpixel(int x,int y, UInt32 color);
+
     void clearScreen();
     void clearScreen(const char attr);
     int getCursorOffset();
@@ -58,6 +59,12 @@ public:
     char getTextAttr();
 
 private:
+    void *framebuffer;
+    UInt32 pitch;
+    UInt32 width;
+    UInt32 height;
+    UInt8 bpp;
+    UInt8 fbtype;
     char textAttr;
 };
 

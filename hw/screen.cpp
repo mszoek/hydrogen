@@ -10,13 +10,29 @@
 
 ScreenController::ScreenController()
 {
-    textAttr = DEFAULT_TEXT_ATTR;
+    if(bootinfo.flags & 0x1000)
+    {
+        framebuffer = (void *)bootinfo.framebufferAddr;
+        pitch = bootinfo.framebufferPitch;
+        width = bootinfo.framebufferWidth;
+        height = bootinfo.framebufferHeight;
+        bpp = bootinfo.framebufferBPP;
+        fbtype = bootinfo.framebufferType;
+    }
+
     g_controllers[CTRL_SCREEN] = (UInt32)this;
 }
 
 ScreenController::~ScreenController()
 {
     g_controllers[CTRL_SCREEN] = 0;
+}
+
+void ScreenController::putpixel(int x, int y, UInt32 color)
+{
+    int bytesPerPixel = bpp/8;
+    void *where = (void *)((UInt32)framebuffer + x*bytesPerPixel + y*pitch);
+    *(UInt32 *)where = color;
 }
 
 char ScreenController::defaultTextAttr(char attr)
@@ -33,13 +49,13 @@ void ScreenController::printBackspace()
     {
       offset = 0;
     }
-    *(char *)(VIDEO_ADDRESS + offset) = ' ';
+    *(char *)(framebuffer + offset) = ' ';
     setCursorOffset(offset);
 }
 
 int ScreenController::printChar(char c, int col, int row, char attr)
 {
-    unsigned char *vidmem = (unsigned char*) VIDEO_ADDRESS;
+    unsigned char *vidmem = (unsigned char*) framebuffer;
     if (!attr) attr = 0x0f;
 
     // Error: print red 'E' if coords aren't correct.
@@ -70,12 +86,12 @@ int ScreenController::printChar(char c, int col, int row, char attr)
         int i;
         for (i = 1; i < MAX_ROWS; i++)
         {
-            memcpy(getOffset(0, i-1) + (unsigned char*)VIDEO_ADDRESS,
-              getOffset(0, i) + (unsigned char*)VIDEO_ADDRESS, MAX_COLS * 2);
+            memcpy(getOffset(0, i-1) + (unsigned char*)framebuffer,
+              getOffset(0, i) + (unsigned char*)framebuffer, MAX_COLS * 2);
         }
 
         // Blank last line
-        char *last_line = getOffset(0, MAX_ROWS-1) + (unsigned char*)VIDEO_ADDRESS;
+        char *last_line = getOffset(0, MAX_ROWS-1) + (unsigned char*)framebuffer;
         for (i = 0; i < MAX_COLS * 2; i++)
         {
             last_line[i] = 0;
@@ -117,7 +133,7 @@ void ScreenController::clearScreen()
 
 void ScreenController::clearScreen(const char attr)
 {
-    char *vidmem = (char*)VIDEO_ADDRESS; // Start of video memory
+    char *vidmem = (char*)framebuffer; // Start of video memory
     unsigned int j = 0;
 
     while (j < MAX_COLS * MAX_ROWS * 2)

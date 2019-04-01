@@ -40,7 +40,7 @@ mboot:
 	dd 0	; mode = graphical
 	dd 0	; auto width (no preference)
 	dd 0	; auto height (no preference)
-	dd 0	; auto depth (no preference)
+	dd 32	; prefer 32bpp
 
 stublet:
 	mov eax, end
@@ -55,7 +55,7 @@ die: hlt
 %include "utilities/32bit/32bit-gdt.asm"
 
 section .bss
-	resb 8192
+	resb 32768
 
 _sys_stack:
 

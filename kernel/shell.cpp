@@ -15,8 +15,6 @@
 #include <kernel.h>
 #include <shell.h>
 
-extern bool runMemTest;
-
 // map scan codes 0x00 to 0x58 into en_US layout
 const char scanCodesToASCII_base[] =
 {
@@ -62,29 +60,14 @@ void shellExecCommand()
 
   if(strcmp(shellBuffer, "help") == 0)
   {
-    kprintf("Commands:\n  memtest - run a memory page allocation test\n"
+    kprintf("Commands:\n"
     "  clear - clear the screen\n  lspci - list pci devices\n"
     "  printdata - print memory contents\n  meminfo - show memory pool info\n\n");
     return;
   }
 
-  if(strcmp(shellBuffer, "memtest") == 0)
-  {
-    runMemTest = !runMemTest;
-    // if(screen)
-    // {
-    //   screen->clearScreen(DEFAULT_TEXT_ATTR);
-    //   screen->setCursorOffset(ScreenController::getOffset(0, 1));
-    // }
-    // if(runMemTest) kprintf("Running memory test\n");
-    // if(screen)
-    //   screen->setCursorOffset(ScreenController::getOffset(0, 20));
-    return;
-  }
   if(strcmp(shellBuffer, "clear") == 0)
   {
-    if(runMemTest) return;
-
     if(screen)
     {
       screen->clearScreen(DEFAULT_TEXT_ATTR);

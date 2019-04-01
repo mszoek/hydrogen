@@ -8,6 +8,7 @@
 
 #include <hw/types.h>
 #include <kmem.h>
+#include <bootinfo.h>
 
 #define KERN_ADDRESS 0x100000 // kernel load address (see loader.asm)
 
@@ -22,6 +23,7 @@ extern PhysicalMemoryManager *pmm;
 extern UInt32 g_controllers[];
 extern bool verbose;
 extern bool debug;
+extern struct multiboot_info bootinfo;
 
 extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size);
 

@@ -16,7 +16,6 @@
 #include <kmem.h>
 #include <kstdio.h>
 #include <kversion.h>
-#include <bootinfo.h>
 #include <shell.h>
 #include <fs/gpt.h>
 
@@ -24,8 +23,8 @@ PhysicalMemoryManager *pmm = 0;
 UInt32 g_controllers[CONTROLLER_MAX];
 char rootGUID[40]; // root filesystem GUID from cmdline
 Partition *rootPartition = 0;
+struct multiboot_info bootinfo;
 
-bool runMemTest = false;
 bool verbose = false;
 bool debug = false;
 
@@ -43,26 +42,28 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   
   memset(cmdline, 0, sizeof(cmdline));
   memset(rootGUID, 0, sizeof(rootGUID));
-
-  ScreenController screen;
-  displayStartupMsg(size);
+  memcpy((char *)&bootinfo, (char *)binf, sizeof(bootinfo));
 
   /* Read data from the multiboot structure */
   if(binf->flags & 0x1)
-  {
     mem = binf->memHi + binf->memLo + 1024;
-    kprintf("%d KB memory", mem);
-  }
   if(binf->flags & 0x40) 
   {
     mmap = binf->mmapAddr;
     mmapLen = binf->mmapLen;
-    kprintf("; memory map loaded %d @ 0x%x\n", mmapLen, mmap);
   }
   if(binf->flags & 0x4)
-  {
     strcpy(cmdline, (char *)(binf->cmdLine));
-  }
+
+  new ScreenController();
+  ScreenController *screen = ((ScreenController *)g_controllers[CTRL_SCREEN]);
+  if(!screen)
+    panic();
+
+  screen->clearScreen();
+  screen->setCursorOffset(ScreenController::getOffset(0, 0));
+  kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x%x]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size, KERN_ADDRESS);
+  kprint("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
 
   PhysicalMemoryManager physMM(mem, KERN_ADDRESS, size,
     (PhysicalMemoryManager::RegionInfo *)mmap, mmapLen);
@@ -85,11 +86,10 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   new KeyboardController();
   PCIController *ctrlPCI = new PCIController();
   ctrlPCI->pciEnumBuses();
-
   asm volatile("sti"); // Start interrupts!
-
   ctrlPCI->startDevices();
-  if(!g_controllers[CTRL_AHCI]) // we didn't find any disk controllers
+
+  if(!g_controllers[CTRL_AHCI])
     panic();
 
   GUIDPartitionTable gpt((AHCIController *)g_controllers[CTRL_AHCI], 0);
@@ -148,20 +148,6 @@ void displayStatusLine()
   kprintAt(line, 0, 0, DEFAULT_STATUS_ATTR);
 
   screen->setCursorOffset(curpos);
-}
-
-void displayStartupMsg(unsigned int size)
-{
-  ScreenController *screen = ((ScreenController *)g_controllers[CTRL_SCREEN]);
-  if(!screen)
-    return;
-
-  screen->defaultTextAttr(BG_BLACK | FG_GREY | FG_BOLD);
-  screen->clearScreen();
-  screen->setCursorOffset(ScreenController::getOffset(0, 2));
-  kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x%x]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size, KERN_ADDRESS);
-  kprint("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
-  screen->defaultTextAttr(DEFAULT_TEXT_ATTR);
 }
 
 void panic()

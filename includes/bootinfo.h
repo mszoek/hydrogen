@@ -65,4 +65,18 @@ struct multiboot_info
     unsigned int drivesAddr;
     unsigned int cfgTable;
     unsigned int loaderName;
+    unsigned int apmTable;
+    unsigned int vbeControlInfo;
+    unsigned int vbeModeInfo;
+    unsigned short vbeMode;
+    unsigned short vbeInterfaceSeg;
+    unsigned short vbeInterfaceOff;
+    unsigned short vbeInterfaceLen;
+    unsigned long long framebufferAddr;
+    unsigned int framebufferPitch;
+    unsigned int framebufferWidth;
+    unsigned int framebufferHeight;
+    unsigned char framebufferBPP;
+    unsigned char framebufferType;
+    unsigned char colorInfo[6];
 };

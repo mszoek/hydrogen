@@ -53,11 +53,17 @@ KERNEL_INC=$(wildcard includes/*.h includes/hw/*.h fs/*.h)
 KERNEL_OBJ=kernel/loader.o ${KERNEL_SRC:.cpp=.o} hw/interrupt.o
 
 kernel.bin: $(KERNEL_OBJ)
-	ld -m elf_i386 -o kernel.bin -Tlinker.ld $(KERNEL_OBJ) 
+	ld -m elf_i386 -o kernel.bin -Tlinker.ld --oformat=elf32-i386 $(KERNEL_OBJ) 
 
-debug: kernel.bin
-	qemu-system-i386 -s -hda hd.img &
-	gdb -ex "target remote localhost:1234" -ex "symbol-file kernel.elf"
+debug: kernel.bin mkiso
+	qemu-system-x86_64 -s -S -M q35 -accel kvm -drive file=hd.img,if=ide,media=disk -cdrom hydrogen.iso -boot d \
+        -drive file=/usr/share/ovmf/x64/OVMF_CODE.fd,if=pflash,format=raw,unit=0,readonly=on &
+	sleep 6
+	gdb -ex "target remote localhost:1234" -ex "symbol-file kernel.bin"
+
+run: kernel.bin mkiso
+	qemu-system-x86_64 -M q35 -accel kvm -drive file=hd.img,if=ide,media=disk -cdrom hydrogen.iso -boot d \
+        -drive file=/usr/share/ovmf/x64/OVMF_CODE.fd,if=pflash,format=raw,unit=0,readonly=on
 
 clean:
 	rm -f bootsect.bin kernel.bin kernel.o
