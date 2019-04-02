@@ -3,12 +3,14 @@
  * Copyright (C) 2017-2019 Zoe & Alexis Knox. All rights reserved.
  */
 
-class VirtualMemoryManager {
+#include <hw/types.h>
 
+class VirtualMemoryManager
+{
 public:
 	VirtualMemoryManager();
-	~VirtualMemoryManager();
+	virtual ~VirtualMemoryManager();
+
 private:
 	UInt32 pageDirectory[1024] __attribute__((aligned(4096)));
-
 };

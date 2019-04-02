@@ -38,8 +38,8 @@ mboot:
 	dd end
 	dd start
 	dd 0	; mode = graphical
-	dd 0	; auto width (no preference)
-	dd 0	; auto height (no preference)
+	dd 1920	; auto width (no preference)
+	dd 1080	; auto height (no preference)
 	dd 32	; prefer 32bpp
 
 stublet:

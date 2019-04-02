@@ -17,19 +17,19 @@ void kprintAt(const char *message, int col, int row, char attr)
     int offset;
     if (col >= 0 && row >= 0)
     {
-        offset = ScreenController::getOffset(col, row);
+        offset = screen->getOffset(col, row);
     } else {
         offset = screen->getCursorOffset();
-        row = ScreenController::getOffsetRow(offset);
-        col = ScreenController::getOffsetCol(offset);
+        row = screen->getOffsetRow(offset);
+        col = screen->getOffsetCol(offset);
     }
 
     int i = 0;
     while(message[i] != 0)
     {
         offset = screen->printChar(message[i++], col, row, attr);
-        row = ScreenController::getOffsetRow(offset);
-        col = ScreenController::getOffsetCol(offset);
+        row = screen->getOffsetRow(offset);
+        col = screen->getOffsetCol(offset);
     }
 }
 

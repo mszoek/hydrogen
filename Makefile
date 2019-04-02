@@ -56,9 +56,9 @@ kernel.bin: $(KERNEL_OBJ)
 	ld -m elf_i386 -o kernel.bin -Tlinker.ld --oformat=elf32-i386 $(KERNEL_OBJ) 
 
 debug: kernel.bin mkiso
-	qemu-system-x86_64 -s -S -M q35 -accel kvm -drive file=hd.img,if=ide,media=disk -cdrom hydrogen.iso -boot d \
+	qemu-system-x86_64 -s -S -M q35 -accel tcg -drive file=hd.img,if=ide,media=disk -cdrom hydrogen.iso -boot d \
         -drive file=/usr/share/ovmf/x64/OVMF_CODE.fd,if=pflash,format=raw,unit=0,readonly=on &
-	sleep 6
+	sleep 3
 	gdb -ex "target remote localhost:1234" -ex "symbol-file kernel.bin"
 
 run: kernel.bin mkiso

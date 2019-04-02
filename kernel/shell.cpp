@@ -71,7 +71,7 @@ void shellExecCommand()
     if(screen)
     {
       screen->clearScreen(DEFAULT_TEXT_ATTR);
-      screen->setCursorOffset(ScreenController::getOffset(0, 1));
+      screen->setCursorOffset(screen->getOffset(0, 1));
     }
     return;
   }

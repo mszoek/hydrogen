@@ -61,7 +61,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
     panic();
 
   screen->clearScreen();
-  screen->setCursorOffset(ScreenController::getOffset(0, 0));
+  screen->setCursorOffset(screen->getOffset(0, 0));
   kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x%x]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size, KERN_ADDRESS);
   kprint("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
 
@@ -143,8 +143,9 @@ void displayStatusLine()
   memcpy(line+strlen(line), s, strlen(s));
   i = strlen(line);
   line[i] = 's';
-  line[i+1] = 0;
-  memset(line+strlen(line), 0x20, sizeof(line)-strlen(line)-2); // space fill to right edge
+  line[i+1] = '\n';
+  line[i+2] = 0;
+  // memset(line+strlen(line), 0x20, sizeof(line)-strlen(line)-2); // space fill to right edge
   kprintAt(line, 0, 0, DEFAULT_STATUS_ATTR);
 
   screen->setCursorOffset(curpos);
