@@ -64,11 +64,6 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   if(!screen)
     panic();
 
-  screen->clearScreen();
-  screen->setXYChars(0, 1);
-  kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x%x]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size, KERN_ADDRESS);
-  kprint("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
-
   char *s = 0;
   int index = 0;
   while((s = strtok(cmdline, " ", &index)) != 0)
@@ -79,7 +74,14 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
       debug = true;
     else if(strncmp(s, "rd=", 3) == 0)
       strcpy(rootGUID, &s[3]);
+    else if(strncmp(s, "font=", 5) == 0)
+      screen->setFont(atoi(&s[5]));
   }
+
+  screen->clearScreen();
+  screen->setXYChars(0, 1);
+  kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x%x]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size, KERN_ADDRESS);
+  kprint("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
 
   TimerController *ctrlTimer = new TimerController();
   new KeyboardController();

@@ -6,6 +6,8 @@
 #ifndef SCREEN_H
 #define SCREEN_H
 
+#include <fonts/font.h>
+
 class ScreenController
 {
 public:
@@ -26,6 +28,7 @@ public:
     void setColor(UInt32 c);
     void setBackColor(UInt32 c);
     void fontdemo();
+    void setFont(int f);
 
 private:
     void *framebuffer;
@@ -38,6 +41,12 @@ private:
     UInt32 ypos;
     UInt32 color;
     UInt32 bgcolor;
+    int fontNumber; // current font number
+    int fontWidth;
+    int fontHeight;
+    int fontbpp;
+    const fontGlyph *glyphDsc;
+    const UInt8 *glyphBitmap;
 };
 
 #endif
