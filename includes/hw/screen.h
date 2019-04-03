@@ -38,40 +38,6 @@
 #define DEFAULT_TEXT_ATTR (BG_BLACK | FG_GREY)
 #define DEFAULT_STATUS_ATTR (BG_MAGENTA | FG_GREY | FG_BOLD)
 
-struct vbeInfoBlock {
-    char   vbeSignature[4];
-    UInt16 vbeVersion;
-    UInt16 oemStringPtr[2];
-    UInt8  capabilities[4];
-    UInt16 videoModePtr[2];
-    UInt16 totalMemory;
-} __attribute__((packed));
-
-struct modeInfoBlock {
-    UInt16 attributes;
-    UInt8  winA, winB;
-    UInt16 granularity;
-    UInt16 winSize;
-    UInt16 segA, segB;
-    VBE_FAR(realFctPtr);
-    UInt16 pitch; // bytes per scanline
-
-    UInt16 Xres, Yres;
-    UInt8 Wchar, Ychar, planes, bpp, banks;
-    UInt8 memModel, bankSize, imgPages;
-    UInt8 reserved0;
-
-    UInt8 redMask, redPos;
-    UInt8 grnMask, grnPos;
-    UInt8 bluMask, bluPos;
-    UInt8 rsvMask, rsvPos;
-    UInt8 directColorAttributes;
-
-    UInt32 physBase;
-    UInt32 reserved1;
-    UInt16 reserved2;
-} __attribute__((packed));
-
 class ScreenController
 {
 public:
