@@ -13,8 +13,8 @@
 PhysicalMemoryManager::PhysicalMemoryManager(UInt32 memSize, UInt32 kernAddr, 
   UInt32 kernSize, RegionInfo *regions, UInt32 regionsLen)
 {
-  if(verbose)
-    kprintf("kernel/PhysicalMemoryManager: 0x%x\n", this);
+  // if(verbose)
+  //   kprintf("kernel/PhysicalMemoryManager: 0x%x\n", this);
 
   int i = 0;
   char buf[64];
@@ -36,12 +36,12 @@ PhysicalMemoryManager::PhysicalMemoryManager(UInt32 memSize, UInt32 kernAddr,
       break;
 
     /* display region info */
-    if(verbose)
-    {
-      kprintf("Region %d: start 0x%x, len 0x%x, type %d\n", i,
-       /*region->startHi,*/ region->startLo, 
-       /*region->sizeHi,*/ region->sizeLo, region->type);
-    }
+    // if(verbose)
+    // {
+    //   kprintf("Region %d: start 0x%x, len 0x%x, type %d\n", i,
+    //    /*region->startHi,*/ region->startLo, 
+    //    /*region->sizeHi,*/ region->sizeLo, region->type);
+    // }
 
     /* init any available regions for our use */
     if(region->type == 1)
@@ -54,7 +54,7 @@ PhysicalMemoryManager::PhysicalMemoryManager(UInt32 memSize, UInt32 kernAddr,
   }
 
   /* mark the kernel memory as in use */
-  dropRegion(kernAddr, kernSize+regionsLen);
+  dropRegion(kernAddr, kernSize+(physMaxBlocks/PMM_BLOCKS_PER_BYTE));
 
   /* drop unusable low memory areas */
   dropRegion(0, 0x400); // real mode interrupt vectors
@@ -122,7 +122,7 @@ PhysicalMemoryManager::PhysicalMemoryManager(UInt32 memSize, UInt32 kernAddr,
     if(size >= 2048)
       size = 2032; // +16 byte header gives 2 chunks per 4K block
   }
-  printStats();
+  // printStats();
 }
 
 PhysicalMemoryManager::~PhysicalMemoryManager()
@@ -496,6 +496,15 @@ void memcpy(char *dst, char *src, unsigned int len)
 void memset(char *dst, char val, int len)
 {
   char *tmp=dst;
+  for(;len > 0; --len)
+  {
+    *tmp++ = val;
+  }
+}
+
+void memset(UInt32 *dst, UInt32 val, int len)
+{
+  UInt32 *tmp=dst;
   for(;len > 0; --len)
   {
     *tmp++ = val;

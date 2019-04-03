@@ -1,5 +1,5 @@
 /*
- * H2 Text-mode Video Driver
+ * H2 Framebuffer Video Driver
  * Copyright (C) 2017-2019 Zoe & Alexis Knox. All rights reserved.
  */
 
@@ -23,6 +23,8 @@ ScreenController::ScreenController()
 
     xpos = 0;
     ypos = 0;
+    color = 0xFFFFFF;
+    bgcolor = 0;
 
     g_controllers[CTRL_SCREEN] = (UInt32)this;
 }
@@ -39,28 +41,33 @@ void ScreenController::putpixel(int x, int y, UInt32 color)
     *(UInt32 *)where = color;
 }
 
-char ScreenController::defaultTextAttr(char attr)
-{
-    char a = textAttr;
-    textAttr = attr;
-    return a;
-}
-
 void ScreenController::printBackspace() 
 {
-    int offset = getCursorOffset() - 2;
-    if(offset < 0)
+    int newx = xpos - FONT_WIDTH_hack16;
+    int newy = ypos;
+    if(newx < 0)
     {
-      offset = 0;
+        newx = width - FONT_WIDTH_hack16;
+        newy = ypos - FONT_HEIGHT_hack16;
     }
-    *(char *)(framebuffer + offset) = ' ';
-    setCursorOffset(offset);
+    if(newy < 0)
+    {
+        newy = 0;
+        newx = 0;
+    }
+
+    for(int j = 0; j < FONT_HEIGHT_hack16; ++j)
+    {
+        memset((char *)((UInt32)framebuffer + newx*(bpp/8) + (newy+j)*pitch), 0,
+            FONT_WIDTH_hack16*(bpp/8));
+    }
+
+    xpos = newx;
+    ypos = newy;
 }
 
 void ScreenController::fontdemo()
 {
-    int color = 0xFFFFFFFF;
-
     char *msg = "H2OS Kernel! ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789";
     for(int pos = 0; msg[pos] != 0; ++pos)
     {
@@ -80,6 +87,9 @@ void ScreenController::fontdemo()
             {
                 if(hack16_glyph_bitmap[offset] & (1<<bit))
                     putpixel(col, row, color);
+                else
+                    putpixel(col, row, bgcolor);
+                
                 ++col;
                 --bit;
                 --w;
@@ -96,26 +106,15 @@ void ScreenController::fontdemo()
     }
 }
 
-int ScreenController::printChar(UInt8 c, int col, int row, char attr)
+void ScreenController::printChar(UInt8 c)
 {
-    int color = 0xFFFFFFFF;
-
-    // if (col >= (width - FONT_WIDTH_hack16) || row >= (height - FONT_HEIGHT_hack16))
-    //     return getOffset(width - FONT_WIDTH_hack16, height - FONT_HEIGHT_hack16);
-
-    // int offset;
-    // if (col >= 0 && row >= 0) offset = getOffset(col, row);
-    // else offset = getCursorOffset();
-
     if (c == '\n')
     {
-        // row = getOffsetRow(offset);
-        // offset = getOffset(0, row + FONT_HEIGHT_hack16);
         ypos += FONT_HEIGHT_hack16;
         xpos = 0;
     } else {
         if(c < 0x20) // unprintable
-            return 0; //getCursorOffset();
+            return;
         c = c - 0x20;
 
         int offset = hack16_glyph_dsc[c].offset;
@@ -126,10 +125,20 @@ int ScreenController::printChar(UInt8 c, int col, int row, char attr)
             int bit = 7;
             int x = xpos;
             int w = hack16_glyph_dsc[c].width;
+            int pad = (FONT_WIDTH_hack16 - w) / 2;
+            while(pad > 0)
+            {
+                putpixel(x, y, bgcolor);
+                ++x;
+                --pad;
+            }
             while(w > 0)
             {
                 if(hack16_glyph_bitmap[offset] & (1<<bit))
                     putpixel(x, y, color);
+                else
+                    putpixel(x, y, bgcolor);
+                
                 ++x;
                 --bit;
                 --w;
@@ -139,6 +148,15 @@ int ScreenController::printChar(UInt8 c, int col, int row, char attr)
                     ++offset;
                 }
             }
+            pad = (FONT_WIDTH_hack16 - w) / 2;
+            while(pad > 0)
+            {
+                putpixel(x, y, bgcolor);
+                ++x;
+                --pad;
+            }
+            if(pad*2+w < FONT_WIDTH_hack16)
+                putpixel(x++, y, bgcolor);
             if(bit != 7)
                 ++offset;
             ++y;
@@ -160,74 +178,64 @@ int ScreenController::printChar(UInt8 c, int col, int row, char attr)
 
         // Blank last line
         memset((char *)((UInt32)framebuffer + (height - FONT_HEIGHT_hack16)*pitch),
-            0, FONT_HEIGHT_hack16*pitch /*+ width*(bpp/8)*/);
+            0, FONT_HEIGHT_hack16*pitch);
         ypos = height - FONT_HEIGHT_hack16;
         xpos = 0;
     }
-    // setCursorOffset(offset);
-    // return offset;
-    return 0;
+    return;
 }
 
-int ScreenController::getCursorOffset()
+UInt32 ScreenController::getX()
 {
-    return cursorOffset;
-    // /* Use the VGA ports to get the current cursor position
-    //   * 1. Ask for high byte of the cursor offset (data 14)
-    //   * 2. Ask for low byte (data 15)
-    //   */
-    // portByteOut(REG_SCREEN_CTRL, 14);
-    // int offset = portByteIn(REG_SCREEN_DATA) << 8; /* High byte: << 8 */
-    // portByteOut(REG_SCREEN_CTRL, 15);
-    // offset += portByteIn(REG_SCREEN_DATA);
-    // return offset * 2; /* Position * size of character cell */
+    return xpos;
 }
 
-void ScreenController::setCursorOffset(int offset)
+UInt32 ScreenController::getY()
 {
-    cursorOffset = offset;
-    // /* Similar to getCursorOffset, but instead of reading we write data */
-    // offset /= 2;
-    // portByteOut(REG_SCREEN_CTRL, 14);
-    // portByteOut(REG_SCREEN_DATA, (unsigned char)(offset >> 8));
-    // portByteOut(REG_SCREEN_CTRL, 15);
-    // portByteOut(REG_SCREEN_DATA, (unsigned char)(offset & 0xff));
+    return ypos;
+}
+
+UInt32 ScreenController::getColor()
+{
+    return color;
+}
+
+UInt32 ScreenController::getBackColor()
+{
+    return bgcolor;
+}
+
+void ScreenController::setXY(UInt32 x, UInt32 y)
+{
+    if(x > width || y > height)
+        return;
+    xpos = x;
+    ypos = y;
+}
+
+void ScreenController::setXYChars(UInt32 x, UInt32 y)
+{
+    x *= FONT_WIDTH_hack16;
+    y *= FONT_HEIGHT_hack16;
+
+    if(x > width || y > height)
+        return;
+    xpos = x;
+    ypos = y;
+}
+
+void ScreenController::setColor(UInt32 c)
+{
+    color = c;
+}
+
+void ScreenController::setBackColor(UInt32 c)
+{
+    bgcolor = c;
 }
 
 void ScreenController::clearScreen()
 {
-    clearScreen(this->textAttr);
-}
-
-void ScreenController::clearScreen(const char attr)
-{
-    char *framebuffer = (char*)framebuffer; // Start of video memory
-    unsigned int j = 0;
-
-    while (j < MAX_COLS * MAX_ROWS * 2)
-    {
-        framebuffer[j++] = ' ';
-        framebuffer[j++] = (attr ? attr : (BG_BLACK | FG_GREY));
-    }
-    setCursorOffset(0); // no need to calc - it is always zero :)
-}
-
-char ScreenController::getTextAttr()
-{
-    return textAttr;
-}
-
-int ScreenController::getOffset(int col, int row)
-{
-    return (row*pitch + col*(bpp/8));
-}
-
-int ScreenController::getOffsetRow(int offset)
-{
-    return (offset - width*(bpp/8)) / pitch;
-}
-
-int ScreenController::getOffsetCol(int offset)
-{
-    return (offset - getOffsetRow(offset)*pitch) / (bpp/8);
+    memset((UInt32 *)framebuffer, bgcolor, width*height);
+    xpos = ypos = 0;
 }

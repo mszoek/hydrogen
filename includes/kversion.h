@@ -4,7 +4,7 @@
 #include <hw/types.h>
 
 // 4 byte version code (major, minor, service pack, patchlevel)
-static UInt32 KERN_VERSION = 0x00030000;
+static UInt32 KERN_VERSION = 0x00040000;
 
 #define KERN_MAJOR ((KERN_VERSION & 0xff000000) >> 24)
 #define KERN_MINOR ((KERN_VERSION & 0xff0000) >> 16)

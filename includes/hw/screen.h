@@ -6,37 +6,6 @@
 #ifndef SCREEN_H
 #define SCREEN_H
 
-#define MAX_ROWS 25
-#define MAX_COLS 80
-
-// Screen I/O ports
-#define REG_SCREEN_CTRL 0x3d4
-#define REG_SCREEN_DATA 0x3d5
-
-#define BG_BLACK   0x00
-#define BG_BLUE    0x10
-#define BG_GREEN   0x20
-#define BG_BROWN   0x30
-#define BG_RED     0x40
-#define BG_MAGENTA 0x50
-#define BG_CYAN    0x60
-#define BG_GREY    0x70
-#define BG_BOLD    0x80
-
-#define FG_BLACK   0x00
-#define FG_BLUE    0x01
-#define FG_GREEN   0x02
-#define FG_BROWN   0x03
-#define FG_RED     0x04
-#define FG_MAGENTA 0x05
-#define FG_CYAN    0x06
-#define FG_GREY    0x07
-#define FG_BOLD    0x08
-
-// Text Attributes
-#define DEFAULT_TEXT_ATTR (BG_BLACK | FG_GREY)
-#define DEFAULT_STATUS_ATTR (BG_MAGENTA | FG_GREY | FG_BOLD)
-
 class ScreenController
 {
 public:
@@ -46,16 +15,16 @@ public:
     void putpixel(int x,int y, UInt32 color);
 
     void clearScreen();
-    void clearScreen(const char attr);
-    int getCursorOffset();
-    void setCursorOffset(int offset);
-    char defaultTextAttr(char attr);
     void printBackspace();
-    int printChar(UInt8 c, int col, int row, char attr);
-    char getTextAttr();
-    int getOffset(int col, int row);
-    int getOffsetRow(int offset);
-    int getOffsetCol(int offset);
+    void printChar(UInt8 c);
+    UInt32 getColor();
+    UInt32 getBackColor();
+    UInt32 getX();
+    UInt32 getY();
+    void setXY(UInt32 x, UInt32 y);
+    void setXYChars(UInt32 x, UInt32 y);
+    void setColor(UInt32 c);
+    void setBackColor(UInt32 c);
     void fontdemo();
 
 private:
@@ -65,10 +34,10 @@ private:
     UInt32 height;
     UInt8 bpp;
     UInt8 fbtype;
-    char textAttr;
-    UInt32 cursorOffset; // current offset into fb
     UInt32 xpos;
     UInt32 ypos;
+    UInt32 color;
+    UInt32 bgcolor;
 };
 
 #endif

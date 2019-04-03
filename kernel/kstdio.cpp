@@ -8,38 +8,15 @@
 #include <hw/screen.h>
 #include <kstring.h>
 
-void kprintAt(const char *message, int col, int row, char attr)
-{
-    ScreenController *screen = (ScreenController *)g_controllers[CTRL_SCREEN];
-    if(!screen)
-        return;
-
-    int offset;
-    if (col >= 0 && row >= 0)
-    {
-        offset = screen->getOffset(col, row);
-    } else {
-        offset = screen->getCursorOffset();
-        row = screen->getOffsetRow(offset);
-        col = screen->getOffsetCol(offset);
-    }
-
-    int i = 0;
-    while(message[i] != 0)
-    {
-        offset = screen->printChar(message[i++], col, row, attr);
-        row = screen->getOffsetRow(offset);
-        col = screen->getOffsetCol(offset);
-    }
-}
-
 void kprint(const char *message)
 {
     ScreenController *screen = (ScreenController *)g_controllers[CTRL_SCREEN];
     if(!screen) return;
-    kprintAt(message, -1, -1, screen->getTextAttr());
-}
 
+    int i = 0;
+    while(message[i] != 0)
+        screen->printChar(message[i++]);
+}
 
 int kprintf(const char* str, ...)
 {
@@ -69,7 +46,7 @@ int kprintf(const char* str, ...)
 					case 'c':
                     {
 						char c = va_arg(args, int);
-						screen->printChar(c, -1, -1, screen->getTextAttr());
+						screen->printChar(c);
 						i++;
 						break;
 					}
@@ -89,7 +66,7 @@ int kprintf(const char* str, ...)
 						itoa(c, 10, buf);
 						int q = strlen(buf);
 						for(int c = 0; c < width-q; ++c)
-							screen->printChar('0', -1, -1, screen->getTextAttr());
+							screen->printChar('0');
 						kprint(buf);
 						i++;
 						break;
@@ -102,7 +79,7 @@ int kprintf(const char* str, ...)
 						itoa(c, 16, buf);
 						int q = strlen(buf);
 						for(int c = 0; c < width-q; ++c)
-							screen->printChar('0', -1, -1, screen->getTextAttr());
+							screen->printChar('0');
                         kprint(buf);
 						i++;
 						break;
@@ -115,7 +92,7 @@ int kprintf(const char* str, ...)
 				break;
 
 			default:
-				screen->printChar(str[i], -1, -1, screen->getTextAttr());
+				screen->printChar(str[i]);
 				break;
 		}
 	}

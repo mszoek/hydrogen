@@ -70,8 +70,7 @@ void shellExecCommand()
   {
     if(screen)
     {
-      screen->clearScreen(DEFAULT_TEXT_ATTR);
-      screen->setCursorOffset(screen->getOffset(0, 1));
+      screen->clearScreen();
     }
     return;
   }
@@ -100,7 +99,7 @@ void shellExecCommand()
     return;
   }
 
-  kprintAt("Invalid command\n", -1, -1, (FG_RED | FG_BOLD | BG_BLACK));
+  kprint("Invalid command\n");
 }
 
 void shellCheckInput()

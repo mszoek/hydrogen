@@ -35,8 +35,7 @@ void displayStartupMsg(unsigned int size);
 // Kernel entry function
 extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 {
-  UInt32 mem = 0;
-  UInt32 mmap = 0, mmapLen = 0;
+  UInt32 mem = 0, mmap = 0, mmapLen = 0;
   int i = 0;
   char cmdline[256];
   
@@ -55,19 +54,20 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   if(binf->flags & 0x4)
     strcpy(cmdline, (char *)(binf->cmdLine));
 
+  isrInstall();
+  PhysicalMemoryManager physMM(mem, KERN_ADDRESS, size,
+    (PhysicalMemoryManager::RegionInfo *)mmap, mmapLen);
+  pmm = &physMM;
+
   new ScreenController();
   ScreenController *screen = ((ScreenController *)g_controllers[CTRL_SCREEN]);
   if(!screen)
     panic();
 
   screen->clearScreen();
-  screen->setCursorOffset(screen->getOffset(0, 0));
+  screen->setXYChars(0, 1);
   kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x%x]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size, KERN_ADDRESS);
   kprint("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
-
-  PhysicalMemoryManager physMM(mem, KERN_ADDRESS, size,
-    (PhysicalMemoryManager::RegionInfo *)mmap, mmapLen);
-  pmm = &physMM;
 
   char *s = 0;
   int index = 0;
@@ -81,7 +81,6 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
       strcpy(rootGUID, &s[3]);
   }
 
-  isrInstall();
   TimerController *ctrlTimer = new TimerController();
   new KeyboardController();
   PCIController *ctrlPCI = new PCIController();
@@ -124,15 +123,15 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 
 void displayStatusLine()
 {
-  int curpos, i;
-  char attr;
   char s[25], line[81];
 
   ScreenController *screen = (ScreenController *)g_controllers[CTRL_SCREEN];
   if(!screen)
     return;
 
-  curpos = screen->getCursorOffset();
+  UInt32 x = screen->getX();
+  UInt32 y = screen->getY();
+  UInt32 bg = screen->getBackColor();
 
   memset(line, 0, sizeof(line));
   memcpy(line, "Mem Free: ", 10);
@@ -141,14 +140,15 @@ void displayStatusLine()
   memcpy(line+strlen(line), " blocks Uptime: ", 16);
   itoa(((TimerController *)g_controllers[CTRL_TIMER])->getSeconds(), 10, s);
   memcpy(line+strlen(line), s, strlen(s));
-  i = strlen(line);
+  int i = strlen(line);
   line[i] = 's';
-  line[i+1] = '\n';
-  line[i+2] = 0;
-  // memset(line+strlen(line), 0x20, sizeof(line)-strlen(line)-2); // space fill to right edge
-  kprintAt(line, 0, 0, DEFAULT_STATUS_ATTR);
-
-  screen->setCursorOffset(curpos);
+  line[i+1] = 0;
+  memset(line+strlen(line), 0x20, sizeof(line)-strlen(line)-2); // space fill to right edge
+  screen->setXY(0, 0);
+  screen->setBackColor(0x600060);
+  kprint(line);
+  screen->setXY(x, y);
+  screen->setBackColor(bg);
 }
 
 void panic()
