@@ -1,7 +1,7 @@
 /*
- * H2 Virtual Memory Manager
- * Copyright (C) 2017-2019 Zoe & Alexis Knox. All rights reserved.
- */
+* H2 Virtual Memory Manager
+* Copyright (C) 2017-2019 Zoe & Alexis Knox. All rights reserved.
+*/
 
 #include <vmem.h>
 
