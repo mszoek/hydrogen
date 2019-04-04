@@ -25,7 +25,7 @@ ScreenController::ScreenController()
     color = 0xAFAFAF;
     bgcolor = 0;
 
-    if(width >= 1600)
+    if(width > 1920)
         setFont(5); // 20px
     else
         setFont(4); // 16px
