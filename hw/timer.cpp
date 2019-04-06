@@ -41,12 +41,12 @@ TimerController::~TimerController()
   g_controllers[CTRL_TIMER] = 0;
 }
 
-UInt32 TimerController::getTicks()
+UInt64 TimerController::getTicks()
 {
   return tickCounter;
 }
 
-UInt32 TimerController::getSeconds()
+UInt64 TimerController::getSeconds()
 {
   return tickCounter / KERNEL_HZ;
 }

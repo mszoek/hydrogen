@@ -14,12 +14,12 @@ public:
     TimerController();
     virtual ~TimerController();
 
-    UInt32 getTicks();
-    UInt32 getSeconds();
+    UInt64 getTicks();
+    UInt64 getSeconds();
     void tick();
 
 private:
-    UInt32 tickCounter;
+    UInt64 tickCounter;
 };
 
 #endif

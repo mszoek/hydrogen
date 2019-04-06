@@ -58,7 +58,6 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   if(binf->flags & 0x4)
     strcpy(cmdline, (char *)((UInt64)binf->cmdLine));
 
-  isrInstall();
   PhysicalMemoryManager physMM(mem, KERN_ADDRESS, size,
     (PhysicalMemoryManager::RegionInfo *)mmap, mmapLen);
   pmm = &physMM;
@@ -86,6 +85,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   screen->setXYChars(0, 1);
   kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x%x]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size, KERN_ADDRESS);
   kprint("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
+  isrInstall();
 
   TimerController *ctrlTimer = new TimerController();
   new KeyboardController();
@@ -94,22 +94,22 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   asm volatile("sti"); // Start interrupts!
   ctrlPCI->startDevices();
 
-  if(!g_controllers[CTRL_AHCI])
-    panic();
+  // if(!g_controllers[CTRL_AHCI])
+  //   panic();
 
-  GUIDPartitionTable gpt((AHCIController *)g_controllers[CTRL_AHCI], 0);
+  // GUIDPartitionTable gpt((AHCIController *)g_controllers[CTRL_AHCI], 0);
 
-  if(rootGUID[0] != 0)
-  {
-    if(!gpt.isValid())
-      panic();
-    rootPartition = gpt.getPartitionByGUID(rootGUID);
-    if(rootPartition == 0)
-        panic();
-    if(verbose)
-      kprintf("Mounting %s root partition %s on /\n",
-        (rootPartition->getTypeEntry())->name, rootPartition->getGUIDA());
-  }
+  // if(rootGUID[0] != 0)
+  // {
+  //   if(!gpt.isValid())
+  //     panic();
+  //   rootPartition = gpt.getPartitionByGUID(rootGUID);
+  //   if(rootPartition == 0)
+  //       panic();
+  //   if(verbose)
+  //     kprintf("Mounting %s root partition %s on /\n",
+  //       (rootPartition->getTypeEntry())->name, rootPartition->getGUIDA());
+  // }
 
   shellStart();
   displayStatusLine();

@@ -24,5 +24,5 @@ void setIDT()
     idt_reg.base = (UInt64) &idt;
     idt_reg.limit = IDT_ENTRIES * sizeof(idtGate) - 1;
     /* Don't make the mistake of loading &idt -- always load &idt_reg */
-    asm volatile("lidtq (%0)" : : "r" (&idt_reg));
+    asm volatile("lidt (%0)" : : "r" (&idt_reg));
 }

@@ -40,7 +40,7 @@ isrCommonStub:
     pop rbp;
     pop rsi;
     pop rdi;
-	add rsp, 8 ; Cleans up the pushed error code and pushed ISR number
+	add rsp, 0x10 ; Cleans up the pushed error code and pushed ISR number
 	sti
 	iretq ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
 
@@ -78,7 +78,7 @@ irqCommonStub:
     pop rbp;
     pop rsi;
     pop rdi;
-    add rsp, 8
+    add rsp, 0x10
     sti
     iretq
 
