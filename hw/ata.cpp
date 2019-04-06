@@ -24,7 +24,7 @@ AHCIController::AHCIController(hbaMem *p)
 {
     if(verbose)
         kprintf("hw/AHCIController: 0x%x\n", this);
-    g_controllers[CTRL_AHCI] = (UInt32)this;
+    g_controllers[CTRL_AHCI] = (UInt64)this;
     abar = p;
 
     // reserve 75 blocks starting at AHCI_BASE
@@ -176,7 +176,8 @@ void AHCIController::identifyPort(hbaPort *port)
     hbaCmdTable *tbl = (hbaCmdTable *)(hdr->ctbaLo);
     memset((char *)tbl, 0, sizeof(hbaCmdTable));
 
-    tbl->prdtEntry[0].dbaLo = (UInt32)buf;
+    tbl->prdtEntry[0].dbaLo = ((UInt64)buf) & 0xFFFFFFFF;
+    tbl->prdtEntry[0].dbaHi = ((UInt64)buf) >> 32;
     tbl->prdtEntry[0].dbc = 512;
     tbl->prdtEntry[0].i = 1;
 
@@ -228,13 +229,15 @@ bool AHCIController::read(hbaPort *port, UInt16 *buf, UInt32 lba, UInt16 sectors
     int i;
     for(i = 0; i < hdr->prdtLen - 1; ++i)
     {
-        tbl->prdtEntry[i].dbaLo = (UInt32)buf; 
+        tbl->prdtEntry[i].dbaLo = (UInt32)((UInt64)buf & 0xFFFFFFFF);
+        tbl->prdtEntry[i].dbaHi = (UInt32)((UInt64)buf >> 32);
         tbl->prdtEntry[i].dbc = 8191; // always 1 less than actual value (8192 = 8K)
         tbl->prdtEntry[i].i = 1; // interrupt when ready
         buf += 4096; // 4K words = 8K bytes
         sectors -= 16;
     }
-    tbl->prdtEntry[i].dbaLo = (UInt32)buf;
+    tbl->prdtEntry[i].dbaLo = (UInt32)((UInt64)buf & 0xFFFFFFFF);
+    tbl->prdtEntry[i].dbaHi = (UInt32)((UInt64)buf >> 32);
     tbl->prdtEntry[i].dbc = (sectors << 9) - 1; // 512 bytes per sector
     tbl->prdtEntry[i].i = 1;
 

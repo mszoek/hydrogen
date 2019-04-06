@@ -10,7 +10,7 @@
 #include <kernel.h>
 
 
-PhysicalMemoryManager::PhysicalMemoryManager(UInt32 memSize, UInt32 kernAddr, 
+PhysicalMemoryManager::PhysicalMemoryManager(UInt32 memSize, UInt64 kernAddr, 
   UInt32 kernSize, RegionInfo *regions, UInt32 regionsLen)
 {
   // if(verbose)
@@ -46,11 +46,17 @@ PhysicalMemoryManager::PhysicalMemoryManager(UInt32 memSize, UInt32 kernAddr,
     /* init any available regions for our use */
     if(region->type == 1)
     {
-      initRegion(region->startLo, region->sizeLo);
+      UInt64 addr = region->startHi;
+      addr <<= 32;
+      addr |= region->startLo;
+      UInt64 len = region->sizeHi;
+      len <<= 32;
+      len |= region->sizeLo;
+      initRegion(addr, len);
     }
 
     ++i;
-    region = (RegionInfo *)((UInt32)region + region->size + sizeof(region->size));
+    region = (RegionInfo *)((UInt64)region + region->size + sizeof(region->size));
   }
 
   /* mark the kernel memory as in use */
@@ -59,9 +65,32 @@ PhysicalMemoryManager::PhysicalMemoryManager(UInt32 memSize, UInt32 kernAddr,
   /* drop unusable low memory areas */
   dropRegion(0, 0x400); // real mode interrupt vectors
   dropRegion(0x400, 0x100); // bios data area
+  dropRegion(0x1000, 0x5000); // page tables
   dropRegion(0x7c00, 0x200); // boot sector
   dropRegion(0x80000, 0x20000); // 128kb extended bios data area
   dropRegion(0xa0000, 0x60000); // 384kb video, ROMs, etc.
+
+  UInt64 *pdpt = (UInt64 *)0x2000;  // increments of 1 GB
+  pdpt[2] = 0x5003; // map the 2GB space with PDT at 0x5000
+  UInt64 *pdt = (UInt64 *)0x5000;    // increments of 2 MB
+  memset((char *)pdt, 0, 0x1000);
+
+  UInt64 framebuffer = bootinfo.framebufferAddr;
+
+  /* allocate memory for PTs to cover the 48MB framebuffer space */
+  UInt64 *pt = (UInt64 *)allocBlock(24); // each one covers 2MB of addresses
+  int j = 0;
+  for(i = 0; framebuffer+j <= framebuffer+(1920*1080*32); ++i)
+  {
+    *(pt+i) = framebuffer + j | 0x3;
+    j += 0x1000;
+  }
+  j = 0;
+  for(i = 0; i < 24; ++i)
+  {
+    pdt[i+128] = ((UInt64)pt)+j | 0x3;
+    j += 0x1000;
+  }
 
   /*
    * We're going to have pools for allocations < PMM_BLOCK_SIZE/2. A block 
@@ -239,7 +268,7 @@ int PhysicalMemoryManager::findFirstFree(UInt32 size)
 	return -1;
 }
 
-void PhysicalMemoryManager::initRegion(UInt32 base, UInt32 size)
+void PhysicalMemoryManager::initRegion(UInt64 base, UInt64 size)
 { 
 	int align = base / PMM_BLOCK_SIZE;
 	int blocks = size / PMM_BLOCK_SIZE;
@@ -255,7 +284,7 @@ void PhysicalMemoryManager::initRegion(UInt32 base, UInt32 size)
 	pmmBitmapSet(0);	// First block is always set so allocs can't be 0
 }
 
-void PhysicalMemoryManager::dropRegion(UInt32 base, UInt32 size)
+void PhysicalMemoryManager::dropRegion(UInt64 base, UInt64 size)
 {
 	int align = base / PMM_BLOCK_SIZE;
 	int blocks = size / PMM_BLOCK_SIZE;
@@ -273,7 +302,7 @@ void PhysicalMemoryManager::dropRegion(UInt32 base, UInt32 size)
 void *PhysicalMemoryManager::allocBlock()
 {
   int frame;
-  UInt32 addr;
+  UInt64 addr;
 
 	if(memFreeBlocks() <= 0)
 		return 0;	// out of memory!
@@ -291,7 +320,7 @@ void *PhysicalMemoryManager::allocBlock()
 
 void PhysicalMemoryManager::freeBlock(void *p)
 {
-  UInt32 addr = (UInt32)p;
+  UInt64 addr = (UInt64)p;
   int frame = addr / PMM_BLOCK_SIZE;
 
   pmmBitmapUnset(frame);
@@ -310,7 +339,7 @@ void* PhysicalMemoryManager::allocBlock(UInt32 size)
 	for(UInt32 i = 0; i < size; i++)
 		pmmBitmapSet(frame + i);
 
-	UInt32 addr = frame * PMM_BLOCK_SIZE;
+	UInt64 addr = frame * PMM_BLOCK_SIZE;
 	physUsedBlocks += size;
 
 	return (void*)addr;
@@ -318,7 +347,7 @@ void* PhysicalMemoryManager::allocBlock(UInt32 size)
 
 void PhysicalMemoryManager::freeBlock(void* p, UInt32 size)
 {
-	UInt32 addr = (UInt32)p;
+	UInt64 addr = (UInt64)p;
 	int frame = addr / PMM_BLOCK_SIZE;
 
 	for(UInt32 i = 0; i < size; i++)
@@ -395,7 +424,7 @@ void *PhysicalMemoryManager::malloc(const unsigned int size)
         tmp->magic = ((i & 0xFF) << 24) | (MALLOC_MAGIC & 0xFFFFFF);
         tmp->node = pools[i].used;
 
-        tmp = (mallocHeader *)((UInt32)tmp + sizeof(mallocHeader));
+        tmp = (mallocHeader *)((UInt64)tmp + sizeof(mallocHeader));
         // kprintf("malloc(%d)=%x p=%x POOL %d\n",size,(UInt32)tmp-sizeof(mallocHeader),tmp,i);
         return (void *)tmp;
       }
@@ -407,7 +436,7 @@ void *PhysicalMemoryManager::malloc(const unsigned int size)
     ((mallocHeader *)p)->magic = 0xEE000000 | MALLOC_MAGIC;
     ((mallocHeader *)p)->node = (poolNode *)size; // we need this to free!
     // kprintf("malloc(%d)=%x p=%x blocks=%d magic=%x\n",size,p,(UInt32)p+sizeof(mallocHeader),blocks,((mallocHeader *)p)->magic);
-    p = (void *)((UInt32)p + sizeof(mallocHeader));
+    p = (void *)((UInt64)p + sizeof(mallocHeader));
     return (void *)p;
   }
 
@@ -430,14 +459,14 @@ void PhysicalMemoryManager::free(void *p)
       // this is a full block header
       ((mallocHeader *)hdr)->magic = 0;
       void *q = p;
-      p = (void *)((UInt32)p - sizeof(mallocHeader));
-      int len = (UInt32)((mallocHeader *)hdr)->node + sizeof(mallocHeader);
+      p = (void *)((UInt64)p - sizeof(mallocHeader));
+      int len = (UInt64)((mallocHeader *)hdr)->node + sizeof(mallocHeader);
       int blocks = len / PMM_BLOCK_SIZE + (len % PMM_BLOCK_SIZE ? 1 : 0);
       // kprintf("free(%d)=%x p=%x blocks %d magic=%x (now 0)\n", len - sizeof(mallocHeader), (UInt32)p, (UInt32)q, blocks, magic);
-      if((UInt32)p % PMM_BLOCK_ALIGN)
+      if((UInt64)p % PMM_BLOCK_ALIGN)
       {
         // not block aligned? something's weird.
-        kprintf("free: freeing %d blocks at %x which is not aligned\n", blocks, (UInt32)p);
+        kprintf("free: freeing %d blocks at %x which is not aligned\n", blocks, (UInt64)p);
       }
       freeBlock(p, blocks);
       return;

@@ -7,15 +7,58 @@ extern kernelMain
 
 
 start:
-	lgdt [gdt_descriptor] ; Load the GDT descriptor
-	mov ax, 0x10 ; update the segment registers
-	mov ds, ax
-	mov ss, ax
-	mov es, ax
-	mov fs, ax
-	mov gs, ax
-	mov esp, _sys_stack
-	jmp 0x08:stublet
+; set up PAE paging with tables at 0x1000
+	mov edi, 0x1000
+	mov cr3, edi
+	xor eax, eax
+	mov ecx, 0x1000
+	rep stosd ; clear the memory
+	mov edi, cr3
+
+; now we have
+;  PML4T at 0x1000
+;  PDPT at 0x2000
+;  PDT at 0x3000
+;  PT at 0x4000
+
+	mov DWORD [edi], 0x2003 ; point PML4T to PDPT
+	add edi, 0x1000
+	mov DWORD [edi], 0x3003 ; point PDPT to PDT
+	add edi, 0x1000
+	mov DWORD [edi], 0x4003 ; point PDT to PT
+	add edi, 0x1000
+
+; identity map 2MB
+	mov eax, ebx	; bootloader put stuff here
+	mov ebx, 0x00000003
+	mov ecx, 0x200 ; 512 entries
+setEntry:
+	mov DWORD [edi], ebx
+	add ebx, 0x1000
+	add edi, 8
+	loop setEntry
+	mov ebx, eax
+
+; tell the CPU we're using PAE
+	mov eax, cr4
+	or eax, 1<<5
+	mov cr4, eax
+
+; set the LM bit to enable Long Mode
+; we will be in 32-bit Compatibility Mode
+	mov ecx, 0xC0000080
+	rdmsr
+	or eax, 1<<8
+	wrmsr
+; enable paging
+	mov eax, cr0
+	or eax, 1<<31
+	mov cr0, eax
+
+; now we can enter true 64-bit mode!
+; load the GDT and jump to the stub64
+	lgdt [GDT64.Pointer]
+	jmp GDT64.Code:stub64
 
 align 4
 mboot:
@@ -42,20 +85,34 @@ mboot:
 	dd 1080	; auto height (no preference)
 	dd 32	; prefer 32bpp
 
-stublet:
-	mov eax, end
-	sub eax, 0x100000
-	push eax
-	push ebx				; Pass multiboot info block to kernel
-	call kernelMain			; nu kör vi!!
+
+
+[bits 64]
+stub64:
+	mov ax, GDT64.Data ; update the segment registers
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	mov ax, GDT64.Null
+	mov ss, ax
+	mov rbp, _sys_stack
+	mov rsp, rbp
+
+	mov rsi, end
+	sub rsi, 0x100000
+	mov rdi, rbx
+	push rdi
+	push rsi
+	jmp kernelMain		; nu kör vi!!
 	cli
 die: hlt
 	jmp die
 
-%include "utilities/32bit/32bit-gdt.asm"
+%include "kernel/gdt64.asm"
 
 section .bss
-	resb 32768
+	resb 256*1024
 
 _sys_stack:
 

@@ -17,7 +17,7 @@ typedef signed short SInt16;
 typedef unsigned char UInt8;
 typedef signed char SInt8;
 
-#define low16(address) (UInt16)((address) & 0xFFFF)
-#define high16(address) (UInt16)(((address) >> 16) & 0xFFFF)
+#define low16(address) (UInt16)(address & 0xFFFF)
+#define high16(address) (UInt16)((address & 0xFFFF0000) >> 16)
 
 #endif

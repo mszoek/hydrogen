@@ -126,9 +126,9 @@ GUIDPartitionTable::GUIDPartitionTable(AHCIController *ahci, int port)
             stringifyGUID(header.diskGUID, guid);
 
             kprintf("Version %d.%d Header size %d CRC %8x LBA %d Backup %d\n",
-            header.revision[2], header.revision[3], header.hdrSize, header.crcHeader, header.curLBALo, header.backupLBALo);
+            header.revision[2], header.revision[3], header.hdrSize, header.crcHeader, header.curLBA, header.backupLBA);
             kprintf("First LBA %d Last LBA %d GUID %s\nPartitions %d\n",
-            header.firstUsableLBALo, header.lastUsableLBALo, guid, header.nrPartEntries);
+            header.firstUsableLBA, header.lastUsableLBA, guid, header.nrPartEntries);
         }
         gptValid = true;
     }
@@ -228,12 +228,9 @@ Partition::Partition(AHCIController *c, int p, GPTEntry *entry, TypeGUIDEntry *t
     port = p;
     typeEntry = type;
     memcpy((char *)partGUID, (char *)entry->partGUID, 16);
-    startLBALo = entry->startLBALo;
-    startLBAHi = entry->startLBAHi;
-    endLBALo = entry->endLBALo;
-    endLBAHi = entry->endLBAHi;
-    flagsLo = entry->flagsLo;
-    flagsHi = entry->flagsHi;
+    startLBA = entry->startLBA;
+    endLBA = entry->endLBA;
+    flags = entry->flags;
     memcpy((char *)partName, (char *)entry->partName, 36);
     memset(asciiName, 0, 19);
     int j = 0;
@@ -272,19 +269,19 @@ char *Partition::getGUIDA()
     return asciiGUID;
 }
 
-UInt32 Partition::getStartLBA()
+UInt64 Partition::getStartLBA()
 {
-    return startLBALo;
+    return startLBA;
 }
 
-UInt32 Partition::getEndLBA()
+UInt64 Partition::getEndLBA()
 {
-    return endLBALo;
+    return endLBA;
 }
 
-UInt32 Partition::getFlags()
+UInt64 Partition::getFlags()
 {
-    return flagsLo;
+    return flags;
 }
 
 char *Partition::getNameA()

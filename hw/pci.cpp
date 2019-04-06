@@ -16,7 +16,7 @@ PCIController::PCIController()
 {
     if(verbose)
         kprintf("hw/PCIController: 0x%x\n", this);
-    g_controllers[CTRL_PCI] = (UInt32)this;
+    g_controllers[CTRL_PCI] = (UInt64)this;
     pciTableIndex = 0;
     memset((char *)pciTable, 0, sizeof(pciTable));
 }

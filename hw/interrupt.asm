@@ -5,9 +5,17 @@
 ; Common ISR code
 isrCommonStub:
     ; 1. Save CPU state
-	pusha ; Pushes edi,esi,ebp,esp,ebx,edx,ecx,eax
+;	pusha ; Pushes edi,esi,ebp,esp,ebx,edx,ecx,eax
+    push rdi;
+    push rsi;
+    push rbp;
+    push rsp;
+    push rbx;
+    push rdx;
+    push rcx;
+    push rax;
 	mov ax, ds ; Lower 16-bits of eax = ds.
-	push eax ; save the data segment descriptor
+	push rax ; save the data segment descriptor
 	mov ax, 0x10  ; kernel data segment descriptor
 	mov ds, ax
 	mov es, ax
@@ -18,37 +26,61 @@ isrCommonStub:
 	call isrHandler
 
     ; 3. Restore state
-	pop eax
+	pop rax
 	mov ds, ax
 	mov es, ax
 	mov fs, ax
 	mov gs, ax
-	popa
-	add esp, 8 ; Cleans up the pushed error code and pushed ISR number
+;	popa
+    pop rax;
+    pop rcx;
+    pop rdx;
+    pop rbx;
+    pop rsp;
+    pop rbp;
+    pop rsi;
+    pop rdi;
+	add rsp, 8 ; Cleans up the pushed error code and pushed ISR number
 	sti
-	iret ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
+	iretq ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
 
 ; Common IRQ code. Identical to ISR code except for the 'call'
 ; and the 'pop ebx'
 irqCommonStub:
-    pusha
+;    pusha
+    push rdi;
+    push rsi;
+    push rbp;
+    push rsp;
+    push rbx;
+    push rdx;
+    push rcx;
+    push rax;
     mov ax, ds
-    push eax
+    push rax
     mov ax, 0x10
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
     call irqHandler ; Different than the ISR code
-    pop ebx  ; Different than the ISR code
+    pop rbx  ; Different than the ISR code
     mov ds, bx
     mov es, bx
     mov fs, bx
     mov gs, bx
-    popa
-    add esp, 8
+;    popa
+    pop rax;
+    pop rcx;
+    pop rdx;
+    pop rbx;
+    pop rsp;
+    pop rbp;
+    pop rsi;
+    pop rdi;
+    add rsp, 8
     sti
-    iret
+    iretq
 
 ; We don't get information about which interrupt was caller
 ; when the handler is run, so we will need to have a different handler

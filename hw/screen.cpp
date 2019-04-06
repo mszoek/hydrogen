@@ -31,7 +31,7 @@ ScreenController::ScreenController()
         setFont(4); // 16px
     
 
-    g_controllers[CTRL_SCREEN] = (UInt32)this;
+    g_controllers[CTRL_SCREEN] = (UInt64)this;
 }
 
 ScreenController::~ScreenController()
@@ -55,7 +55,7 @@ void ScreenController::setFont(int f)
 void ScreenController::putpixel(int x, int y, UInt32 color)
 {
     int bytesPerPixel = bpp/8;
-    void *where = (void *)((UInt32)framebuffer + x*bytesPerPixel + y*pitch);
+    void *where = (void *)((UInt64)framebuffer + x*bytesPerPixel + y*pitch);
     *(UInt32 *)where = color;
 }
 
@@ -76,7 +76,7 @@ void ScreenController::printBackspace()
 
     for(int j = 0; j < fontHeight; ++j)
     {
-        memset((char *)((UInt32)framebuffer + newx*(bpp/8) + (newy+j)*pitch), 0,
+        memset((char *)((UInt64)framebuffer + newx*(bpp/8) + (newy+j)*pitch), 0,
             fontWidth*(bpp/8));
     }
 
@@ -215,11 +215,11 @@ void ScreenController::printChar(UInt8 c)
     /* scroll if necessary */
     if(ypos > (height - fontHeight))
     {
-        memcpy((char *)framebuffer, (char *)((UInt32)framebuffer + fontHeight*pitch),
+        memcpy((char *)framebuffer, (char *)((UInt64)framebuffer + fontHeight*pitch),
             (height - fontHeight)*pitch + width*(bpp/8));
 
         // Blank last line
-        memset((char *)((UInt32)framebuffer + (height - fontHeight)*pitch),
+        memset((char *)((UInt64)framebuffer + (height - fontHeight)*pitch),
             0, fontHeight*pitch);
         ypos = height - fontHeight;
         xpos = 0;

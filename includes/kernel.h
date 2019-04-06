@@ -20,7 +20,7 @@
 #define CONTROLLER_MAX  5
 
 extern PhysicalMemoryManager *pmm;
-extern UInt32 g_controllers[];
+extern UInt64 g_controllers[];
 extern bool verbose;
 extern bool debug;
 extern struct multiboot_info bootinfo;

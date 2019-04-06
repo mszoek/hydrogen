@@ -21,7 +21,7 @@ TimerController::TimerController()
 {
   if(verbose)
     kprintf("hw/TimerController: 0x%x @%dHz\n", this, KERNEL_HZ);
-  g_controllers[CTRL_TIMER] = (UInt32)this;
+  g_controllers[CTRL_TIMER] = (UInt64)this;
 
   tickCounter = 0;
   registerInterruptHandler(IRQ0, timerCallback);

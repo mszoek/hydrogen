@@ -20,7 +20,7 @@
 #include <fs/gpt.h>
 
 PhysicalMemoryManager *pmm = 0;
-UInt32 g_controllers[CONTROLLER_MAX];
+UInt64 g_controllers[CONTROLLER_MAX];
 char rootGUID[40]; // root filesystem GUID from cmdline
 Partition *rootPartition = 0;
 struct multiboot_info bootinfo;
@@ -35,13 +35,17 @@ void displayStartupMsg(unsigned int size);
 // Kernel entry function
 extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 {
-  UInt32 mem = 0, mmap = 0, mmapLen = 0;
+  asm volatile("mov %0, %%rdi" : "=m"(binf));
+  asm volatile("mov %0, %%rsi" : "=m"(size));
+
+  UInt64 mem = 0, mmap = 0, mmapLen = 0;
   int i = 0;
   char cmdline[256];
   
   memset(cmdline, 0, sizeof(cmdline));
   memset(rootGUID, 0, sizeof(rootGUID));
   memcpy((char *)&bootinfo, (char *)binf, sizeof(bootinfo));
+
 
   /* Read data from the multiboot structure */
   if(binf->flags & 0x1)
@@ -52,7 +56,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
     mmapLen = binf->mmapLen;
   }
   if(binf->flags & 0x4)
-    strcpy(cmdline, (char *)(binf->cmdLine));
+    strcpy(cmdline, (char *)((UInt64)binf->cmdLine));
 
   isrInstall();
   PhysicalMemoryManager physMM(mem, KERN_ADDRESS, size,
