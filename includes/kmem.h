@@ -26,17 +26,19 @@ public:
         UInt32 acpi30;
     } __attribute__((packed)) RegionInfo;
 
-    PhysicalMemoryManager(UInt32 memSize, UInt64 kernAddr, UInt32 kernSize,
+    PhysicalMemoryManager(UInt64 memSize, UInt64 kernAddr, UInt32 kernSize,
         RegionInfo *regions, UInt32 regionsLen);
     virtual ~PhysicalMemoryManager();
 
     void printStats();
-    UInt32 memSize();
-    UInt32 memSizeBlocks();
-    UInt32 memFree();
-    UInt32 memFreeBlocks();
-    void *malloc(unsigned int size);
-    void free(void *p);
+    UInt64 memSize();
+    UInt64 memSizeBlocks();
+    UInt64 memFree();
+    UInt64 memFreeBlocks();
+    void *allocBlock(); // alloc one block
+    void *allocBlock(UInt32 size); // alloc size blocks
+    void freeBlock(void *p); // free one block
+    void freeBlock(void *p, UInt32 size); // free size blocks
     void dropRegion(UInt64 base, UInt64 size); // allow drivers to reserve memory areas
 
 private:
@@ -45,41 +47,12 @@ private:
     UInt32 physMaxBlocks;
     UInt32 *physMemoryMap;
 
-    typedef struct __poolNode
-    {
-        struct __poolNode *prev;
-        struct __poolNode *next;
-        void *chunk;
-    } poolNode;
-
-    typedef struct __mallocHeader
-    {
-        poolNode *node;
-        UInt32 magic;
-    } mallocHeader;
-
-    typedef struct __poolHeader
-    {
-        UInt32 size;
-        UInt32 nrFreeChunks;
-        poolNode *free;
-        poolNode *used;
-    } poolHeader;
-
-    // pools are held in a static list by size. grows horizontally.
-#define NR_POOLS 9
-    poolHeader pools[NR_POOLS];
-
     inline void pmmBitmapSet(int bit);
     inline void pmmBitmapUnset(int bit);
     inline int pmmBitmapTest(int bit);
     int findFirstFree();
     int findFirstFree(UInt32 size);
     void initRegion(UInt64 base, UInt64 size);
-    void *allocBlock(); // alloc one block
-    void *allocBlock(UInt32 size); // alloc size blocks
-    void freeBlock(void *p); // free one block
-    void freeBlock(void *p, UInt32 size); // free size blocks
 };
 
 /* standard memory functions */

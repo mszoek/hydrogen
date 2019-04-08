@@ -8,8 +8,6 @@
 
 #include <hw/types.h>
 
-#define AHCI_BASE 0x800000 // 8 MB
-
 #define SATA_SIG_ATA 0x00000101     // SATA drive
 #define SATA_SIG_ATAPI 0xEB140101   // SATAPI drive
 #define SATA_SIG_SEMB 0xC33C0101    // enclosure management bridge
@@ -753,6 +751,7 @@ private:
     void swapBytes(UInt8 *buf, UInt32 len);
     void identifyPort(hbaPort *port);
 
+    UInt64 AHCI_BASE;
     hbaMem *abar; // AHCI Base Address Register = PCI BAR5
     UInt8 nrPorts; // number of ports implemented on this controller
     UInt8 nrCmdSlots; // number of command slots per port

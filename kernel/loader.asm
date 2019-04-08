@@ -4,40 +4,77 @@
 [bits 32]
 global start
 extern kernelMain
-
+extern pml4t
+extern pdpt
+extern pdt
+extern pt
 
 start:
-; set up PAE paging with tables at 0x1000
-	mov edi, 0x1000
+; set up PAE paging
+	mov edi, pml4t
 	mov cr3, edi
 	xor eax, eax
 	mov ecx, 0x1000
 	rep stosd ; clear the memory
 	mov edi, cr3
 
-; now we have
-;  PML4T at 0x1000
-;  PDPT at 0x2000
-;  PDT at 0x3000
-;  PT at 0x4000
+	mov eax, ebx	; save ebx. GRUB put stuff there
 
-	mov DWORD [edi], 0x2003 ; point PML4T to PDPT
-	add edi, 0x1000
-	mov DWORD [edi], 0x3003 ; point PDPT to PDT
-	add edi, 0x1000
-	mov DWORD [edi], 0x4003 ; point PDT to PT
-	add edi, 0x1000
+	mov ebx, pdpt
+	or ebx, 3
+	mov DWORD [edi], ebx ; point PML4T to PDPT
 
-; identity map 2MB
-	mov eax, ebx	; bootloader put stuff here
-	mov ebx, 0x00000003
-	mov ecx, 0x200 ; 512 entries
+	mov edi, pdpt
+	mov ebx, pdt
+	or ebx, 3
+	mov DWORD [edi], ebx ; point PDPT to PDT
+
+	mov edi, pdt
+	mov ebx, pt
+	or ebx, 3
+	mov DWORD [edi], ebx ; point PDT[0] to PT[0]
+	add ebx, 0x1000
+	add edi, 8
+	mov DWORD [edi], ebx ; point PDT[1] to PT[1]
+	
+	mov edi, pt
+
+; identity map first 4MB (pt[0-1023])
+	mov ebx, 0x3
+	mov ecx, 0x400 ; 1024 entries
 setEntry:
 	mov DWORD [edi], ebx
 	add ebx, 0x1000
 	add edi, 8
 	loop setEntry
-	mov ebx, eax
+
+; ; we'll map the kernel at 3GB (0xC0000000)
+; ; give it 8MB of space to start
+; ; create PDT and page tables at 0x20000
+; 	mov edi, 0x20000
+; 	mov ebx, 0x21003
+; 	mov ecx, 4
+; setPDT:
+; 	mov DWORD [edi], ebx
+; 	add edi, 8
+; 	add ebx, 0x1000
+; 	loop setPDT
+
+; 	mov edi, 0x21000
+; 	mov ebx, 0x100003 ; phys address
+; 	mov ecx, 0x1000
+; setEntry2:
+; 	mov DWORD [edi], ebx
+; 	add edi, 8
+; 	add ebx, 0x1000
+; 	loop setEntry2
+
+; ; hook up our new PDT in the PDPT
+; 	mov edi, 0x2018
+; 	mov ebx, 0x20003
+; 	mov DWORD [edi], ebx
+
+	mov ebx, eax ; restore bootloader info
 
 ; tell the CPU we're using PAE
 	mov eax, cr4
@@ -69,7 +106,7 @@ mboot:
 	multiboot_header_magic	equ 0x1badb002
 	multiboot_header_flags	equ multiboot_page_align | multiboot_memory_info | multiboot_gfx_info | multiboot_aout_kludge
 	multiboot_checksum		equ -(multiboot_header_magic + multiboot_header_flags)
-	extern code, bss, end
+	extern begin, code, bss, end
 
 	dd multiboot_header_magic
 	dd multiboot_header_flags
@@ -100,11 +137,15 @@ stub64:
 	mov rsp, rbp
 
 	mov rsi, end
+	; mov rax, 0xC0000000
 	sub rsi, 0x100000
 	mov rdi, rbx
 	push rdi
 	push rsi
-	jmp kernelMain		; nu kör vi!!
+	mov rax, qword kernelMain
+	; mov rcx, qword 0xBFF00000
+	; add rax, rcx
+	jmp rax ; nu kör vi!!
 	cli
 die: hlt
 	jmp die
@@ -113,6 +154,5 @@ die: hlt
 
 section .bss
 	resb 256*1024
-
 _sys_stack:
 

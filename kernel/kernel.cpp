@@ -13,13 +13,13 @@
 #include <hw/keyboard.h>
 #include <hw/screen.h>
 #include <kstring.h>
-#include <kmem.h>
 #include <kstdio.h>
 #include <kversion.h>
 #include <shell.h>
 #include <fs/gpt.h>
 
 PhysicalMemoryManager *pmm = 0;
+VirtualMemoryManager *vmm = 0;
 UInt64 g_controllers[CONTROLLER_MAX];
 char rootGUID[40]; // root filesystem GUID from cmdline
 Partition *rootPartition = 0;
@@ -35,9 +35,6 @@ void displayStartupMsg(unsigned int size);
 // Kernel entry function
 extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 {
-  asm volatile("mov %0, %%rdi" : "=m"(binf));
-  asm volatile("mov %0, %%rsi" : "=m"(size));
-
   UInt64 mem = 0, mmap = 0, mmapLen = 0;
   int i = 0;
   char cmdline[256];
@@ -61,6 +58,9 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   PhysicalMemoryManager physMM(mem, KERN_ADDRESS, size,
     (PhysicalMemoryManager::RegionInfo *)mmap, mmapLen);
   pmm = &physMM;
+
+  VirtualMemoryManager virtMM;
+  vmm = &virtMM;
 
   new ScreenController();
   ScreenController *screen = ((ScreenController *)g_controllers[CTRL_SCREEN]);
@@ -94,8 +94,8 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   asm volatile("sti"); // Start interrupts!
   ctrlPCI->startDevices();
 
-  // if(!g_controllers[CTRL_AHCI])
-  //   panic();
+  if(!g_controllers[CTRL_AHCI])
+    panic();
 
   // GUIDPartitionTable gpt((AHCIController *)g_controllers[CTRL_AHCI], 0);
 

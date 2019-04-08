@@ -8,9 +8,11 @@
 
 #include <hw/types.h>
 #include <kmem.h>
+#include <vmem.h>
 #include <bootinfo.h>
 
-#define KERN_ADDRESS 0x100000 // kernel load address (see loader.asm)
+#define KERN_ADDRESS 0x100000 // kernel physical load address
+#define KERN_VMA 0xC0000000 // kernel virtual address
 
 #define CTRL_KEYBOARD   0
 #define CTRL_TIMER      1
@@ -20,6 +22,7 @@
 #define CONTROLLER_MAX  5
 
 extern PhysicalMemoryManager *pmm;
+extern VirtualMemoryManager *vmm;
 extern UInt64 g_controllers[];
 extern bool verbose;
 extern bool debug;

@@ -54,7 +54,7 @@ KERNEL_INC=$(wildcard includes/*.h includes/hw/*.h includes/fs/*.h includes/font
 KERNEL_OBJ=kernel/loader.o ${KERNEL_SRC:.cpp=.o} hw/interrupt.o
 
 kernel.bin: $(KERNEL_OBJ)
-	ld -m elf_x86_64 -o kernel.bin -Tlinker.ld --oformat=elf64-x86-64 $(KERNEL_OBJ) 
+	ld -m elf_x86_64 -o kernel.bin -Tlinker.ld --no-relax $(KERNEL_OBJ) -Map kernel.map
 
 debug: kernel.bin mkiso
 	qemu-system-x86_64 -s -S -M q35 -accel tcg -drive file=hd.img,if=ide,media=disk -cdrom hydrogen.iso -boot d \
