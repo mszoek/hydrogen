@@ -29,6 +29,7 @@ public:
     void setBackColor(UInt32 c);
     void fontdemo();
     void setFont(int f);
+    void drawLogo();
 
 private:
     void *framebuffer;

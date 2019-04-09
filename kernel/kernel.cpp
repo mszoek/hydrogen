@@ -82,7 +82,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   }
 
   screen->clearScreen();
-  screen->setXYChars(0, 1);
+  screen->drawLogo();
   kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x%x]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size, KERN_ADDRESS);
   kprint("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
   isrInstall();
@@ -151,7 +151,7 @@ void displayStatusLine()
   line[i+1] = 0;
   memset(line+strlen(line), 0x20, sizeof(line)-strlen(line)-2); // space fill to right edge
   screen->setXY(0, 0);
-  screen->setBackColor(0x600060);
+  screen->setBackColor(0x00277c);
   kprint(line);
   screen->setXY(x, y);
   screen->setBackColor(bg);

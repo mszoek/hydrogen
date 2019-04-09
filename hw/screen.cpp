@@ -7,6 +7,7 @@
 #include <hw/screen.h>
 #include <kmem.h>
 #include <kernel.h>
+#include <h2logo.h>
 
 ScreenController::ScreenController()
 {
@@ -280,4 +281,15 @@ void ScreenController::clearScreen()
 {
     memset((UInt32 *)framebuffer, bgcolor, width*height);
     xpos = ypos = 0;
+}
+
+void ScreenController::drawLogo()
+{
+    for(int y = 0; y < gimp_image.height; ++y)
+    {
+        memcpy((char *)(FRAMEBUFFER_VMA+((y+fontHeight+2)*pitch)),
+            (char *)(gimp_image.pixel_data+gimp_image.width*y*gimp_image.bytes_per_pixel),
+            gimp_image.width*gimp_image.bytes_per_pixel);
+    }
+    setXY(0, gimp_image.height+fontHeight+2);
 }
