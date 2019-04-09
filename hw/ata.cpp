@@ -28,7 +28,7 @@ AHCIController::AHCIController(hbaMem *p)
     abar = p;
 
     // reserve 75 blocks for our data structures
-    AHCI_BASE = (UInt64)vmm->malloc(75*PMM_BLOCK_SIZE);
+    AHCI_BASE = vmm->remap((UInt64)vmm->malloc(75*PMM_BLOCK_SIZE), 75*PMM_BLOCK_SIZE);
 
     nrCmdSlots = ((abar->cap >> 8) & 0x1F) + 1;
     probeSATAPorts();

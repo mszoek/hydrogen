@@ -97,19 +97,19 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   if(!g_controllers[CTRL_AHCI])
     panic();
 
-  // GUIDPartitionTable gpt((AHCIController *)g_controllers[CTRL_AHCI], 0);
+  GUIDPartitionTable gpt((AHCIController *)g_controllers[CTRL_AHCI], 0);
 
-  // if(rootGUID[0] != 0)
-  // {
-  //   if(!gpt.isValid())
-  //     panic();
-  //   rootPartition = gpt.getPartitionByGUID(rootGUID);
-  //   if(rootPartition == 0)
-  //       panic();
-  //   if(verbose)
-  //     kprintf("Mounting %s root partition %s on /\n",
-  //       (rootPartition->getTypeEntry())->name, rootPartition->getGUIDA());
-  // }
+  if(rootGUID[0] != 0)
+  {
+    if(!gpt.isValid())
+      panic();
+    rootPartition = gpt.getPartitionByGUID(rootGUID);
+    if(rootPartition == 0)
+        panic();
+    if(verbose)
+      kprintf("Mounting %s root partition %s on /\n",
+        (rootPartition->getTypeEntry())->name, rootPartition->getGUIDA());
+  }
 
   shellStart();
   displayStatusLine();
