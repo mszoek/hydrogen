@@ -45,7 +45,7 @@ VirtualMemoryManager::VirtualMemoryManager()
 		*(mypdt+x) = ((UInt64)mypt)+j | 0x3;
 		j += 0x1000;
 	}
-	bootinfo.framebufferAddr = 0x7f80000000;
+	bootinfo.framebufferAddr = FRAMEBUFFER_VMA;
 
   /*
    * We're going to have pools for allocations < PMM_BLOCK_SIZE/2. A block 
@@ -112,54 +112,67 @@ VirtualMemoryManager::~VirtualMemoryManager()
 {
 }
 
+UInt64 VirtualMemoryManager::remap(UInt64 phys, UInt64 size)
+{
+	return remap(phys, size, VMA_BASE+phys);
+}
+
 /* remap() is still kind of broken */
-UInt64 VirtualMemoryManager::remap(UInt64 phys, UInt64 virt, UInt64 size)
+UInt64 VirtualMemoryManager::remap(UInt64 phys, UInt64 size, UInt64 virt)
 {
 	if(phys < 0x400000)
 		return phys;	// first 4MB is identity mapped
 
-	// find the page table indexes for our virtual addr
-	int pml4Idx = (UInt64)(virt / (512UL*GB));
-	UInt64 v = (virt - (512*GB*pml4Idx));
-
-	int pdptIdx = v / GB;
-	v = v - (pdptIdx*GB);
-
-	int pdtIdx = v / (2*MB);
-	v = v - (pdtIdx*2*MB);
-
-	int ptIdx = v / 4096;
-
-	if(pml4t[pml4Idx] == 0)
+	UInt64 orig = virt;
+	UInt64 end = virt+size;
+	while(virt < end)
 	{
-		// create a new pdpt for this 512GB
-		pml4t[pml4Idx] = (UInt64)pmm->allocBlock();
-		memset((UInt32 *)(pml4t[pml4Idx]), 0, 1024);
-		pml4t[pml4Idx] |= 3;
+		// find the page table indexes for our virtual addr
+		int pml4Idx = (UInt64)(virt / (512UL*GB));
+		UInt64 v = (virt - (512*GB*pml4Idx));
+
+		int pdptIdx = v / GB;
+		v = v - (pdptIdx*GB);
+
+		int pdtIdx = v / (2*MB);
+		v = v - (pdtIdx*2*MB);
+
+		int ptIdx = v / 4096;
+
+		if(pml4t[pml4Idx] == 0)
+		{
+			// create a new pdpt for this 512GB
+			pml4t[pml4Idx] = (UInt64)pmm->allocBlock();
+			memset((UInt32 *)(pml4t[pml4Idx]), 0, 1024);
+			pml4t[pml4Idx] |= 3;
+		}
+
+		UInt64 *mypdpt = (UInt64 *)(pml4t[pml4Idx] & ~0x0FFF);
+		if(mypdpt[pdptIdx] == 0)
+		{
+			// create a new pdt for this 1GB
+			mypdpt[pdptIdx] = (UInt64)pmm->allocBlock();
+			memset((UInt32 *)(mypdpt[pdptIdx]), 0, 1024);
+			mypdpt[pdptIdx] |= 3;
+		}
+
+		UInt64 *mypdt = (UInt64 *)(mypdpt[pdptIdx] & ~0x0FFF);
+		if(mypdt[pdtIdx] == 0)
+		{
+			// create a new pt for this 2MB
+			mypdt[pdtIdx] = (UInt64)pmm->allocBlock();
+			memset((UInt32 *)(mypdt[pdtIdx]), 0, 1024);
+			mypdt[pdtIdx] |= 3;
+		}
+
+		UInt64 *mypt = (UInt64 *)(mypdt[pdtIdx] & ~0x0FFF);
+		mypt[ptIdx] = phys | 3; // mark page present and writable
+
+		virt += 4096;
+		phys += 4096;
 	}
 
-	UInt64 *mypdpt = (UInt64 *)(pml4t[pml4Idx] & ~0x1FFF);
-	if(mypdpt[pdptIdx] == 0)
-	{
-		// create a new pdt for this 1GB
-		mypdpt[pdptIdx] = (UInt64)pmm->allocBlock();
-		memset((UInt32 *)(mypdpt[pdptIdx]), 0, 1024);
-		mypdpt[pdptIdx] |= 3;
-	}
-
-	UInt64 *mypdt = (UInt64 *)(mypdpt[pdptIdx] & ~0x1FFF);
-	if(mypdt[pdtIdx] == 0)
-	{
-		// create a new pt for this 2MB
-		mypdt[pdtIdx] = (UInt64)pmm->allocBlock();
-		memset((UInt32 *)(mypdt[pdtIdx]), 0, 1024);
-		mypdt[pdtIdx] |= 3;
-	}
-
-	UInt64 *mypt = (UInt64 *)(mypdt[pdtIdx] & ~0x1FFF);
-	mypt[ptIdx] = phys | 3; // mark page present and writable
-
-	return virt;
+	return orig;
 }
 
 void *VirtualMemoryManager::malloc(const unsigned int size)
