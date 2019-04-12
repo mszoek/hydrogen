@@ -16,7 +16,10 @@
 #include <kstdio.h>
 #include <kversion.h>
 #include <shell.h>
-#include <fs/gpt.h>
+#include <hw/byteswap.h>
+
+#define KERNEL_HFS
+#include <fs/hfs.h>
 
 PhysicalMemoryManager *pmm = 0;
 VirtualMemoryManager *vmm = 0;
@@ -109,6 +112,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
     if(verbose)
       kprintf("Mounting %s root partition %s on /\n",
         (rootPartition->getTypeEntry())->name, rootPartition->getGUIDA());
+    HierarchicalFileSystem hfs(rootPartition);
   }
 
   shellStart();

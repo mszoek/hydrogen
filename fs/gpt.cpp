@@ -221,6 +221,12 @@ Partition *GUIDPartitionTable::getPartitionByGUID(UInt8 *GUID)
     return 0;
 }
 
+Partition::Partition()
+{
+    ahci = 0;
+    port = 0;
+    startLBA = endLBA = flags = 0;
+}
 
 Partition::Partition(AHCIController *c, int p, GPTEntry *entry, TypeGUIDEntry *type)
 {

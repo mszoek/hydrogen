@@ -6,6 +6,7 @@
 #include <hw/port_io.h>
 #include <hw/ata.h>
 #include <hw/screen.h>
+#include <hw/byteswap.h>
 #include <kstring.h>
 #include <kstdio.h>
 #include <kernel.h>
@@ -154,10 +155,8 @@ void AHCIController::swapBytes(UInt8 *buf, UInt32 len)
 {
     for(UInt32 i = 0; i < len; i += 2)
     {
-        // we don't have ntohs() yet
         UInt16 *x = (UInt16 *)(buf + i);
-        UInt8 a = (*x & 0xFF00) >> 8;
-        *(UInt16 *)(buf + i) = (*x << 8) | a;
+        *x = bswap16(*x);
     }
 }
 

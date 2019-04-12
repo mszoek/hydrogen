@@ -54,6 +54,7 @@ class Partition
 {
 public:
     Partition(AHCIController *c, int port, GPTEntry *entry, TypeGUIDEntry *type);
+    Partition();
     virtual ~Partition();
 
     AHCIController *getController();
