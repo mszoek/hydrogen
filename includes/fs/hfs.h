@@ -225,7 +225,7 @@ typedef struct {
    UInt16              keyLength;
    HFSCatalogNodeID    parentID;
    HFSUniStr255        nodeName;
-} HFSPlusCatalogKey;
+} __attribute__((packed)) HFSPlusCatalogKey;
 
 typedef struct {
     UInt32    fLink;
@@ -270,8 +270,8 @@ private:
     Partition partition; // where this fs lives
     bool mounted;
 
-    UInt64 volHeaderStart;    // 1st sector
-    UInt64 volHeaderEnd;      // last sector
+    UInt64 catalogStartSector;
+    UInt64 catalogEndSector;
 };
 
 #endif // KERNEL_HFS
