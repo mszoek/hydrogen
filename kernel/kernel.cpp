@@ -21,9 +21,11 @@
 #define KERNEL_HFS
 #include <fs/hfs.h>
 
+// some global stuff
 PhysicalMemoryManager *pmm = 0;
 VirtualMemoryManager *vmm = 0;
 UInt64 g_controllers[CONTROLLER_MAX];
+StorageList *g_storage = 0;
 char rootGUID[40]; // root filesystem GUID from cmdline
 Partition *rootPartition = 0;
 struct multiboot_info bootinfo;
@@ -86,8 +88,10 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 
   screen->clearScreen();
   screen->drawLogo();
+  screen->setColor(0xF0F0F0);
   kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x%x]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size, KERN_ADDRESS);
   kprint("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
+  screen->setColor(0xB0B0B0);
   isrInstall();
 
   TimerController *ctrlTimer = new TimerController();
@@ -97,22 +101,24 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   asm volatile("sti"); // Start interrupts!
   ctrlPCI->startDevices();
 
-  if(!g_controllers[CTRL_AHCI])
-    panic();
-
-  GUIDPartitionTable gpt((AHCIController *)g_controllers[CTRL_AHCI], 0);
-
-  if(rootGUID[0] != 0)
+  // look for partition tables if we found some disks.
+  // enumerate them all so they get displayed, even if no root UUID to mount
+  for(StorageList *iter = g_storage; iter != 0; iter = iter->next)
   {
-    if(!gpt.isValid())
-      panic();
-    rootPartition = gpt.getPartitionByGUID(rootGUID);
-    if(rootPartition == 0)
-        panic();
-    if(verbose)
-      kprintf("Mounting %s root partition %s on /\n",
-        (rootPartition->getTypeEntry())->name, rootPartition->getGUIDA());
-    HierarchicalFileSystem hfs(rootPartition);
+    GUIDPartitionTable *gpt = 0;
+    
+    if(iter->controllerType == CTRL_AHCI)
+      gpt = new GUIDPartitionTable((AHCIController *)iter->controller, iter->port);
+
+    if(rootGUID[0] != 0 && gpt->isValid())
+    {
+      rootPartition = new Partition(*gpt->getPartitionByGUID(rootGUID));
+      free(gpt);
+
+      kprintf("Mounting %s root partition %s\n",
+          (rootPartition->getTypeEntry())->name, rootPartition->getGUIDA());
+      HierarchicalFileSystem *hfs = new HierarchicalFileSystem(rootPartition);
+    }
   }
 
   shellStart();

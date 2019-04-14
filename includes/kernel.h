@@ -28,6 +28,16 @@ extern bool verbose;
 extern bool debug;
 extern struct multiboot_info bootinfo;
 
+// let's store our detected disks in a linked list
+typedef struct _storageListEntry
+{
+    struct _storageListEntry *next;
+    int controllerType; // from CTRL_XXX above
+    void *controller;
+    int port;
+} StorageList;
+extern StorageList *g_storage;
+
 extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size);
 
 char isprint (unsigned char c);

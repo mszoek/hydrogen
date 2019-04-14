@@ -2,9 +2,21 @@
 #define HFS_H
 
 #include <hw/types.h>
+#define FD_MAX 1024
 
 #ifdef KERNEL_HFS
 #include <fs/gpt.h>
+
+typedef struct _fdMapType
+{
+  UInt16 fdtype;
+  void *entry;
+} fdMapType;
+extern fdMapType fdMap[FD_MAX];
+
+#define FDTYPE_EMPTY     0
+#define FDTYPE_CATFILE   1
+
 #endif
 
 typedef UInt32        FourCharCode;
@@ -265,13 +277,19 @@ public:
     bool mount();
     bool unmount();
     bool isMounted();
+    int open(const char *path);
+    void close(int fd);
+    int read(int fd, UInt8 *buf, int len);
 
 private:
+    void readVolumeHeader();
+    void *searchCatalog(const char *path, UInt16 kind);
+
     Partition partition; // where this fs lives
     bool mounted;
-
     UInt64 catalogStartSector;
     UInt64 catalogEndSector;
+    UInt32 blockSize;
 };
 
 #endif // KERNEL_HFS

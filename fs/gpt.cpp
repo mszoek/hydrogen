@@ -120,16 +120,9 @@ GUIDPartitionTable::GUIDPartitionTable(AHCIController *ahci, int port)
 
     if(memcmp((char *)&header.signature,"EFI PART",8) == 0)
     {
-        if(verbose)
-        {
-            char guid[40];
-            stringifyGUID(header.diskGUID, guid);
-
-            kprintf("Version %d.%d Header size %d CRC %8x LBA %d Backup %d\n",
-            header.revision[2], header.revision[3], header.hdrSize, header.crcHeader, header.curLBA, header.backupLBA);
-            kprintf("First LBA %d Last LBA %d GUID %s\nPartitions %d\n",
-            header.firstUsableLBA, header.lastUsableLBA, guid, header.nrPartEntries);
-        }
+        char guid[40];
+        stringifyGUID(header.diskGUID, guid);
+        kprintf("GPT disk at AHCI %x Port %d GUID %s\n", ahci, port, guid);
         gptValid = true;
     }
 
@@ -161,8 +154,9 @@ GUIDPartitionTable::GUIDPartitionTable(AHCIController *ahci, int port)
 
         if(verbose)
         {
-            kprintf("Partition %d GUID %s\nType %s Start LBA %d End LBA %d\n", i,
-                parts[j]->getGUIDA(), t->name, parts[j]->getStartLBA(), parts[j]->getEndLBA());
+            kprintf("#%d %s %s LBA %d - %d\n", i,
+                t->name, parts[j]->getGUIDA(), parts[j]->getStartLBA(),
+                parts[j]->getEndLBA());
         }
 
         ++j;

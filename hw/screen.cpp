@@ -85,46 +85,6 @@ void ScreenController::printBackspace()
     ypos = newy;
 }
 
-void ScreenController::fontdemo()
-{
-    char *msg = "H2OS Kernel! ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789";
-    for(int pos = 0; msg[pos] != 0; ++pos)
-    {
-        UInt8 ch = msg[pos];
-        if(ch < 0x20)
-            continue;
-        ch = ch - 0x20;
-        int offset = glyphDsc[ch].offset;
-        int row = 120;
-
-        for(int j = 0; j < 16; ++j)
-        {
-            int bit = 7;
-            int col = pos*fontWidth;
-            int w = glyphDsc[ch].width;
-            while(w > 0)
-            {
-                if(glyphBitmap[offset] & (1<<bit))
-                    putpixel(col, row, color);
-                else
-                    putpixel(col, row, bgcolor);
-                
-                ++col;
-                --bit;
-                --w;
-                if(bit < 0)
-                {
-                    bit = 7;
-                    ++offset;
-                }
-            }
-            if(bit != 7)
-                ++offset;
-            ++row;
-        }
-    }
-}
-
 void ScreenController::printChar(UInt8 c)
 {
     if (c == '\n')

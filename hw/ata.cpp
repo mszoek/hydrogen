@@ -82,12 +82,23 @@ void AHCIController::probeSATAPorts()
             if(dt != AHCI_DEV_NULL)
             {
                 rebasePort(port, i);
-                kprintf("AHCI Port %d: %s drive\n", i,
+                kprintf("AHCI Port %d: %s drive ", i,
                     dt == AHCI_DEV_SATA ? "SATA" :
                     dt == AHCI_DEV_SATAPI ? "SATAPI" :
                     dt == AHCI_DEV_SEMB ? "SEMB" : "PM");
                 if(dt == AHCI_DEV_SATA)
+                {
                     identifyPort(port);
+                    StorageList *node = (StorageList *)malloc(sizeof(StorageList));
+                    node = (StorageList *)vmm->remap((UInt64)node, sizeof(StorageList));
+                    node->controller = this;
+                    node->controllerType = CTRL_AHCI;
+                    node->port = i;
+                    node->next = g_storage;
+                    g_storage = node;
+                } else {
+                    kprint("\n");
+                }
             }
         }
 
