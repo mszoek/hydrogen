@@ -8,9 +8,11 @@
 
 #include <hw/types.h>
 #include <kmem.h>
+#include <vmem.h>
 #include <bootinfo.h>
 
-#define KERN_ADDRESS 0x100000 // kernel load address (see loader.asm)
+#define KERN_ADDRESS 0x100000 // kernel physical load address
+#define KERN_VMA 0xC0000000 // kernel virtual address
 
 #define CTRL_KEYBOARD   0
 #define CTRL_TIMER      1
@@ -20,10 +22,21 @@
 #define CONTROLLER_MAX  5
 
 extern PhysicalMemoryManager *pmm;
-extern UInt32 g_controllers[];
+extern VirtualMemoryManager *vmm;
+extern UInt64 g_controllers[];
 extern bool verbose;
 extern bool debug;
 extern struct multiboot_info bootinfo;
+
+// let's store our detected disks in a linked list
+typedef struct _storageListEntry
+{
+    struct _storageListEntry *next;
+    int controllerType; // from CTRL_XXX above
+    void *controller;
+    int port;
+} StorageList;
+extern StorageList *g_storage;
 
 extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size);
 

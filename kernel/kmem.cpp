@@ -10,7 +10,7 @@
 #include <kernel.h>
 
 
-PhysicalMemoryManager::PhysicalMemoryManager(UInt32 memSize, UInt32 kernAddr, 
+PhysicalMemoryManager::PhysicalMemoryManager(UInt64 memSize, UInt64 kernAddr, 
   UInt32 kernSize, RegionInfo *regions, UInt32 regionsLen)
 {
   // if(verbose)
@@ -46,11 +46,17 @@ PhysicalMemoryManager::PhysicalMemoryManager(UInt32 memSize, UInt32 kernAddr,
     /* init any available regions for our use */
     if(region->type == 1)
     {
-      initRegion(region->startLo, region->sizeLo);
+      UInt64 addr = region->startHi;
+      addr <<= 32;
+      addr |= region->startLo;
+      UInt64 len = region->sizeHi;
+      len <<= 32;
+      len |= region->sizeLo;
+      initRegion(addr, len);
     }
 
     ++i;
-    region = (RegionInfo *)((UInt32)region + region->size + sizeof(region->size));
+    region = (RegionInfo *)((UInt64)region + region->size + sizeof(region->size));
   }
 
   /* mark the kernel memory as in use */
@@ -59,69 +65,10 @@ PhysicalMemoryManager::PhysicalMemoryManager(UInt32 memSize, UInt32 kernAddr,
   /* drop unusable low memory areas */
   dropRegion(0, 0x400); // real mode interrupt vectors
   dropRegion(0x400, 0x100); // bios data area
+  dropRegion(0x1000, 0x4000); // low mem page tables
   dropRegion(0x7c00, 0x200); // boot sector
   dropRegion(0x80000, 0x20000); // 128kb extended bios data area
   dropRegion(0xa0000, 0x60000); // 384kb video, ROMs, etc.
-
-  /*
-   * We're going to have pools for allocations < PMM_BLOCK_SIZE/2. A block 
-   * (4K) is subdivided into 'chunks' of fixed size for each pool. Each pool
-   * maintains lists of allocated and free chunks. Each pool header indicates
-   * the number of 'size' chunks available in the pool.
-   * 
-   * Blocks in a pool are never freed once allocated so we don't track them.
-   * 
-   * This scheme isn't efficient for chunks of PMM_BLOCK_SIZE/2 to
-   * PMM_BLOCK_SIZE. We just allocate a full block for anything over half.
-   */
-
-  // First, allocate a special pool so we can alloc our linked lists
-  // 2 blocks holds 510 node entries + 2K spare. This will never be freed.
-
-  void *initpool = allocBlock(2);
-  UInt8 *initptr = (UInt8 *)initpool;
-
-  int size = 8;
-  for(i = 0; i < NR_POOLS; ++i)
-  {
-    pools[i].size = size;
-    pools[i].used = 0;
-    pools[i].nrFreeChunks = 0;
-
-    // allocate one block for this pool
-    void *block = allocBlock();
-    memset((char *)block, 0, PMM_BLOCK_SIZE);
-
-    // set up the free list
-    pools[i].free = (poolNode *)initptr;
-    pools[i].free->prev = 0;
-    pools[i].free->next = 0;
-
-    // carve the block into 'size' chunks on the free list
-    int count = PMM_BLOCK_SIZE / (size + sizeof(mallocHeader)) - 1;
-
-    pools[i].free->chunk = (UInt8 *)block + (count * (size + sizeof(mallocHeader)));
-    pools[i].nrFreeChunks++;
-    count--;
-    initptr += sizeof(poolNode);
-
-    while(count >= 0)
-    {
-      poolNode *tmp = (poolNode *)initptr;
-      tmp->chunk = (UInt8 *)block + (count * (size + sizeof(mallocHeader)));
-      tmp->prev = 0;
-      tmp->next = pools[i].free;
-      pools[i].free->prev = tmp;
-      pools[i].free = tmp;
-
-      count--;
-      initptr += sizeof(poolNode);
-      pools[i].nrFreeChunks++;
-    }
-    size *= 2;
-    if(size >= 2048)
-      size = 2032; // +16 byte header gives 2 chunks per 4K block
-  }
   // printStats();
 }
 
@@ -133,13 +80,6 @@ void PhysicalMemoryManager::printStats()
 {
   kprintf("PMM: %d blocks. Used/reserved: %d blocks. Free: %d blocks\n",
     physMaxBlocks, physUsedBlocks, physMaxBlocks - physUsedBlocks);
-
-  if(verbose)
-    for(int i = 0; i < NR_POOLS; ++i)
-    {
-      kprintf("Pool %d: chunk size %d bytes, %d chunks free\n", i, 
-        pools[i].size, pools[i].nrFreeChunks);
-    }
 }
 
 inline void PhysicalMemoryManager::pmmBitmapSet(int bit)
@@ -158,25 +98,25 @@ inline int PhysicalMemoryManager::pmmBitmapTest(int bit)
 }
 
 /* return memory size in KB */
-UInt32 PhysicalMemoryManager::memSize()
+UInt64 PhysicalMemoryManager::memSize()
 {
   return physMemorySize;
 }
 
 /* return memory size in blocks */
-UInt32 PhysicalMemoryManager::memSizeBlocks()
+UInt64 PhysicalMemoryManager::memSizeBlocks()
 {
   return physMaxBlocks;
 }
 
 /* return free memory in KB */
-UInt32 PhysicalMemoryManager::memFree()
+UInt64 PhysicalMemoryManager::memFree()
 {
   return (memFreeBlocks() * PMM_BLOCK_SIZE) / 1024;
 }
 
 /* return free memory in blocks */
-UInt32 PhysicalMemoryManager::memFreeBlocks()
+UInt64 PhysicalMemoryManager::memFreeBlocks()
 {
   return physMaxBlocks - physUsedBlocks;
 }
@@ -239,7 +179,7 @@ int PhysicalMemoryManager::findFirstFree(UInt32 size)
 	return -1;
 }
 
-void PhysicalMemoryManager::initRegion(UInt32 base, UInt32 size)
+void PhysicalMemoryManager::initRegion(UInt64 base, UInt64 size)
 { 
 	int align = base / PMM_BLOCK_SIZE;
 	int blocks = size / PMM_BLOCK_SIZE;
@@ -255,7 +195,7 @@ void PhysicalMemoryManager::initRegion(UInt32 base, UInt32 size)
 	pmmBitmapSet(0);	// First block is always set so allocs can't be 0
 }
 
-void PhysicalMemoryManager::dropRegion(UInt32 base, UInt32 size)
+void PhysicalMemoryManager::dropRegion(UInt64 base, UInt64 size)
 {
 	int align = base / PMM_BLOCK_SIZE;
 	int blocks = size / PMM_BLOCK_SIZE;
@@ -273,7 +213,7 @@ void PhysicalMemoryManager::dropRegion(UInt32 base, UInt32 size)
 void *PhysicalMemoryManager::allocBlock()
 {
   int frame;
-  UInt32 addr;
+  UInt64 addr;
 
 	if(memFreeBlocks() <= 0)
 		return 0;	// out of memory!
@@ -291,7 +231,7 @@ void *PhysicalMemoryManager::allocBlock()
 
 void PhysicalMemoryManager::freeBlock(void *p)
 {
-  UInt32 addr = (UInt32)p;
+  UInt64 addr = (UInt64)p;
   int frame = addr / PMM_BLOCK_SIZE;
 
   pmmBitmapUnset(frame);
@@ -310,7 +250,7 @@ void* PhysicalMemoryManager::allocBlock(UInt32 size)
 	for(UInt32 i = 0; i < size; i++)
 		pmmBitmapSet(frame + i);
 
-	UInt32 addr = frame * PMM_BLOCK_SIZE;
+	UInt64 addr = frame * PMM_BLOCK_SIZE;
 	physUsedBlocks += size;
 
 	return (void*)addr;
@@ -318,7 +258,7 @@ void* PhysicalMemoryManager::allocBlock(UInt32 size)
 
 void PhysicalMemoryManager::freeBlock(void* p, UInt32 size)
 {
-	UInt32 addr = (UInt32)p;
+	UInt64 addr = (UInt64)p;
 	int frame = addr / PMM_BLOCK_SIZE;
 
 	for(UInt32 i = 0; i < size; i++)
@@ -329,159 +269,22 @@ void PhysicalMemoryManager::freeBlock(void* p, UInt32 size)
 
 void *operator new(unsigned long size)
 {
-  return pmm->malloc(size);
+  return vmm->malloc(size);
 }
 
 void operator delete(void *p, unsigned long size)
 {
-  pmm->free(p);
-}
-
-void *PhysicalMemoryManager::malloc(const unsigned int size)
-{
-  if(size <= 2032)
-  {
-    for(int i = 0; i < NR_POOLS; ++i)
-    {
-      // add a block if any pool is low on free chunks
-      if(pools[i].nrFreeChunks < 2)
-      {
-        void *initpool = allocBlock(2);
-
-        // memory for the poolNode structures
-        UInt8 *initptr = (UInt8 *)initpool;
-
-        // and a block for this pool
-        void *block = initptr + PMM_BLOCK_SIZE;
-        memset((char *)block, 0, PMM_BLOCK_SIZE);
-
-        // carve the block into 'size' chunks on the free list
-        int count = PMM_BLOCK_SIZE / (pools[i].size + sizeof(mallocHeader)) - 1;
-        while(count >= 0)
-        {
-          poolNode *tmp = (poolNode *)initptr;
-          tmp->chunk = (UInt8 *)block + (count * (pools[i].size + sizeof(mallocHeader)));
-          tmp->prev = 0;
-          tmp->next = pools[i].free;
-          pools[i].free->prev = tmp;
-          pools[i].free = tmp;
-
-          count--;
-          initptr += sizeof(poolNode);
-          pools[i].nrFreeChunks++;
-        }
-        // kprintf("pool %d poolsize %d new free chunks %d\n",i,pools[i].size,pools[i].nrFreeChunks);
-      }
-      
-      if(size <= pools[i].size && pools[i].nrFreeChunks > 0)
-      {
-        // kprintf("size %d pool %d poolsize %d free %d\n",size,i,
-        //   pools[i].size,pools[i].nrFreeChunks);
-
-        // This pool has free chunks. Take the first element from the free
-        // list and move it to the used list.
-        poolNode *node = pools[i].free;
-        pools[i].free = node->next;
-        pools[i].free->prev = 0; // new head of list
-
-        pools[i].nrFreeChunks--;
-
-        // insert at beginning of used list
-        node->next = pools[i].used;
-        node->prev = 0;
-        pools[i].used = node;
-
-        mallocHeader *tmp = (mallocHeader *)(node->chunk);
-        tmp->magic = ((i & 0xFF) << 24) | (MALLOC_MAGIC & 0xFFFFFF);
-        tmp->node = pools[i].used;
-
-        tmp = (mallocHeader *)((UInt32)tmp + sizeof(mallocHeader));
-        // kprintf("malloc(%d)=%x p=%x POOL %d\n",size,(UInt32)tmp-sizeof(mallocHeader),tmp,i);
-        return (void *)tmp;
-      }
-    }
-  } else {
-    int newsize = size + sizeof(mallocHeader);
-    int blocks = newsize / PMM_BLOCK_SIZE + (newsize % PMM_BLOCK_SIZE ? 1 : 0);
-    void *p = allocBlock(blocks);
-    ((mallocHeader *)p)->magic = 0xEE000000 | MALLOC_MAGIC;
-    ((mallocHeader *)p)->node = (poolNode *)size; // we need this to free!
-    // kprintf("malloc(%d)=%x p=%x blocks=%d magic=%x\n",size,p,(UInt32)p+sizeof(mallocHeader),blocks,((mallocHeader *)p)->magic);
-    p = (void *)((UInt32)p + sizeof(mallocHeader));
-    return (void *)p;
-  }
-
-  kprintf("malloc(): no pool for alloc of %d bytes\n",size);
-  return (void *)0;
-}
-
-void PhysicalMemoryManager::free(void *p)
-{
-  // first, is this a full block without header or a pool chunk?
-  void *hdr = (char *)p - sizeof(mallocHeader);
-  UInt32 magic = ((mallocHeader *)hdr)->magic;
-
-  if((magic & 0xFFFFFF) == (MALLOC_MAGIC & 0xFFFFFF))
-  {
-    int poolID = (magic & 0xFF000000) >> 24;
-
-    if(poolID == 0xEE)
-    {
-      // this is a full block header
-      ((mallocHeader *)hdr)->magic = 0;
-      void *q = p;
-      p = (void *)((UInt32)p - sizeof(mallocHeader));
-      int len = (UInt32)((mallocHeader *)hdr)->node + sizeof(mallocHeader);
-      int blocks = len / PMM_BLOCK_SIZE + (len % PMM_BLOCK_SIZE ? 1 : 0);
-      // kprintf("free(%d)=%x p=%x blocks %d magic=%x (now 0)\n", len - sizeof(mallocHeader), (UInt32)p, (UInt32)q, blocks, magic);
-      if((UInt32)p % PMM_BLOCK_ALIGN)
-      {
-        // not block aligned? something's weird.
-        kprintf("free: freeing %d blocks at %x which is not aligned\n", blocks, (UInt32)p);
-      }
-      freeBlock(p, blocks);
-      return;
-    }
-
-    // not a full block so this is a pool header
-    if(poolID < 0 || poolID > NR_POOLS)
-    {
-      kprintf("free: %x has invalid pool ID %d - leaking memory!\n", p, poolID);
-      return;
-    }
-    ((mallocHeader *)hdr)->magic = 0;
-
-    // remove our chunk's node from the used list
-    poolNode *node = ((mallocHeader *)hdr)->node;
-    if(node->prev == 0) // this is the list head
-    {
-      pools[poolID].used = node->next;
-      node->next->prev = 0; // new list head
-    } else {
-      node->prev->next = node->next; // unlink this node
-    }
-
-    // and add it to the free list
-    pools[poolID].free->prev = node;
-    node->next = pools[poolID].free;
-    node->prev = 0; // new list head
-    pools[poolID].free = node;
-
-    pools[poolID].nrFreeChunks++;
-  } else {
-    // kprintf("free() %x magic=%x INVALID\n", p, magic);
-    kprintf("free: %x invalid malloc header! Memory corrupt or double free?\n",p);
-  }  
+  vmm->free(p);
 }
 
 void *malloc(const unsigned int size)
 {
-  return pmm->malloc(size);
+  return vmm->malloc(size);
 }
 
 void free(void *p)
 {
-  return pmm->free(p);
+  return vmm->free(p);
 }
 
 void memcpy(char *dst, char *src, unsigned int len)

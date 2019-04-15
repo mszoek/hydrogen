@@ -13,32 +13,34 @@
 
 /* How every interrupt gate (handler) is defined */
 typedef struct {
-    UInt16 low_offset; /* Lower 16 bits of handler function address */
+    UInt16 offset0; /* Handler address bits 0-15 */
     UInt16 sel; /* Kernel segment selector */
-    UInt8 always0;
+    UInt8 ist; // bits 0-2 = Int Stack Tbl Offset, rest = 0
     /* First byte
      * Bit 7: "Interrupt is present"
      * Bits 6-5: Privilege level of caller (0=kernel..3=user)
      * Bit 4: Set to 0 for interrupt gates
      * Bits 3-0: bits 1110 = decimal 14 = "32 bit interrupt gate" */
     UInt8 flags;
-    UInt16 high_offset; /* Higher 16 bits of handler function address */
-} __attribute__((packed)) idt_gate_t ;
+    UInt16 offset1; /* Handler address bits 16-31 */
+    UInt32 offset2; /* Handler address bits 32-63 */
+    UInt32 zero;    // reserved
+} __attribute__((packed)) idtGate;
 
 /* A pointer to the array of interrupt handlers.
  * Assembly instruction 'lidt' will read it */
 typedef struct {
     UInt16 limit;
-    UInt32 base;
-} __attribute__((packed)) idt_register_t;
+    UInt64 base;
+} __attribute__((packed)) idtRegister;
 
 #define IDT_ENTRIES 256
-extern idt_gate_t idt[IDT_ENTRIES];
-extern idt_register_t idt_reg;
+extern idtGate idt[IDT_ENTRIES];
+extern idtRegister idt_reg;
 
 
 /* Functions implemented in idt.c */
-void setIDTGate(int n, UInt32 handler);
+void setIDTGate(int n, UInt64 handler);
 void setIDT();
 
 #endif

@@ -53,7 +53,7 @@ int kprintf(const char* str, ...)
 
 					case 's':
                     {
-						UInt32 c = (int)va_arg(args, char *);
+						UInt64 c = (int)va_arg(args, char *);
 						kprint((char *)c);
 						i++;
 						break;

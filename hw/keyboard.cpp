@@ -28,7 +28,7 @@ KeyboardController::KeyboardController()
   if(verbose)
     kprintf("hw/KeyboardController: 0x%x\n", this);
   keyBufferPos = 0;
-  g_controllers[CTRL_KEYBOARD] = (UInt32)this; // assume ownership of keyboard input
+  g_controllers[CTRL_KEYBOARD] = (UInt64)this; // assume ownership of keyboard input
   registerInterruptHandler(IRQ1, keyboardCallback);
 }
 

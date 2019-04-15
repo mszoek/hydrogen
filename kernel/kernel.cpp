@@ -13,14 +13,19 @@
 #include <hw/keyboard.h>
 #include <hw/screen.h>
 #include <kstring.h>
-#include <kmem.h>
 #include <kstdio.h>
 #include <kversion.h>
 #include <shell.h>
-#include <fs/gpt.h>
+#include <hw/byteswap.h>
 
+#define KERNEL_HFS
+#include <fs/hfs.h>
+
+// some global stuff
 PhysicalMemoryManager *pmm = 0;
-UInt32 g_controllers[CONTROLLER_MAX];
+VirtualMemoryManager *vmm = 0;
+UInt64 g_controllers[CONTROLLER_MAX];
+StorageList *g_storage = 0;
 char rootGUID[40]; // root filesystem GUID from cmdline
 Partition *rootPartition = 0;
 struct multiboot_info bootinfo;
@@ -35,13 +40,14 @@ void displayStartupMsg(unsigned int size);
 // Kernel entry function
 extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 {
-  UInt32 mem = 0, mmap = 0, mmapLen = 0;
+  UInt64 mem = 0, mmap = 0, mmapLen = 0;
   int i = 0;
   char cmdline[256];
   
   memset(cmdline, 0, sizeof(cmdline));
   memset(rootGUID, 0, sizeof(rootGUID));
   memcpy((char *)&bootinfo, (char *)binf, sizeof(bootinfo));
+
 
   /* Read data from the multiboot structure */
   if(binf->flags & 0x1)
@@ -52,12 +58,14 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
     mmapLen = binf->mmapLen;
   }
   if(binf->flags & 0x4)
-    strcpy(cmdline, (char *)(binf->cmdLine));
+    strcpy(cmdline, (char *)((UInt64)binf->cmdLine));
 
-  isrInstall();
   PhysicalMemoryManager physMM(mem, KERN_ADDRESS, size,
     (PhysicalMemoryManager::RegionInfo *)mmap, mmapLen);
   pmm = &physMM;
+
+  VirtualMemoryManager virtMM;
+  vmm = &virtMM;
 
   new ScreenController();
   ScreenController *screen = ((ScreenController *)g_controllers[CTRL_SCREEN]);
@@ -79,9 +87,12 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   }
 
   screen->clearScreen();
-  screen->setXYChars(0, 1);
+  screen->drawLogo();
+  screen->setColor(0xF0F0F0);
   kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x%x]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size, KERN_ADDRESS);
   kprint("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
+  screen->setColor(0xB0B0B0);
+  isrInstall();
 
   TimerController *ctrlTimer = new TimerController();
   new KeyboardController();
@@ -90,21 +101,24 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   asm volatile("sti"); // Start interrupts!
   ctrlPCI->startDevices();
 
-  if(!g_controllers[CTRL_AHCI])
-    panic();
-
-  GUIDPartitionTable gpt((AHCIController *)g_controllers[CTRL_AHCI], 0);
-
-  if(rootGUID[0] != 0)
+  // look for partition tables if we found some disks.
+  // enumerate them all so they get displayed, even if no root UUID to mount
+  for(StorageList *iter = g_storage; iter != 0; iter = iter->next)
   {
-    if(!gpt.isValid())
-      panic();
-    rootPartition = gpt.getPartitionByGUID(rootGUID);
-    if(rootPartition == 0)
-        panic();
-    if(verbose)
-      kprintf("Mounting %s root partition %s on /\n",
-        (rootPartition->getTypeEntry())->name, rootPartition->getGUIDA());
+    GUIDPartitionTable *gpt = 0;
+    
+    if(iter->controllerType == CTRL_AHCI)
+      gpt = new GUIDPartitionTable((AHCIController *)iter->controller, iter->port);
+
+    if(rootGUID[0] != 0 && gpt->isValid())
+    {
+      rootPartition = new Partition(*gpt->getPartitionByGUID(rootGUID));
+      free(gpt);
+
+      kprintf("Mounting %s root partition %s\n",
+          (rootPartition->getTypeEntry())->name, rootPartition->getGUIDA());
+      HierarchicalFileSystem *hfs = new HierarchicalFileSystem(rootPartition);
+    }
   }
 
   shellStart();
@@ -147,7 +161,7 @@ void displayStatusLine()
   line[i+1] = 0;
   memset(line+strlen(line), 0x20, sizeof(line)-strlen(line)-2); // space fill to right edge
   screen->setXY(0, 0);
-  screen->setBackColor(0x600060);
+  screen->setBackColor(0x00277c);
   kprint(line);
   screen->setXY(x, y);
   screen->setBackColor(bg);

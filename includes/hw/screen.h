@@ -27,8 +27,8 @@ public:
     void setXYChars(UInt32 x, UInt32 y);
     void setColor(UInt32 c);
     void setBackColor(UInt32 c);
-    void fontdemo();
     void setFont(int f);
+    void drawLogo();
 
 private:
     void *framebuffer;

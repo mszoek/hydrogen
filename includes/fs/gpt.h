@@ -12,17 +12,12 @@ typedef struct _GPTHeader
     UInt32 hdrSize;     // little endian, usually 0x5C
     UInt32 crcHeader;
     UInt32 rsv0;        // must be 0
-    UInt32 curLBALo;
-    UInt32 curLBAHi;
-    UInt32 backupLBALo;
-    UInt32 backupLBAHi;
-    UInt32 firstUsableLBALo;
-    UInt32 firstUsableLBAHi;
-    UInt32 lastUsableLBALo;
-    UInt32 lastUsableLBAHi;
+    UInt64 curLBA;
+    UInt64 backupLBA;
+    UInt64 firstUsableLBA;
+    UInt64 lastUsableLBA;
     UInt8 diskGUID[16];
-    UInt32 partEntryLBALo;  // starting LBA of partition entries
-    UInt32 partEntryLBAHi;
+    UInt64 partEntryLBA;  // starting LBA of partition entries
     UInt32 nrPartEntries;
     UInt32 sizePartEntry;   // usually 0x80
     UInt32 crcEntries;
@@ -34,12 +29,9 @@ typedef struct _GPTEntry
 {
     UInt8 typeGUID[16];
     UInt8 partGUID[16];
-    UInt32 startLBALo;
-    UInt32 startLBAHi;
-    UInt32 endLBALo;
-    UInt32 endLBAHi;
-    UInt32 flagsLo;
-    UInt32 flagsHi;
+    UInt64 startLBA;
+    UInt64 endLBA;
+    UInt64 flags;
     UInt16 partName[36]; // UTF-16LE code units
 } GPTEntry;
 
@@ -62,6 +54,7 @@ class Partition
 {
 public:
     Partition(AHCIController *c, int port, GPTEntry *entry, TypeGUIDEntry *type);
+    Partition();
     virtual ~Partition();
 
     AHCIController *getController();
@@ -69,9 +62,9 @@ public:
     TypeGUIDEntry *getTypeEntry();
     UInt8 *getGUID();
     char *getGUIDA(); // get the ASCII GUID string
-    UInt32 getStartLBA();
-    UInt32 getEndLBA();
-    UInt32 getFlags();
+    UInt64 getStartLBA();
+    UInt64 getEndLBA();
+    UInt64 getFlags();
     char *getNameA(); // converts UTF-16 to ASCII
     UInt16 *getName();
 
@@ -80,12 +73,9 @@ private:
     int port;
     TypeGUIDEntry *typeEntry;
     UInt8 partGUID[16];
-    UInt32 startLBALo;
-    UInt32 startLBAHi;
-    UInt32 endLBALo;
-    UInt32 endLBAHi;
-    UInt32 flagsLo;
-    UInt32 flagsHi;
+    UInt64 startLBA;
+    UInt64 endLBA;
+    UInt64 flags;
     UInt16 partName[36]; // UTF-16LE code units
     char asciiName[19];
     char asciiGUID[40];

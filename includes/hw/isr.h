@@ -78,10 +78,10 @@ extern "C" void irq15();
 
 /* Struct which aggregates many registers */
 typedef struct {
-   UInt32 ds; /* Data segment selector */
-   UInt32 edi, esi, ebp, esp, ebx, edx, ecx, eax; /* Pushed by pusha. */
-   UInt32 int_no, err_code; /* Interrupt number and error code (if applicable) */
-   UInt32 eip, cs, eflags, useresp, ss; /* Pushed by the processor automatically */
+   UInt64 ds; /* Data segment selector */
+   UInt64 rdi, rsi, rbp, rsp, rbx, rdx, rcx, rax; /* Pushed by pusha. */
+   UInt64 int_no, err_code; /* Interrupt number and error code (if applicable) */
+   UInt64 rip, cs, rflags, userrsp, ss; /* Pushed by the processor automatically */
 } registers_t;
 
 void isrInstall();

@@ -16,7 +16,7 @@ PCIController::PCIController()
 {
     if(verbose)
         kprintf("hw/PCIController: 0x%x\n", this);
-    g_controllers[CTRL_PCI] = (UInt32)this;
+    g_controllers[CTRL_PCI] = (UInt64)this;
     pciTableIndex = 0;
     memset((char *)pciTable, 0, sizeof(pciTable));
 }
@@ -139,7 +139,10 @@ void PCIController::startDevices(void)
                 {
                     case 0x6:
                         if(g_controllers[CTRL_AHCI] == 0)
-                            new AHCIController((hbaMem *)(pciTable[j].baseAddrReg[5]));
+                        {
+                            UInt64 addr = vmm->remap(pciTable[j].baseAddrReg[5], 0x40);
+                            new AHCIController((hbaMem *)(addr));
+                        }
                         break;
                 }
                 break;

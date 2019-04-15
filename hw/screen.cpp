@@ -7,6 +7,7 @@
 #include <hw/screen.h>
 #include <kmem.h>
 #include <kernel.h>
+#include <h2logo.h>
 
 ScreenController::ScreenController()
 {
@@ -31,7 +32,7 @@ ScreenController::ScreenController()
         setFont(4); // 16px
     
 
-    g_controllers[CTRL_SCREEN] = (UInt32)this;
+    g_controllers[CTRL_SCREEN] = (UInt64)this;
 }
 
 ScreenController::~ScreenController()
@@ -55,7 +56,7 @@ void ScreenController::setFont(int f)
 void ScreenController::putpixel(int x, int y, UInt32 color)
 {
     int bytesPerPixel = bpp/8;
-    void *where = (void *)((UInt32)framebuffer + x*bytesPerPixel + y*pitch);
+    void *where = (void *)((UInt64)framebuffer + x*bytesPerPixel + y*pitch);
     *(UInt32 *)where = color;
 }
 
@@ -76,52 +77,12 @@ void ScreenController::printBackspace()
 
     for(int j = 0; j < fontHeight; ++j)
     {
-        memset((char *)((UInt32)framebuffer + newx*(bpp/8) + (newy+j)*pitch), 0,
+        memset((char *)((UInt64)framebuffer + newx*(bpp/8) + (newy+j)*pitch), 0,
             fontWidth*(bpp/8));
     }
 
     xpos = newx;
     ypos = newy;
-}
-
-void ScreenController::fontdemo()
-{
-    char *msg = "H2OS Kernel! ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789";
-    for(int pos = 0; msg[pos] != 0; ++pos)
-    {
-        UInt8 ch = msg[pos];
-        if(ch < 0x20)
-            continue;
-        ch = ch - 0x20;
-        int offset = glyphDsc[ch].offset;
-        int row = 120;
-
-        for(int j = 0; j < 16; ++j)
-        {
-            int bit = 7;
-            int col = pos*fontWidth;
-            int w = glyphDsc[ch].width;
-            while(w > 0)
-            {
-                if(glyphBitmap[offset] & (1<<bit))
-                    putpixel(col, row, color);
-                else
-                    putpixel(col, row, bgcolor);
-                
-                ++col;
-                --bit;
-                --w;
-                if(bit < 0)
-                {
-                    bit = 7;
-                    ++offset;
-                }
-            }
-            if(bit != 7)
-                ++offset;
-            ++row;
-        }
-    }
 }
 
 void ScreenController::printChar(UInt8 c)
@@ -215,11 +176,11 @@ void ScreenController::printChar(UInt8 c)
     /* scroll if necessary */
     if(ypos > (height - fontHeight))
     {
-        memcpy((char *)framebuffer, (char *)((UInt32)framebuffer + fontHeight*pitch),
+        memcpy((char *)framebuffer, (char *)((UInt64)framebuffer + fontHeight*pitch),
             (height - fontHeight)*pitch + width*(bpp/8));
 
         // Blank last line
-        memset((char *)((UInt32)framebuffer + (height - fontHeight)*pitch),
+        memset((char *)((UInt64)framebuffer + (height - fontHeight)*pitch),
             0, fontHeight*pitch);
         ypos = height - fontHeight;
         xpos = 0;
@@ -280,4 +241,15 @@ void ScreenController::clearScreen()
 {
     memset((UInt32 *)framebuffer, bgcolor, width*height);
     xpos = ypos = 0;
+}
+
+void ScreenController::drawLogo()
+{
+    for(int y = 0; y < gimp_image.height; ++y)
+    {
+        memcpy((char *)(FRAMEBUFFER_VMA+((y+fontHeight+2)*pitch)),
+            (char *)(gimp_image.pixel_data+gimp_image.width*y*gimp_image.bytes_per_pixel),
+            gimp_image.width*gimp_image.bytes_per_pixel);
+    }
+    setXY(0, gimp_image.height+fontHeight+2);
 }

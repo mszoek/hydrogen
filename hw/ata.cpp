@@ -6,6 +6,7 @@
 #include <hw/port_io.h>
 #include <hw/ata.h>
 #include <hw/screen.h>
+#include <hw/byteswap.h>
 #include <kstring.h>
 #include <kstdio.h>
 #include <kernel.h>
@@ -24,11 +25,11 @@ AHCIController::AHCIController(hbaMem *p)
 {
     if(verbose)
         kprintf("hw/AHCIController: 0x%x\n", this);
-    g_controllers[CTRL_AHCI] = (UInt32)this;
+    g_controllers[CTRL_AHCI] = (UInt64)this;
     abar = p;
 
-    // reserve 75 blocks starting at AHCI_BASE
-    pmm->dropRegion(AHCI_BASE, 75*PMM_BLOCK_SIZE);
+    // reserve 75 blocks for our data structures
+    AHCI_BASE = vmm->remap((UInt64)vmm->malloc(75*PMM_BLOCK_SIZE), 75*PMM_BLOCK_SIZE);
 
     nrCmdSlots = ((abar->cap >> 8) & 0x1F) + 1;
     probeSATAPorts();
@@ -37,6 +38,8 @@ AHCIController::AHCIController(hbaMem *p)
 AHCIController::~AHCIController()
 {
     g_controllers[CTRL_AHCI] = 0;
+    void *p = (void *)AHCI_BASE;
+    vmm->free(p);
 }
 
 
@@ -79,12 +82,23 @@ void AHCIController::probeSATAPorts()
             if(dt != AHCI_DEV_NULL)
             {
                 rebasePort(port, i);
-                kprintf("AHCI Port %d: %s drive\n", i,
+                kprintf("AHCI Port %d: %s drive ", i,
                     dt == AHCI_DEV_SATA ? "SATA" :
                     dt == AHCI_DEV_SATAPI ? "SATAPI" :
                     dt == AHCI_DEV_SEMB ? "SEMB" : "PM");
                 if(dt == AHCI_DEV_SATA)
+                {
                     identifyPort(port);
+                    StorageList *node = (StorageList *)malloc(sizeof(StorageList));
+                    node = (StorageList *)vmm->remap((UInt64)node, sizeof(StorageList));
+                    node->controller = this;
+                    node->controllerType = CTRL_AHCI;
+                    node->port = i;
+                    node->next = g_storage;
+                    g_storage = node;
+                } else {
+                    kprint("\n");
+                }
             }
         }
 
@@ -152,10 +166,8 @@ void AHCIController::swapBytes(UInt8 *buf, UInt32 len)
 {
     for(UInt32 i = 0; i < len; i += 2)
     {
-        // we don't have ntohs() yet
         UInt16 *x = (UInt16 *)(buf + i);
-        UInt8 a = (*x & 0xFF00) >> 8;
-        *(UInt16 *)(buf + i) = (*x << 8) | a;
+        *x = bswap16(*x);
     }
 }
 
@@ -176,7 +188,8 @@ void AHCIController::identifyPort(hbaPort *port)
     hbaCmdTable *tbl = (hbaCmdTable *)(hdr->ctbaLo);
     memset((char *)tbl, 0, sizeof(hbaCmdTable));
 
-    tbl->prdtEntry[0].dbaLo = (UInt32)buf;
+    tbl->prdtEntry[0].dbaLo = ((UInt64)buf) & 0xFFFFFFFF;
+    tbl->prdtEntry[0].dbaHi = ((UInt64)buf) >> 32;
     tbl->prdtEntry[0].dbc = 512;
     tbl->prdtEntry[0].i = 1;
 
@@ -228,13 +241,15 @@ bool AHCIController::read(hbaPort *port, UInt16 *buf, UInt32 lba, UInt16 sectors
     int i;
     for(i = 0; i < hdr->prdtLen - 1; ++i)
     {
-        tbl->prdtEntry[i].dbaLo = (UInt32)buf; 
+        tbl->prdtEntry[i].dbaLo = (UInt32)((UInt64)buf & 0xFFFFFFFF);
+        tbl->prdtEntry[i].dbaHi = (UInt32)((UInt64)buf >> 32);
         tbl->prdtEntry[i].dbc = 8191; // always 1 less than actual value (8192 = 8K)
         tbl->prdtEntry[i].i = 1; // interrupt when ready
         buf += 4096; // 4K words = 8K bytes
         sectors -= 16;
     }
-    tbl->prdtEntry[i].dbaLo = (UInt32)buf;
+    tbl->prdtEntry[i].dbaLo = (UInt32)((UInt64)buf & 0xFFFFFFFF);
+    tbl->prdtEntry[i].dbaHi = (UInt32)((UInt64)buf >> 32);
     tbl->prdtEntry[i].dbc = (sectors << 9) - 1; // 512 bytes per sector
     tbl->prdtEntry[i].i = 1;
 

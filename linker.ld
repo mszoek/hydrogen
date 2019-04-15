@@ -1,9 +1,10 @@
-OUTPUT_FORMAT("binary")
+OUTPUT_FORMAT("elf64-x86-64")
 ENTRY(start)
 phys = 0x00100000;
 SECTIONS
 {
-	.text phys : AT(phys) {
+	.text phys : AT(phys)
+	{
 		code = .;
 		*(.text)
 		*(.rodata)

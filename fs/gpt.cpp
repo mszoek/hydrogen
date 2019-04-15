@@ -104,7 +104,7 @@ GUIDPartitionTable::GUIDPartitionTable(AHCIController *ahci, int port)
         return;
     hbaPort *p = ahci->getPort(port);
 
-    UInt16 *diskbuf = (UInt16 *)malloc(4096);
+    UInt16 *diskbuf = (UInt16 *)vmm->remap((UInt64)malloc(4096), 4096);
     memset((char *)diskbuf, 0, 512);
 
     // read header and make sure it's valid
@@ -120,16 +120,9 @@ GUIDPartitionTable::GUIDPartitionTable(AHCIController *ahci, int port)
 
     if(memcmp((char *)&header.signature,"EFI PART",8) == 0)
     {
-        if(verbose)
-        {
-            char guid[40];
-            stringifyGUID(header.diskGUID, guid);
-
-            kprintf("Version %d.%d Header size %d CRC %8x LBA %d Backup %d\n",
-            header.revision[2], header.revision[3], header.hdrSize, header.crcHeader, header.curLBALo, header.backupLBALo);
-            kprintf("First LBA %d Last LBA %d GUID %s\nPartitions %d\n",
-            header.firstUsableLBALo, header.lastUsableLBALo, guid, header.nrPartEntries);
-        }
+        char guid[40];
+        stringifyGUID(header.diskGUID, guid);
+        kprintf("GPT disk at AHCI %x Port %d GUID %s\n", ahci, port, guid);
         gptValid = true;
     }
 
@@ -161,8 +154,9 @@ GUIDPartitionTable::GUIDPartitionTable(AHCIController *ahci, int port)
 
         if(verbose)
         {
-            kprintf("Partition %d GUID %s\nType %s Start LBA %d End LBA %d\n", i,
-                parts[j]->getGUIDA(), t->name, parts[j]->getStartLBA(), parts[j]->getEndLBA());
+            kprintf("#%d %s %s LBA %d - %d\n", i,
+                t->name, parts[j]->getGUIDA(), parts[j]->getStartLBA(),
+                parts[j]->getEndLBA());
         }
 
         ++j;
@@ -221,6 +215,12 @@ Partition *GUIDPartitionTable::getPartitionByGUID(UInt8 *GUID)
     return 0;
 }
 
+Partition::Partition()
+{
+    ahci = 0;
+    port = 0;
+    startLBA = endLBA = flags = 0;
+}
 
 Partition::Partition(AHCIController *c, int p, GPTEntry *entry, TypeGUIDEntry *type)
 {
@@ -228,12 +228,9 @@ Partition::Partition(AHCIController *c, int p, GPTEntry *entry, TypeGUIDEntry *t
     port = p;
     typeEntry = type;
     memcpy((char *)partGUID, (char *)entry->partGUID, 16);
-    startLBALo = entry->startLBALo;
-    startLBAHi = entry->startLBAHi;
-    endLBALo = entry->endLBALo;
-    endLBAHi = entry->endLBAHi;
-    flagsLo = entry->flagsLo;
-    flagsHi = entry->flagsHi;
+    startLBA = entry->startLBA;
+    endLBA = entry->endLBA;
+    flags = entry->flags;
     memcpy((char *)partName, (char *)entry->partName, 36);
     memset(asciiName, 0, 19);
     int j = 0;
@@ -272,19 +269,19 @@ char *Partition::getGUIDA()
     return asciiGUID;
 }
 
-UInt32 Partition::getStartLBA()
+UInt64 Partition::getStartLBA()
 {
-    return startLBALo;
+    return startLBA;
 }
 
-UInt32 Partition::getEndLBA()
+UInt64 Partition::getEndLBA()
 {
-    return endLBALo;
+    return endLBA;
 }
 
-UInt32 Partition::getFlags()
+UInt64 Partition::getFlags()
 {
-    return flagsLo;
+    return flags;
 }
 
 char *Partition::getNameA()
