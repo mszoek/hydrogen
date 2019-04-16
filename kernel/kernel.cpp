@@ -88,7 +88,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 
   screen->clearScreen();
   screen->drawLogo();
-  screen->setColor(0xF0F0F0);
+  screen->setColor(0xE0E0F0);
   kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x%x]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size, KERN_ADDRESS);
   kprint("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
   screen->setColor(0xB0B0B0);

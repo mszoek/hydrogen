@@ -1,27 +1,56 @@
 OUTPUT_FORMAT("elf64-x86-64")
 ENTRY(start)
-phys = 0x00100000;
+
+phys = 0x100000;
+base = 0x7C00000000;
+
 SECTIONS
 {
-	.text phys : AT(phys)
+	. = phys;
+
+	.header :
+	{
+		KEEP(*(.header))
+	}
+
+	.inittext :
+	{
+		*(.multiboot)
+		*(.inittext)
+	}
+
+	. += base;
+	.text : AT(ADDR(.text) - base)
 	{
 		code = .;
 		*(.text)
-		*(.rodata)
 		. = ALIGN(4096);
 	}
-	.data : AT(phys + (data - code))
+
+	.data : AT(ADDR(.data) - base)
 	{
 		data = .;
 		*(.data)
 		. = ALIGN(4096);
+		dataend = .;
 	}
 
-	.bss : AT(phys + (bss - code))
+	.rodata : AT(ADDR(.rodata) - base)
+	{
+		*(.rodata)
+	}
+
+	.bss : AT(ADDR(.bss) - base)
 	{
 		bss = .;
 		*(.bss)
+		*(COMMON)
 		. = ALIGN(4096);
 	}
 	end = .;
+
+	/DISCARD/ :
+	{
+		*(.comment)
+	}
 }

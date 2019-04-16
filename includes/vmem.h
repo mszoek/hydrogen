@@ -14,7 +14,7 @@
  * physical addresses of 4K blocks */
 extern UInt64 pml4t[512] __attribute__((aligned(4096))); // Page Map Level 4 Table. Each entry is 512GB
 extern UInt64 pdpt[1024] __attribute__((aligned(4096))); // Page Directory Pointer Table. Each entry is 1GB
-extern UInt64 pdt[1024] __attribute__((aligned(4096)));  // Page Directory Table. Each entry is 2MB
+extern UInt64 pdt[1536] __attribute__((aligned(4096)));  // Page Directory Table. Each entry is 2MB
 extern UInt64 pt[32768] __attribute__((aligned(4096)));  // Page Tables. Each entry is a 4K physical block.
 
 const UInt64 KB = 1024;

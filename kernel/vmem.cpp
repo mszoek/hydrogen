@@ -7,17 +7,17 @@
 #include <kstdio.h>
 #include <vmem.h>
 
-UInt64 pml4t[512] __attribute__((aligned(4096))); // Page Map Level 4 Table. Each entry is 512GB
-UInt64 pdpt[1024] __attribute__((aligned(4096))); // Page Directory Pointer Table. Each entry is 1GB
-UInt64 pdt[1024] __attribute__((aligned(4096))); // Page Directory Table. Each entry is 2MB
-UInt64 pt[32768] __attribute__((aligned(4096)));  // Page Tables. Each entry is a 4K physical block.
-
+// UInt64 pml4t[512] __attribute__((aligned(4096))); // Page Map Level 4 Table. Each entry is 512GB
+// UInt64 pdpt[1024] __attribute__((aligned(4096))); // Page Directory Pointer Table. Each entry is 1GB
+// UInt64 pdt[1536] __attribute__((aligned(4096))); // Page Directory Table. Each entry is 2MB
+// UInt64 pt[32768] __attribute__((aligned(4096)));  // Page Tables. Each entry is a 4K physical block.
+// UInt64 kernpt[256*16] __attribute__((aligned(4096))); // kernel code/bss mapping table - up to 16 MB
 
 VirtualMemoryManager::VirtualMemoryManager()
 {
 	/* pdpt[0] was set up in loader.asm to point to pdt[0].
 	 * This PDT maps the lowest 1GB. Its first entry points to
-	 * pt[0] which identity maps the first 4MB of physical RAM.
+	 * pt[0] which identity maps the first 1MB of physical RAM.
 	 * We won't touch that mapping. */
 
 	/* we'll put the framebuffer just below 512GB at 7f80000000 */
@@ -27,7 +27,7 @@ VirtualMemoryManager::VirtualMemoryManager()
 	UInt64 framebuffer = bootinfo.framebufferAddr;
 
 	/* allocate memory for PTs to cover the framebuffer space */
-	UInt64 *mypt = &pt[1024]; // 0-1023 hold the low memory identity map
+	UInt64 *mypt = &pt[256]; // 0-255 hold the low memory identity map
 	int j = 0, i;
 	for(i = 0; framebuffer+j <= framebuffer+(bootinfo.framebufferPitch*(bootinfo.framebufferHeight+1)); ++i)
 	{
@@ -117,11 +117,10 @@ UInt64 VirtualMemoryManager::remap(UInt64 phys, UInt64 size)
 	return remap(phys, size, VMA_BASE+phys);
 }
 
-/* remap() is still kind of broken */
 UInt64 VirtualMemoryManager::remap(UInt64 phys, UInt64 size, UInt64 virt)
 {
-	if(phys < 0x400000)
-		return phys;	// first 4MB is identity mapped
+	if(phys < 0x100000)
+		return phys;	// first 1MB is identity mapped
 
 	UInt64 orig = virt;
 	UInt64 end = virt+size;
