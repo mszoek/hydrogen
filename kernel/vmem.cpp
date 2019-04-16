@@ -7,46 +7,8 @@
 #include <kstdio.h>
 #include <vmem.h>
 
-// UInt64 pml4t[512] __attribute__((aligned(4096))); // Page Map Level 4 Table. Each entry is 512GB
-// UInt64 pdpt[1024] __attribute__((aligned(4096))); // Page Directory Pointer Table. Each entry is 1GB
-// UInt64 pdt[1536] __attribute__((aligned(4096))); // Page Directory Table. Each entry is 2MB
-// UInt64 pt[32768] __attribute__((aligned(4096)));  // Page Tables. Each entry is a 4K physical block.
-// UInt64 kernpt[256*16] __attribute__((aligned(4096))); // kernel code/bss mapping table - up to 16 MB
-
 VirtualMemoryManager::VirtualMemoryManager()
 {
-	/* pdpt[0] was set up in loader.asm to point to pdt[0].
-	 * This PDT maps the lowest 1GB. Its first entry points to
-	 * pt[0] which identity maps the first 1MB of physical RAM.
-	 * We won't touch that mapping. */
-
-	/* we'll put the framebuffer just below 512GB at 7f80000000 */
-  	pdpt[510] = (UInt64)(&pdt[512]) | 3;
-  	memset((char *)&pdt[0x1000], 0, 0x1000);
-
-	UInt64 framebuffer = bootinfo.framebufferAddr;
-
-	/* allocate memory for PTs to cover the framebuffer space */
-	UInt64 *mypt = &pt[256]; // 0-255 hold the low memory identity map
-	int j = 0, i;
-	for(i = 0; framebuffer+j <= framebuffer+(bootinfo.framebufferPitch*(bootinfo.framebufferHeight+1)); ++i)
-	{
-		*(mypt+i) = framebuffer + j | 0x3;
-		j += 0x1000;
-	}
-	UInt64 *mypdt = &pdt[512];
-	j = i/512;
-	if(i % 512 != 0)
-		++j;
-	i = j;
-	j = 0;
-	for(int x = 0; x < i; ++x)
-	{
-		*(mypdt+x) = ((UInt64)mypt)+j | 0x3;
-		j += 0x1000;
-	}
-	bootinfo.framebufferAddr = FRAMEBUFFER_VMA;
-
   /*
    * We're going to have pools for allocations < PMM_BLOCK_SIZE/2. A block 
    * (4K) is subdivided into 'chunks' of fixed size for each pool. Each pool

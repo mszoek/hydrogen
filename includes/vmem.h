@@ -9,7 +9,7 @@
 #include <hw/types.h>
 #include <kmem.h>
 
-/* store PAE page tables in the bss. PML4T entries are PDPT.
+/* PAE page tables in loader.asm. PML4T entries are PDPT.
  * PDPT entries are PDT. PDT entries are PT. PT entries are
  * physical addresses of 4K blocks */
 extern UInt64 pml4t[512] __attribute__((aligned(4096))); // Page Map Level 4 Table. Each entry is 512GB
@@ -24,7 +24,7 @@ const UInt64 HALF_TB = 512ULL*1024ULL*1024ULL*1024ULL;
 const UInt64 TB = 1024ULL*1024ULL*1024ULL*1024ULL;
 
 #define FRAMEBUFFER_VMA	0x7f80000000
-#define KERNEL_VMA      0xffc0000000
+#define KERNEL_VMA      0x7C00000000
 #define VMA_BASE        0x8000000000
 
 class VirtualMemoryManager
