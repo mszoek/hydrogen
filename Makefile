@@ -60,7 +60,7 @@ debug: kernel.bin mkiso
 	qemu-system-x86_64 -s -S -M q35 -accel tcg -drive file=hd.img,if=ide,media=disk -cdrom hydrogen.iso -boot d \
         -drive file=/usr/share/ovmf/x64/OVMF_CODE.fd,if=pflash,format=raw,unit=0,readonly=on &
 	sleep 2
-	gdb -ex "target remote localhost:1234" -ex "symbol-file kernel.bin"
+	gdb -ex "target remote localhost:1234" -ex "symbol-file kernel.bin" -ex "b breakpoint()"
 
 run: kernel.bin mkiso
 	qemu-system-x86_64 -M q35 -accel kvm -drive file=hd.img,if=ide,media=disk -cdrom hydrogen.iso -boot d \

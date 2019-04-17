@@ -10,6 +10,11 @@
 
 isr_t interruptHandlers[256];
 
+volatile void breakpoint()
+{
+    asm volatile("nop");
+}
+
 /* Can't do this with a loop because we need the address
  * of the function names */
 void isrInstall()
@@ -121,8 +126,26 @@ char *exceptionMessages[] = {
 
 extern "C" void isrHandler(registers_t r)
 {
-    kprintf("CPU Exception %d: %s\n", r.int_no, exceptionMessages[r.int_no]);
-    // FIXME: print a kernel stack dump here! (panic message)
+    kprintf("DS:%x CS:%x SS:%x Exception:%d %s\n",
+        r.ds, r.cs, r.ss, r.int_no, exceptionMessages[r.int_no]);
+    kprintf("RAX:%x RBX:%x RCX:%x RDX:%x RIP:%x\n",
+        r.rax, r.rbx, r.rcx, r.rdx, r.rip);
+    kprintf("RSI:%x RDI:%x RBP:%x RSP:%x userRSP:%x\n",
+        r.rsi, r.rdi, r.rbp, r.rsp, r.userrsp);
+    kprintf("ErrorCode:%x Flags:%x\n",
+        r.err_code, r.rflags);
+    
+    switch(r.int_no)
+    {
+        case 3: /* Breakpoint */
+            breakpoint();
+            return;
+        case 14: /* page fault */
+            UInt64 cr2;
+            asm volatile("movq %%cr2, %%rax; movq %%rax, %0" : "=m"(cr2));
+            kprintf("Faulting address:%x\n", cr2);
+    }
+    asm("hlt");
 }
 
 void registerInterruptHandler(UInt8 n, isr_t handler)
