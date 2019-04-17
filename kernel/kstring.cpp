@@ -98,9 +98,9 @@ int strcpy(char *dst, char *src)
   return (q - dst);
 }
 
-int atoi(char *str)
+UInt64 atoi(char *str)
 {
-    int res = 0; // Initialize result
+    UInt64 res = 0; // Initialize result
 
     // Iterate through all characters of input string and
     // update result
@@ -112,9 +112,9 @@ int atoi(char *str)
 }
 
 // same thing but parses hex strings
-int atoi16(char *s)
+UInt64 atoi16(char *s)
 {
-    int result = 0;
+    UInt64 result = 0;
     while(*s != 0)
     {
         char ch = toupper(*s);
@@ -150,7 +150,7 @@ void backspace(char s[])
 	s[len-1] = '\0';
 }
 
-void itoa(unsigned n, unsigned base, char str[])
+void itoa(UInt64 n, unsigned base, char str[])
 {
   int i = 0;
   char basechars[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};

@@ -53,7 +53,7 @@ int kprintf(const char* str, ...)
 
 					case 's':
                     {
-						UInt64 c = (int)va_arg(args, char *);
+						UInt64 c = (UInt64)va_arg(args, char *);
 						kprint((char *)c);
 						i++;
 						break;
@@ -62,7 +62,7 @@ int kprintf(const char* str, ...)
 					case 'd':
 					case 'i':
                     {
-						int c = va_arg(args, int);
+						UInt64 c = va_arg(args, UInt64);
 						itoa(c, 10, buf);
 						int q = strlen(buf);
 						for(int c = 0; c < width-q; ++c)
@@ -75,12 +75,12 @@ int kprintf(const char* str, ...)
 					case 'X':
 					case 'x':
                     {
-						int c = va_arg(args, int);
+						UInt64 c = va_arg(args, UInt64);
 						itoa(c, 16, buf);
 						int q = strlen(buf);
 						for(int c = 0; c < width-q; ++c)
 							screen->printChar('0');
-                        kprint(buf);
+            kprint(buf);
 						i++;
 						break;
 					}
@@ -109,7 +109,7 @@ void printdata(UInt8* nodedata, int len)
   for(i=0,j=0; i<len; ++i)
   {
       if(j==0)
-        kprintf("%8x ",i);
+        kprintf("%8x ",(UInt64)nodedata+i);
       kprintf("%2x ", nodedata[i]);
       ascii[j++] = isprint(nodedata[i]) ? nodedata[i] : '.';
       if(j > 15)
