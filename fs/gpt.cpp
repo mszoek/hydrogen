@@ -104,7 +104,7 @@ GUIDPartitionTable::GUIDPartitionTable(AHCIController *ahci, int port)
         return;
     hbaPort *p = ahci->getPort(port);
 
-    UInt16 *diskbuf = (UInt16 *)vmm->remap((UInt64)malloc(4096), 4096);
+    UInt16 *diskbuf = (UInt16 *)malloc(4096);
     memset((char *)diskbuf, 0, 512);
 
     // read header and make sure it's valid

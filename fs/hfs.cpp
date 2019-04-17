@@ -40,12 +40,13 @@ HierarchicalFileSystem::HierarchicalFileSystem(Partition *p)
     mounted = false;
     readVolumeHeader();
 
-    UInt8 buf[256];
+    UInt8 *buf = (UInt8*)malloc(256);
     int fd = open("foo.txt");
     kprintf("fd = %d\n", fd);
-    kprintf("read %d bytes\n", read(fd, buf, sizeof(buf)));
+    kprintf("read %d bytes to %x\n", read(fd, buf, 256), (UInt64)buf);
     close(fd);
     kprintf("%s\n", (char *)buf);
+    free(buf);
 }
 
 HierarchicalFileSystem::~HierarchicalFileSystem()
@@ -73,8 +74,6 @@ void HierarchicalFileSystem::readVolumeHeader()
 {
     // allocate a buffer
     UInt16 *buf = (UInt16 *)malloc(8192);
-    if(buf)
-        buf = (UInt16 *)vmm->remap((UInt64)buf, 8192);
 
     // read the volume header from the first block
     AHCIController *ahci = partition.getController();
@@ -108,8 +107,6 @@ void *HierarchicalFileSystem::searchCatalog(const char *path, UInt16 kind)
 
     // allocate a buffer
     UInt16 *buf = (UInt16 *)malloc(8192);
-    if(buf)
-        buf = (UInt16 *)vmm->remap((UInt64)buf, 8192);
 
     AHCIController *ahci = partition.getController();
     hbaPort *port = ahci->getPort(partition.getPort());
@@ -151,7 +148,6 @@ void *HierarchicalFileSystem::searchCatalog(const char *path, UInt16 kind)
             continue; // not a match
 
         HFSPlusCatalogFile *catrec = (HFSPlusCatalogFile *)malloc(sizeof(HFSPlusCatalogFile));
-        catrec = (HFSPlusCatalogFile *)vmm->remap((UInt64)catrec, sizeof(HFSPlusCatalogFile));
         memcpy((char *)catrec, (char *)((UInt64)buf+offset+2+ntohs(catkey->keyLength)), sizeof(HFSPlusCatalogFile));
         free(buf);
         return catrec;        
@@ -212,6 +208,7 @@ int HierarchicalFileSystem::read(int fd, UInt8 *buf, int len)
     if(bswap64(cf->dataFork.logicalSize) < len)
         len = bswap64(cf->dataFork.logicalSize); // can't read more than we have!
 
+    UInt16 *dbuf = (UInt16 *)malloc(256);
     while(bytesread < len && extent < 8)
     {
         if(cf->dataFork.extents[extent].startBlock == 0)
@@ -223,7 +220,6 @@ int HierarchicalFileSystem::read(int fd, UInt8 *buf, int len)
         // only need to read one sector?
         if(len <= 512)
         {
-            UInt16 dbuf[256];
             ahci->read(port, dbuf, sector, 1);
             memcpy((char *)buf, (char *)dbuf, len);
             bytesread = len;
@@ -243,7 +239,6 @@ int HierarchicalFileSystem::read(int fd, UInt8 *buf, int len)
             // what we want is within the extent. Read all but last sector.
             ahci->read(port, (UInt16 *)((UInt64)buf+bytesread), sector, desired - 1);
             bytesread += desired * 512;
-            UInt16 dbuf[256];
             ahci->read(port, dbuf, sector+desired-1, 1);
             memcpy((char *)(buf+bytesread), (char *)dbuf, len - bytesread);
             bytesread += len-bytesread;
@@ -251,5 +246,6 @@ int HierarchicalFileSystem::read(int fd, UInt8 *buf, int len)
         }
     }
 
+    free(dbuf);
     return bytesread;
 }

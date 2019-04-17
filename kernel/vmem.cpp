@@ -104,29 +104,29 @@ UInt64 VirtualMemoryManager::remap(UInt64 phys, UInt64 size, UInt64 virt)
 		{
 			// create a new pdpt for this 512GB
 			pml4t[pml4Idx] = (UInt64)pmm->allocBlock();
-			memset((UInt32 *)(pml4t[pml4Idx]), 0, 1024);
+			memset((UInt32 *)(pml4t[pml4Idx]+KERNEL_VMA), 0, 1024);
 			pml4t[pml4Idx] |= 3;
 		}
 
-		UInt64 *mypdpt = (UInt64 *)(pml4t[pml4Idx] & ~0x0FFF);
+		UInt64 *mypdpt = (UInt64 *)((pml4t[pml4Idx] & ~0x0FFF) | KERNEL_VMA);
 		if(mypdpt[pdptIdx] == 0)
 		{
 			// create a new pdt for this 1GB
 			mypdpt[pdptIdx] = (UInt64)pmm->allocBlock();
-			memset((UInt32 *)(mypdpt[pdptIdx]), 0, 1024);
+			memset((UInt32 *)(mypdpt[pdptIdx] | KERNEL_VMA), 0, 1024);
 			mypdpt[pdptIdx] |= 3;
 		}
 
-		UInt64 *mypdt = (UInt64 *)(mypdpt[pdptIdx] & ~0x0FFF);
+		UInt64 *mypdt = (UInt64 *)((mypdpt[pdptIdx] & ~0x0FFF) | KERNEL_VMA);
 		if(mypdt[pdtIdx] == 0)
 		{
 			// create a new pt for this 2MB
 			mypdt[pdtIdx] = (UInt64)pmm->allocBlock();
-			memset((UInt32 *)(mypdt[pdtIdx]), 0, 1024);
+			memset((UInt32 *)(mypdt[pdtIdx] | KERNEL_VMA), 0, 1024);
 			mypdt[pdtIdx] |= 3;
 		}
 
-		UInt64 *mypt = (UInt64 *)(mypdt[pdtIdx] & ~0x0FFF);
+		UInt64 *mypt = (UInt64 *)((mypdt[pdtIdx] & ~0x0FFF) | KERNEL_VMA);
 		mypt[ptIdx] = phys | 3; // mark page present and writable
 
 		virt += 4096;
@@ -196,7 +196,7 @@ void *VirtualMemoryManager::malloc(const unsigned int size)
 
         tmp = (mallocHeader *)((UInt64)tmp + sizeof(mallocHeader));
         // kprintf("malloc(%d)=%x p=%x POOL %d\n",size,(UInt32)tmp-sizeof(mallocHeader),tmp,i);
-        return (void *)tmp;
+        return (void *)remap((UInt64)tmp, size);
       }
     }
   } else {
@@ -207,7 +207,7 @@ void *VirtualMemoryManager::malloc(const unsigned int size)
     ((mallocHeader *)p)->node = (poolNode *)size; // we need this to free!
     // kprintf("malloc(%d)=%x p=%x blocks=%d magic=%x\n",size,p,(UInt32)p+sizeof(mallocHeader),blocks,((mallocHeader *)p)->magic);
     p = (void *)((UInt64)p + sizeof(mallocHeader));
-    return (void *)p;
+    return (void *)remap((UInt64)p, size);
   }
 
   kprintf("malloc(): no pool for alloc of %d bytes\n",size);

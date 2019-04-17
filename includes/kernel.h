@@ -11,9 +11,6 @@
 #include <vmem.h>
 #include <bootinfo.h>
 
-#define KERN_ADDRESS 0x100000 // kernel physical load address
-#define KERN_VMA 0xC0000000 // kernel virtual address
-
 #define CTRL_KEYBOARD   0
 #define CTRL_TIMER      1
 #define CTRL_SCREEN     2

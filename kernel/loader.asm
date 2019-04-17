@@ -85,32 +85,39 @@ start:
 	add ebx, 0x1000
 	add edi, 8
 	mov DWORD [edi], ebx ; point PDT[1] to PT[512]
+	add ebx, 0x1000
+	add edi, 8
+	mov DWORD [edi], ebx ; point PDT[2] to PT[1024]
 
 	mov edi, pdt - base
 	add edi, 0x1000 ; base of our PDT for this 1GB
 	mov ebx, pt - base
-	add ebx, 0x2000
+	add ebx, 0x3000
 	or ebx, 3
-	mov DWORD [edi], ebx
+	mov DWORD [edi], ebx ; point PDT[512] to PT[1536]
 	add edi, 8
 	add ebx, 0x1000
-	mov DWORD [edi], ebx
+	mov DWORD [edi], ebx ; point PDT[513] to PT[2048]
+	add edi, 8
+	add ebx, 0x1000
+	mov DWORD [edi], ebx ; point PDT[514] to PT[2560]
+	add edi, 8
 
-	; identity map first 4MB (pt[0-1023])
+	; identity map first 6MB (pt[0-1535])
 	mov edi, pt - base
 	mov ebx, 0x3
-	mov ecx, 0x400 ; 1024 entries = 8KB
+	mov ecx, 0x600 ; 1536 entries = 12KB
 setEntry:
 	mov DWORD [edi], ebx
 	add ebx, 0x1000
 	add edi, 8
 	loop setEntry
 
-	; map the same 4MB into 0x7C00000000
+	; map the same 6MB into 0x7C00000000
 	mov edi, pt - base
-	add edi, 0x2000
+	add edi, 0x3000
 	mov ebx, 0x3
-	mov ecx, 0x400
+	mov ecx, 0x600
 setEntry4:
 	mov DWORD [edi], ebx
 	add edi, 8
@@ -183,10 +190,10 @@ align 4096
 pml4t:	resb 8*512
 pdpt:	resb 8*1024
 pdt:	resb 8*1536
-pt:		resb 8*32768
+pt:		resb 8*3072
 
 align 8
-	resb 256*1024
+	resb 512*1024
 _sys_stack:
 
 section .rodata

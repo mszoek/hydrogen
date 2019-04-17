@@ -23,9 +23,10 @@ const UInt64 GB = 1024*1024*1024;
 const UInt64 HALF_TB = 512ULL*1024ULL*1024ULL*1024ULL;
 const UInt64 TB = 1024ULL*1024ULL*1024ULL*1024ULL;
 
-#define FRAMEBUFFER_VMA	0x7f80000000
-#define KERNEL_VMA      0x7C00000000
-#define VMA_BASE        0x8000000000
+#define KERNEL_ADDR     0x100000
+#define FRAMEBUFFER_VMA	0x7f80000000ULL
+#define KERNEL_VMA      0x7C00000000ULL
+#define VMA_BASE        0x8000000000ULL
 
 class VirtualMemoryManager
 {
@@ -64,9 +65,6 @@ private:
     // pools are held in a static list by size. grows horizontally.
 #define NR_POOLS 9
     poolHeader pools[NR_POOLS];
-
-	// base addr of kernel virtual memory (12 TB)
-	const UInt64 kernelVMABase = 0xC0000000000;
 };
 
 #endif // VMEM_H

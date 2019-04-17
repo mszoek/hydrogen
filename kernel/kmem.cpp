@@ -60,7 +60,7 @@ PhysicalMemoryManager::PhysicalMemoryManager(UInt64 memSize, UInt64 kernAddr,
   }
 
   /* mark the kernel memory as in use */
-  dropRegion(kernAddr, kernSize+(physMaxBlocks/PMM_BLOCKS_PER_BYTE));
+  dropRegion(kernAddr - KERNEL_VMA, kernSize+(physMaxBlocks/PMM_BLOCKS_PER_BYTE));
 
   /* drop unusable low memory areas */
   dropRegion(0, 0x400); // real mode interrupt vectors
@@ -78,8 +78,9 @@ PhysicalMemoryManager::~PhysicalMemoryManager()
 
 void PhysicalMemoryManager::printStats()
 {
-  kprintf("PMM: %d blocks. Used/reserved: %d blocks. Free: %d blocks\n",
-    physMaxBlocks, physUsedBlocks, physMaxBlocks - physUsedBlocks);
+  kprintf("PMM: %d blocks. Used/reserved: %d blocks. Free: %d blocks\nBitmap addr %x size %x\n",
+    physMaxBlocks, physUsedBlocks, physMaxBlocks - physUsedBlocks, physMemoryMap,
+    physMemorySize/PMM_BLOCKS_PER_BYTE);
 }
 
 inline void PhysicalMemoryManager::pmmBitmapSet(int bit)
@@ -135,7 +136,7 @@ int PhysicalMemoryManager::findFirstFree()
       {
 				int bit = 1 << j;
 				if( !(physMemoryMap[i] & bit))
-					return i*4*8 + j;
+					return i*32 + j;
 			}
     }
   } 
@@ -160,8 +161,7 @@ int PhysicalMemoryManager::findFirstFree(UInt32 size)
 				int bit = 1<<j;
 				if(!(physMemoryMap[i] & bit))
         {
-					int startingBit = i*32;
-					startingBit += bit; //get the free bit in the dword at index i
+					int startingBit = i*32 + j;
 
 					UInt32 free = 0; //loop through each bit to see if its enough space
 					for(UInt32 count = 0; count <= size; count++)
@@ -170,7 +170,7 @@ int PhysicalMemoryManager::findFirstFree(UInt32 size)
 							free++;
 
 						if(free == size)
-							return i*4*8+j;
+							return i*32 + j;
 					}
 				}
 			}
