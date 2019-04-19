@@ -17,6 +17,7 @@
 #include <kversion.h>
 #include <shell.h>
 #include <hw/byteswap.h>
+#include <sched.h>
 
 #define KERNEL_HFS
 #include <fs/hfs.h>
@@ -36,6 +37,30 @@ bool debug = false;
 // Prototypes
 void displayStatusLine();
 void displayStartupMsg(unsigned int size);
+
+void testtask(void)
+{
+  kprintf("Hello!\n");
+  switchTask();
+}
+
+void maintask(void)
+{
+  TimerController *ctrlTimer = (TimerController *)g_controllers[CTRL_TIMER];
+
+  while(1)
+  {
+      if(ctrlTimer->getTicks() % 1000 == 0)
+      {
+        displayStatusLine();
+      }
+
+      shellCheckInput();
+
+      // asm("hlt"); // sleep until next interrupt
+      switchTask();
+  }
+}
 
 // Kernel entry function
 extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
@@ -129,17 +154,9 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   shellStart();
   displayStatusLine();
 
-  while(1)
-  {
-      if(ctrlTimer->getTicks() % 1000 == 0)
-      {
-        displayStatusLine();
-      }
-
-      shellCheckInput();
-
-      asm("hlt"); // sleep until next interrupt
-  }
+  // start multitasking!
+  Scheduler::createRootTask();
+  curTask = rootTask;
 }
 
 void displayStatusLine()
