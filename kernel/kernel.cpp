@@ -40,8 +40,16 @@ void displayStartupMsg(unsigned int size);
 
 void testtask(void)
 {
-  kprintf("Hello!\n");
-  switchTask();
+  TimerController *ctrlTimer = (TimerController *)g_controllers[CTRL_TIMER];
+
+  while(1)
+  {
+    if(ctrlTimer->getTicks() % 1000 == 0)
+    {
+      kprintf("Hello!\n");
+    }
+    switchTask(curTask->next);
+  }
 }
 
 void maintask(void)
@@ -50,7 +58,7 @@ void maintask(void)
 
   while(1)
   {
-      if(ctrlTimer->getTicks() % 1000 == 0)
+      if(ctrlTimer->getTicks() % 250 == 0)
       {
         displayStatusLine();
       }
@@ -58,7 +66,7 @@ void maintask(void)
       shellCheckInput();
 
       // asm("hlt"); // sleep until next interrupt
-      switchTask();
+      switchTask(curTask->next);
   }
 }
 
@@ -154,9 +162,30 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   shellStart();
   displayStatusLine();
 
-  // start multitasking!
-  Scheduler::createRootTask();
+  /* set up the kernel's root task (main loop)
+   * can't use createTask for this one because the ret addr
+   * and stack will be wrong.
+   */
+  rootTask = (TaskControlBlock *)vmm->malloc(sizeof(TaskControlBlock));
+  rootTask->tid = 1;
+  asm(
+    "push %2;" // return address
+    "mov %%rsp, %0;"
+    "mov %%cr3, %%rbx;"
+    "mov %%rbx, %1" 
+    : "=m"(rootTask->sp), "=m"(rootTask->vas)
+    : "r"(maintask)
+  );
+  rootTask->bp = rootTask->usersp = 0;
+  rootTask->state = 0;
+  rootTask->next = rootTask;
   curTask = rootTask;
+
+  TaskControlBlock *test = Scheduler::createTask(testtask);
+
+  // start multitasking!
+  asm volatile("mov %0, %%rdi; jmp switchTask" : : "m"(rootTask)); // doesn't return
+  panic();
 }
 
 void displayStatusLine()
