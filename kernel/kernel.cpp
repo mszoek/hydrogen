@@ -48,7 +48,6 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   memset(rootGUID, 0, sizeof(rootGUID));
   memcpy((char *)&bootinfo, (char *)binf, sizeof(bootinfo));
 
-
   /* Read data from the multiboot structure */
   if(binf->flags & 0x1)
     mem = binf->memHi + binf->memLo + 1024;
@@ -60,7 +59,13 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   if(binf->flags & 0x4)
     strcpy(cmdline, (char *)((UInt64)binf->cmdLine));
 
-  PhysicalMemoryManager physMM(mem, KERN_ADDRESS, size,
+  /* unmap 1M - 4M now that we're in VMA */
+  for(i = 256; i < 1024; ++i)
+    pt[i] = 0;
+  pdt[1] = 0;
+  pdt[2] = 0;
+
+  PhysicalMemoryManager physMM(mem, KERNEL_VMA+KERNEL_ADDR, size,
     (PhysicalMemoryManager::RegionInfo *)mmap, mmapLen);
   pmm = &physMM;
 
@@ -88,8 +93,8 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 
   screen->clearScreen();
   screen->drawLogo();
-  screen->setColor(0xF0F0F0);
-  kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x%x]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size, KERN_ADDRESS);
+  screen->setColor(0xE0E0F0);
+  kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x%x]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size, KERNEL_VMA);
   kprint("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
   screen->setColor(0xB0B0B0);
   isrInstall();
@@ -126,7 +131,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 
   while(1)
   {
-      if(ctrlTimer->getTicks() % 500 == 0)
+      if(ctrlTimer->getTicks() % 1000 == 0)
       {
         displayStatusLine();
       }

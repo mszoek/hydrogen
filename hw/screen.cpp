@@ -21,6 +21,10 @@ ScreenController::ScreenController()
         fbtype = bootinfo.framebufferType;
     }
 
+    // Remap the framebuffer to a known location
+    framebuffer = (void *)vmm->remap(bootinfo.framebufferAddr, pitch*(height+1), FRAMEBUFFER_VMA);
+    bootinfo.framebufferAddr = (UInt64)framebuffer;
+
     xpos = 0;
     ypos = 0;
     color = 0xAFAFAF;

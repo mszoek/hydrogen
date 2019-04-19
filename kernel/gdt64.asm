@@ -23,3 +23,6 @@ GDT64:                           ; Global Descriptor Table (64-bit).
     .Pointer:                    ; The GDT-pointer.
     dw $ - GDT64 - 1             ; Limit.
     dq GDT64                     ; Base.
+    .PointerLow:
+    dw GDT64.Pointer - GDT64 - 1
+    dq GDT64 - base

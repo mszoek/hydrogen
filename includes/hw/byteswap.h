@@ -17,6 +17,7 @@ static inline UInt32 bswap32(UInt32 v)
 static inline UInt64 bswap64(UInt64 v)
 {
     asm volatile("bswap %0" : "=q"(v) : "0"(v));
+    return v;
 }
 
 #endif // BYTESWAP_H

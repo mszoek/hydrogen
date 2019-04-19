@@ -29,7 +29,7 @@ AHCIController::AHCIController(hbaMem *p)
     abar = p;
 
     // reserve 75 blocks for our data structures
-    AHCI_BASE = vmm->remap((UInt64)vmm->malloc(75*PMM_BLOCK_SIZE), 75*PMM_BLOCK_SIZE);
+    AHCI_BASE = (UInt64)malloc(75*PMM_BLOCK_SIZE);
 
     nrCmdSlots = ((abar->cap >> 8) & 0x1F) + 1;
     probeSATAPorts();
@@ -90,7 +90,6 @@ void AHCIController::probeSATAPorts()
                 {
                     identifyPort(port);
                     StorageList *node = (StorageList *)malloc(sizeof(StorageList));
-                    node = (StorageList *)vmm->remap((UInt64)node, sizeof(StorageList));
                     node->controller = this;
                     node->controllerType = CTRL_AHCI;
                     node->port = i;
@@ -175,10 +174,10 @@ void AHCIController::identifyPort(hbaPort *port)
 {
     port->is = 0xFFFFFFFF;
     int spin = 0;
-    UInt16 buf[512];
-
     int slot = findCmdSlot(port);
     if(slot < 0) return;
+
+    UInt16 *buf = (UInt16 *)malloc(512);
 
     hbaCmdHeader *hdr = (hbaCmdHeader *)(port->clbLo + slot);
     hdr->cfl = sizeof(eFISTypeRegH2D) / sizeof(UInt32);
@@ -189,7 +188,7 @@ void AHCIController::identifyPort(hbaPort *port)
     memset((char *)tbl, 0, sizeof(hbaCmdTable));
 
     tbl->prdtEntry[0].dbaLo = ((UInt64)buf) & 0xFFFFFFFF;
-    tbl->prdtEntry[0].dbaHi = ((UInt64)buf) >> 32;
+    tbl->prdtEntry[0].dbaHi = (((UInt64)buf) & 0xFFFFFFFF00000000ULL) >> 32;
     tbl->prdtEntry[0].dbc = 512;
     tbl->prdtEntry[0].i = 1;
 
@@ -203,6 +202,7 @@ void AHCIController::identifyPort(hbaPort *port)
         ++spin;
     if(spin == 1000000)
     {
+        free(buf);
         kprintf("AHCI: timeout; port not responding\n");
         return;
     }
@@ -218,6 +218,7 @@ void AHCIController::identifyPort(hbaPort *port)
 
     kprintf("%s %s %dC %dH %dS\n", trimSpaces(id->ModelNumber, 40), trimSpaces(id->SerialNumber, 20),
         id->NumCylinders, id->NumHeads, id->NumSectorsPerTrack);
+    free(buf);
 }
 
 /* Read sectors into 'buf' which must be large enough for the data being read! */

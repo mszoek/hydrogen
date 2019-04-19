@@ -61,8 +61,8 @@ void shellExecCommand()
   if(strcmp(shellBuffer, "help") == 0)
   {
     kprintf("Commands:\n"
-    "  clear - clear the screen\n  lspci - list pci devices\n"
-    "  printdata - print memory contents\n  meminfo - show memory pool info\n\n");
+    "  break - invoke breakpoint\nclear - clear the screen\n  lspci - list pci devices\n"
+    "  printdata ADDR - print memory contents\n  meminfo - show memory pool info\n\n");
     return;
   }
 
@@ -87,15 +87,28 @@ void shellExecCommand()
     return;
   }
 
-  if(strcmp(shellBuffer, "printdata") == 0)
+  if(strncmp(shellBuffer, "printdata", 9) == 0)
   {
-    printdata((UInt8 *)0x100000, 1024);
+    UInt64 index = 0;
+    char *p = strtok(shellBuffer, " ", (int *)&index);
+    p = strtok(shellBuffer, " ", (int *)&index);
+    if(p != 0)
+      index = atoi16(p);
+    else
+      index = KERNEL_VMA;
+    printdata((UInt8 *)index, 256);
     return;
   }
 
   if(strcmp(shellBuffer, "meminfo") == 0)
   {
     pmm->printStats();
+    return;
+  }
+
+  if(strcmp(shellBuffer, "break") == 0)
+  {
+    asm volatile("int3");
     return;
   }
 
