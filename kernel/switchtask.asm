@@ -20,11 +20,16 @@ switchTask:
     mov rbx, curTask
     mov rsi, [rbx]
     mov [rsi+12], rsp   ; save sp in curTask TCB slot
+    cmp BYTE [rsi+36], 1     ; still in 'running' state?
+    jne .notRunning
+    mov BYTE [rsi+36], 0     ; put in 'ready to run'
+                        ; FIXME: remove from run list
 
- ;   mov rsi, [rdi+0]    ; load 'next' pointer from TCB
+.notRunning:
     mov [rbx], rdi      ; curTask = what we passed in
     mov rsp, [rdi+12]   ; load sp for new task
     mov rax, [rdi+28]   ; load cr3 for new task
+    mov BYTE [rdi+36], 1     ; set 'running' state
 ;    mov [TSS.rsp0], rbx
 ;    cmp rax, rcx
 ;    je .sameVAS

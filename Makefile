@@ -6,7 +6,7 @@ CXX=gcc
 AS=as
 LD=ld
 CC64=gcc
-CFLAGS=-g -Iincludes -m64 -nostdlib -fstack-check=no -fstack-protector-explicit \
+CFLAGS=-g -Ikernel/includes -m64 -nostdlib -fstack-check=no -fstack-protector-explicit \
 	-ffreestanding -mno-red-zone -fno-exceptions -mno-sse -mno-sse2 -mno-mmx
 CXXFLAGS=$(CFLAGS) -fno-rtti -fpermissive -Wno-write-strings
 
@@ -49,10 +49,10 @@ hd.img:
 %.o: %.asm
 	nasm -f $(NASM_ARCH) -o $@ $<
 
-KERNEL_SRC=$(wildcard kernel/*.cpp hw/*.cpp fs/*.cpp fonts/*.cpp)
+KERNEL_SRC=$(wildcard kernel/*.cpp kernel/hw/*.cpp kernel/fs/*.cpp kernel/fonts/*.cpp)
 KERNEL_ASMSRC=$(wildcard kernel/switchtask.asm)
 KERNEL_INC=$(wildcard includes/*.h includes/hw/*.h includes/fs/*.h includes/fonts/*.h)
-KERNEL_OBJ=kernel/loader.o ${KERNEL_SRC:.cpp=.o} ${KERNEL_ASMSRC:.asm=.o} hw/interrupt.o
+KERNEL_OBJ=kernel/loader.o ${KERNEL_SRC:.cpp=.o} ${KERNEL_ASMSRC:.asm=.o} kernel/hw/interrupt.o
 
 kernel.bin: $(KERNEL_OBJ)
 	ld -m elf_x86_64 -o kernel.bin -Tlinker.ld --no-relax $(KERNEL_OBJ) -Map kernel.map

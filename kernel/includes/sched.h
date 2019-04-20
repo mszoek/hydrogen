@@ -3,6 +3,12 @@
 
 #include <hw/types.h>
 
+typedef enum _TaskState
+{
+    readyToRun, running, sleeping, waitIO, waitLock, wait 
+} TaskState;
+
+
 typedef struct _TaskControlBlock
 {
 /* 0 */ struct _TaskControlBlock *next;
@@ -10,7 +16,8 @@ typedef struct _TaskControlBlock
 /* 12*/ UInt64 sp;      // address of kernel stack top
 /* 20*/ UInt64 usersp;  // address of user stack top (0 for kernel tasks)
 /* 28*/ UInt64 vas;     // PML4T address
-/* 36*/ UInt32 state;   // flags and stuff
+/* 36*/ UInt8 state;
+        UInt8 priority;
         UInt64 timeUsed;
         UInt64 lastTime;
         char name[48]; 

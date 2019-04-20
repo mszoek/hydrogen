@@ -44,6 +44,7 @@ void testtask(void)
   TimerController *timer = (TimerController *)g_controllers[CTRL_TIMER];
   int x = 60;
   int mod = 1;
+  int ticks = 0;
 
   int oldx = screen->getX();
   int oldy = screen->getY();
@@ -52,19 +53,22 @@ void testtask(void)
   screen->setXYChars(70, 12);
   screen->printChar('|');
   screen->setXY(oldx, oldy);
+
   while(1)
   {
-    if(timer->getTicks() % 200 == 0)
+    ticks++;
+    if(ticks >= 1000000)
     {
+      ticks = 0;
       oldx = screen->getX();
       oldy = screen->getY();
       screen->setXYChars(x, 12);
       screen->printChar(' ');
       x += (1*mod);
-      if(x > 68 || x < 61)
-        mod = mod * -1;
       screen->setXYChars(x, 12);
       screen->printChar('*');
+      if(x > 68 || x < 61)
+        mod = mod * -1;
       screen->setXY(oldx, oldy);
     }
     Scheduler::schedule();
@@ -194,7 +198,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
     : "r"(maintask)
   );
   rootTask->usersp = 0;
-  rootTask->state = 0;
+  rootTask->state = readyToRun;
   strcpy(rootTask->name, "mainTask");
   rootTask->next = rootTask;
   curTask = rootTask;

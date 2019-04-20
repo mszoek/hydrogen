@@ -116,11 +116,12 @@ void shellExecCommand()
 
   if(strcmp(shellBuffer, "ps") == 0)
   {
-    kprintf(" TID      TIME     STACK       NAME\n");
+    kprintf(" TID      TIME     STACK       STATE  NAME\n");
     for(TaskControlBlock *tcb = rootTask; tcb; tcb = tcb->next)
     {
       Scheduler::updateTimeUsed(tcb);
-      kprintf("%6d  %6ds  %9x     %s\n", tcb->tid, tcb->timeUsed/1000000, tcb->sp, tcb->name);
+      kprintf("%6d  %6ds  %9x       %d      %s\n", tcb->tid, tcb->timeUsed/1000000,
+        tcb->sp, tcb->state, tcb->name);
       if(tcb->next == rootTask)
         break;
     }

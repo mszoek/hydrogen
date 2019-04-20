@@ -24,18 +24,18 @@ void Scheduler::schedule()
   switchTask(curTask->next);
 }
 
-TaskControlBlock *Scheduler::createTask(void (&entry)(), char *name = 0)
+TaskControlBlock *Scheduler::createTask(void (&entry)(), char *name)
 {
   static UInt32 taskID = 2;
 
   TaskControlBlock *tcb = (TaskControlBlock *)vmm->malloc(sizeof(TaskControlBlock));
   tcb->tid = taskID++;
   tcb->next = rootTask->next;
-  tcb->sp = vmm->malloc(4096);
+  tcb->sp = (UInt64)vmm->malloc(4096);
   tcb->usersp = 0;
   tcb->lastTime = ((TimerController *)g_controllers[CTRL_TIMER])->getTicks();
   tcb->timeUsed = 0;
-  tcb->state = 0;
+  tcb->state = readyToRun;
   if(name)
     strcpy(tcb->name, name);
   else
