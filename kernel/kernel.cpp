@@ -40,15 +40,34 @@ void displayStartupMsg(unsigned int size);
 
 void testtask(void)
 {
-  TimerController *ctrlTimer = (TimerController *)g_controllers[CTRL_TIMER];
+  ScreenController *screen = (ScreenController *)g_controllers[CTRL_SCREEN];
+  TimerController *timer = (TimerController *)g_controllers[CTRL_TIMER];
+  int x = 60;
+  int mod = 1;
 
+  int oldx = screen->getX();
+  int oldy = screen->getY();
+  screen->setXYChars(59, 12);
+  screen->printChar('|');
+  screen->setXYChars(70, 12);
+  screen->printChar('|');
+  screen->setXY(oldx, oldy);
   while(1)
   {
-    if(ctrlTimer->getTicks() % 1000 == 0)
+    if(timer->getTicks() % 200 == 0)
     {
-      kprintf("Hello!\n");
+      oldx = screen->getX();
+      oldy = screen->getY();
+      screen->setXYChars(x, 12);
+      screen->printChar(' ');
+      x += (1*mod);
+      if(x > 68 || x < 61)
+        mod = mod * -1;
+      screen->setXYChars(x, 12);
+      screen->printChar('*');
+      screen->setXY(oldx, oldy);
     }
-    switchTask(curTask->next);
+    Scheduler::schedule();
   }
 }
 
@@ -64,9 +83,7 @@ void maintask(void)
       }
 
       shellCheckInput();
-
-      // asm("hlt"); // sleep until next interrupt
-      switchTask(curTask->next);
+      Scheduler::schedule();
   }
 }
 
@@ -176,12 +193,13 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
     : "=m"(rootTask->sp), "=m"(rootTask->vas)
     : "r"(maintask)
   );
-  rootTask->bp = rootTask->usersp = 0;
+  rootTask->usersp = 0;
   rootTask->state = 0;
+  strcpy(rootTask->name, "mainTask");
   rootTask->next = rootTask;
   curTask = rootTask;
 
-  TaskControlBlock *test = Scheduler::createTask(testtask);
+  TaskControlBlock *test = Scheduler::createTask(testtask, "bouncer");
 
   // start multitasking!
   asm volatile("mov %0, %%rdi; jmp switchTask" : : "m"(rootTask)); // doesn't return

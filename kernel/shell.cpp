@@ -14,6 +14,7 @@
 #include <kstring.h>
 #include <kernel.h>
 #include <shell.h>
+#include <sched.h>
 
 // map scan codes 0x00 to 0x58 into en_US layout
 const char scanCodesToASCII_base[] =
@@ -61,8 +62,9 @@ void shellExecCommand()
   if(strcmp(shellBuffer, "help") == 0)
   {
     kprintf("Commands:\n"
-    "  break - invoke breakpoint\nclear - clear the screen\n  lspci - list pci devices\n"
-    "  printdata ADDR - print memory contents\n  meminfo - show memory pool info\n\n");
+    "  break - invoke breakpoint\n  clear - clear the screen\n  lspci - list pci devices\n"
+    "  printdata ADDR - print memory contents\n  meminfo - show memory pool info\n"
+    "  ps - show kernel tasks\n\n");
     return;
   }
 
@@ -109,6 +111,19 @@ void shellExecCommand()
   if(strcmp(shellBuffer, "break") == 0)
   {
     asm volatile("int3");
+    return;
+  }
+
+  if(strcmp(shellBuffer, "ps") == 0)
+  {
+    kprintf(" TID      TIME     STACK       NAME\n");
+    for(TaskControlBlock *tcb = rootTask; tcb; tcb = tcb->next)
+    {
+      Scheduler::updateTimeUsed(tcb);
+      kprintf("%6d  %6ds  %9x     %s\n", tcb->tid, tcb->timeUsed/1000000, tcb->sp, tcb->name);
+      if(tcb->next == rootTask)
+        break;
+    }
     return;
   }
 
