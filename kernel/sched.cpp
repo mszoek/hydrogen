@@ -8,8 +8,25 @@
 #include <sched.h>
 #include <kstdio.h>
 
-TaskControlBlock *rootTask = 0;
 TaskControlBlock *curTask = 0;
+TaskControlBlock *readyToRunStart = 0;
+TaskControlBlock *readyToRunEnd = 0;
+
+UInt32 schedulerSpinlock = 0;
+
+/* FIXME: a real spinlock is needed for SMP */
+void Scheduler::lock()
+{
+  asm("cli");
+  ++schedulerSpinlock;
+}
+
+void Scheduler::unlock()
+{
+  --schedulerSpinlock;
+  if(schedulerSpinlock == 0)
+    asm("sti");
+}
 
 void Scheduler::updateTimeUsed(TaskControlBlock *task)
 {
@@ -18,10 +35,39 @@ void Scheduler::updateTimeUsed(TaskControlBlock *task)
   task->lastTime = now;
 }
 
+void Scheduler::blockTask(TaskState state)
+{
+  Scheduler::lock();
+  curTask->state = state;
+  Scheduler::schedule();
+  Scheduler::unlock();
+}
+
+void Scheduler::unblockTask(TaskControlBlock *task)
+{
+  Scheduler::lock();
+  if(readyToRunStart != 0)
+  {
+    // there is something on the run queue. append this task to the end.
+    task->state = readyToRun;
+    task->next = 0;
+    readyToRunEnd->next = task;
+    readyToRunEnd = task;
+  } else {
+    // there is only one currently running task. pre-empt it.
+    switchTask(task);
+  }
+  Scheduler::unlock();
+}
+
 void Scheduler::schedule()
 {
-  updateTimeUsed(curTask);
-  switchTask(curTask->next);
+  if(readyToRunStart != 0)
+  {
+    TaskControlBlock *task = readyToRunStart;
+    readyToRunStart = readyToRunStart->next;
+    switchTask(task);
+  }
 }
 
 TaskControlBlock *Scheduler::createTask(void (&entry)(), char *name)
@@ -30,7 +76,6 @@ TaskControlBlock *Scheduler::createTask(void (&entry)(), char *name)
 
   TaskControlBlock *tcb = (TaskControlBlock *)vmm->malloc(sizeof(TaskControlBlock));
   tcb->tid = taskID++;
-  tcb->next = rootTask->next;
   tcb->sp = (UInt64)vmm->malloc(4096);
   tcb->usersp = 0;
   tcb->lastTime = ((TimerController *)g_controllers[CTRL_TIMER])->getTicks();
@@ -54,6 +99,16 @@ TaskControlBlock *Scheduler::createTask(void (&entry)(), char *name)
     : "r"(entry), "m"(tcb->sp)
   );
   tcb->sp -= 80;
-  rootTask->next = tcb;
+  tcb->next = 0;
+
+  if(readyToRunStart == 0)
+    readyToRunStart = tcb;
+  if(readyToRunEnd == 0)
+    readyToRunEnd = tcb;
+  else
+  {
+    readyToRunEnd->next = tcb;
+    readyToRunEnd = tcb;
+  }
   return tcb;
 }

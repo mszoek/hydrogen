@@ -33,6 +33,7 @@ struct multiboot_info bootinfo;
 
 bool verbose = false;
 bool debug = false;
+TaskControlBlock *test = 0;
 
 // Prototypes
 void displayStatusLine();
@@ -45,6 +46,7 @@ void testtask(void)
   int x = 60;
   int mod = 1;
   int ticks = 0;
+  bool neverPaused = true;
 
   int oldx = screen->getX();
   int oldy = screen->getY();
@@ -56,6 +58,12 @@ void testtask(void)
 
   while(1)
   {
+    if(timer->getTicks() > 5000 && neverPaused)
+    {
+      Scheduler::blockTask(sleeping);
+      neverPaused = false;
+    }
+
     ticks++;
     if(ticks >= 1000000)
     {
@@ -71,23 +79,29 @@ void testtask(void)
         mod = mod * -1;
       screen->setXY(oldx, oldy);
     }
+    Scheduler::lock();
     Scheduler::schedule();
+    Scheduler::unlock();
   }
 }
 
 void maintask(void)
 {
-  TimerController *ctrlTimer = (TimerController *)g_controllers[CTRL_TIMER];
-
+  TimerController *timer = (TimerController *)g_controllers[CTRL_TIMER];
   while(1)
   {
-      if(ctrlTimer->getTicks() % 250 == 0)
-      {
-        displayStatusLine();
-      }
+    if(timer->getTicks() % 250 == 0)
+    {
+      displayStatusLine();
+    }
 
-      shellCheckInput();
-      Scheduler::schedule();
+    if(timer->getTicks() > 10000 && test->state == sleeping)
+      Scheduler::unblockTask(test);
+
+    shellCheckInput();
+    Scheduler::lock();
+    Scheduler::schedule();
+    Scheduler::unlock();
   }
 }
 
@@ -181,32 +195,31 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   }
 
   shellStart();
-  displayStatusLine();
 
   /* set up the kernel's root task (main loop)
    * can't use createTask for this one because the ret addr
    * and stack will be wrong.
    */
-  rootTask = (TaskControlBlock *)vmm->malloc(sizeof(TaskControlBlock));
-  rootTask->tid = 1;
+  TaskControlBlock *root = (TaskControlBlock *)vmm->malloc(sizeof(TaskControlBlock));
+  root->tid = 1;
   asm(
     "push %2;" // return address
     "mov %%rsp, %0;"
     "mov %%cr3, %%rbx;"
     "mov %%rbx, %1" 
-    : "=m"(rootTask->sp), "=m"(rootTask->vas)
+    : "=m"(root->sp), "=m"(root->vas)
     : "r"(maintask)
   );
-  rootTask->usersp = 0;
-  rootTask->state = readyToRun;
-  strcpy(rootTask->name, "mainTask");
-  rootTask->next = rootTask;
-  curTask = rootTask;
+  root->usersp = 0;
+  root->state = running;
+  strcpy(root->name, "main task");
+  root->next = 0;
+  curTask = root;
 
-  TaskControlBlock *test = Scheduler::createTask(testtask, "bouncer");
+  test = Scheduler::createTask(testtask, "bouncer");
 
   // start multitasking!
-  asm volatile("mov %0, %%rdi; jmp switchTask" : : "m"(rootTask)); // doesn't return
+  asm volatile("mov %0, %%rdi; jmp switchTask" : : "m"(root)); // doesn't return
   panic();
 }
 

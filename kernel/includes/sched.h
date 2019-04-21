@@ -3,12 +3,14 @@
 
 #include <hw/types.h>
 
+// be sure to update switchTask() if these are changed!
 typedef enum _TaskState
 {
     readyToRun, running, sleeping, waitIO, waitLock, wait 
 } TaskState;
 
 
+// be sure to update switchTask if this struct is changed!
 typedef struct _TaskControlBlock
 {
 /* 0 */ struct _TaskControlBlock *next;
@@ -23,9 +25,7 @@ typedef struct _TaskControlBlock
         char name[48]; 
 } __attribute__((packed)) TaskControlBlock;
 
-extern TaskControlBlock *rootTask;
 extern TaskControlBlock *curTask;
-
 extern "C" void switchTask(TaskControlBlock *task);
 
 class Scheduler
@@ -33,7 +33,11 @@ class Scheduler
 public:
     static TaskControlBlock *createTask(void (&entry)(), char *name = 0);
     static void updateTimeUsed(TaskControlBlock *task);
-    static void schedule();
+    static void blockTask(TaskState state); // block the running task
+    static void unblockTask(TaskControlBlock *task);
+    static void schedule(); // caller must lock before calling & unlock after
+    static void lock();
+    static void unlock();
 };
 
 #endif // SCHED_H
