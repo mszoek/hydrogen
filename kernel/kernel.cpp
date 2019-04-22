@@ -42,11 +42,8 @@ void displayStartupMsg(unsigned int size);
 void testtask(void)
 {
   ScreenController *screen = (ScreenController *)g_controllers[CTRL_SCREEN];
-  TimerController *timer = (TimerController *)g_controllers[CTRL_TIMER];
   int x = 60;
   int mod = 1;
-  int ticks = 0;
-  bool neverPaused = true;
 
   int oldx = screen->getX();
   int oldy = screen->getY();
@@ -58,27 +55,18 @@ void testtask(void)
 
   while(1)
   {
-    if(timer->getTicks() > 5000 && neverPaused)
-    {
-      Scheduler::blockTask(sleeping);
-      neverPaused = false;
-    }
+    nanosleep(100*NANOTICKS);
 
-    ticks++;
-    if(ticks >= 1000000)
-    {
-      ticks = 0;
-      oldx = screen->getX();
-      oldy = screen->getY();
-      screen->setXYChars(x, 12);
-      screen->printChar(' ');
-      x += (1*mod);
-      screen->setXYChars(x, 12);
-      screen->printChar('*');
-      if(x > 68 || x < 61)
-        mod = mod * -1;
-      screen->setXY(oldx, oldy);
-    }
+    oldx = screen->getX();
+    oldy = screen->getY();
+    screen->setXYChars(x, 12);
+    screen->printChar(' ');
+    x += (1*mod);
+    screen->setXYChars(x, 12);
+    screen->printChar('*');
+    if(x > 68 || x < 61)
+      mod = mod * -1;
+    screen->setXY(oldx, oldy);
     Scheduler::lock();
     Scheduler::schedule();
     Scheduler::unlock();
@@ -87,17 +75,11 @@ void testtask(void)
 
 void maintask(void)
 {
-  TimerController *timer = (TimerController *)g_controllers[CTRL_TIMER];
   while(1)
   {
-    if(timer->getTicks() % 250 == 0)
-    {
-      displayStatusLine();
-    }
-
-    if(timer->getTicks() > 10000 && test->state == sleeping)
-      Scheduler::unblockTask(test);
-
+    for(UInt64 x=0; x<100000; ++x)
+      ;
+    displayStatusLine();
     shellCheckInput();
     Scheduler::lock();
     Scheduler::schedule();
@@ -242,8 +224,17 @@ void displayStatusLine()
   memcpy(line+strlen(line), " blocks Uptime: ", 16);
   itoa(((TimerController *)g_controllers[CTRL_TIMER])->getSeconds(), 10, s);
   memcpy(line+strlen(line), s, strlen(s));
+  memcpy(line+strlen(line), "s CPU idle:", 11);
+  CPUTime *cpu = Scheduler::getCPUTime();
+  UInt64 idle = cpu->idle;
+  UInt64 sys = cpu->sys;
+  itoa(idle/(1+idle+sys)*100, 10, s);
+  memcpy(line+strlen(line), s, strlen(s));
+  memcpy(line+strlen(line), "% sys:", 6);
+  itoa(sys/(1+idle+sys)*100, 10, s);
+  memcpy(line+strlen(line), s, strlen(s));
   int i = strlen(line);
-  line[i] = 's';
+  line[i] = '%';
   line[i+1] = 0;
   memset(line+strlen(line), 0x20, sizeof(line)-strlen(line)-2); // space fill to right edge
   screen->setXY(0, 0);

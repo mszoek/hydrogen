@@ -7,6 +7,7 @@
 #define TIMER_H
 
 #define KERNEL_HZ 1000
+#define NANOTICKS 1000000 // nanoseconds in one tick
 
 class TimerController
 {

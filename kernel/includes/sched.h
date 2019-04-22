@@ -3,6 +3,14 @@
 
 #include <hw/types.h>
 
+typedef struct _CPUTime
+{
+    UInt64 idle;
+    UInt64 sys;
+    UInt64 user;
+    UInt64 wait;
+} CPUTime;
+
 // be sure to update switchTask() if these are changed!
 typedef enum _TaskState
 {
@@ -22,22 +30,34 @@ typedef struct _TaskControlBlock
         UInt8 priority;
         UInt64 timeUsed;
         UInt64 lastTime;
+        UInt64 wakeTime;
         char name[48]; 
 } __attribute__((packed)) TaskControlBlock;
 
 extern TaskControlBlock *curTask;
+extern TaskControlBlock *sleepList; // needed by timer interrupt to wake tasks
 extern "C" void switchTask(TaskControlBlock *task);
+
+/* TEMPORARY big kernel lock */
+void lock();
+void unlock();
+
+void nanosleepUntil(UInt64 when);
+void nanosleep(UInt64 interval);
+void sleep(UInt32 ms);
 
 class Scheduler
 {
 public:
+    static void init();
     static TaskControlBlock *createTask(void (&entry)(), char *name = 0);
-    static void updateTimeUsed(TaskControlBlock *task);
+    static void updateTimeUsed();
     static void blockTask(TaskState state); // block the running task
     static void unblockTask(TaskControlBlock *task);
     static void schedule(); // caller must lock before calling & unlock after
     static void lock();
     static void unlock();
+    static CPUTime *getCPUTime();
 };
 
 #endif // SCHED_H

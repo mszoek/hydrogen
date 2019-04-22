@@ -10,6 +10,7 @@
 #include <hw/timer.h>
 #include <kernel.h>
 #include <kstdio.h>
+#include <sched.h>
 
 static void timerCallback(registers_t regs)
 {
@@ -26,7 +27,7 @@ TimerController::TimerController()
   tickCounter = 0;
   registerInterruptHandler(IRQ0, timerCallback);
 
-  // Program the PIT! H/w clock is 1193180Hz, which is probably wrong
+  // Program the PIT! H/w clock is 1193180Hz
   UInt32 divisor = 1193180 / KERNEL_HZ;
   UInt8 low = (UInt8)(divisor & 0xFF);
   UInt8 high = (UInt8)((divisor >> 8) & 0xFF);
@@ -53,5 +54,25 @@ UInt64 TimerController::getSeconds()
 
 void TimerController::tick()
 {
+  lock();
   ++tickCounter;
+
+  // see if we can wake sleeping tasks
+  TaskControlBlock *task = sleepList;
+  sleepList = 0;
+
+  while(task != 0)
+  {
+    TaskControlBlock *cur = task;
+    task = task->next;
+    if(cur->wakeTime <= tickCounter*NANOTICKS)
+      Scheduler::unblockTask(cur);
+    else
+    {
+      cur->next = sleepList;
+      sleepList = cur;
+    }
+  }
+  
+  unlock();
 }

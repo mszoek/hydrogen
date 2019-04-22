@@ -2,12 +2,26 @@ global switchTask
 extern curTask
 extern readyToRunStart
 extern readyToRunEnd
+extern taskSwitchSpinlock
+extern taskSwitchWasPostponed
 
 bits 64
 section .text
 align 8
 
 switchTask:
+; check whether switches are postponed
+    push rax
+    mov rax, taskSwitchSpinlock
+    cmp DWORD [rax], 0
+    je .notLocked
+    mov rax, taskSwitchWasPostponed
+    mov DWORD [rax], 1
+    pop rax
+    ret
+
+.notLocked:
+    pop rax
 ; callq only pushes the return address, so save everything
     push rax
     push rbx
