@@ -3,6 +3,8 @@
 
 #include <hw/types.h>
 
+#define NANOTICKS 1000000 // ms to ns
+
 // be sure to update switchTask() if these are changed!
 typedef enum _TaskState
 {
@@ -22,11 +24,22 @@ typedef struct _TaskControlBlock
         UInt8 priority;
         UInt64 timeUsed;
         UInt64 lastTime;
+        UInt64 wakeTime;
         char name[48]; 
 } __attribute__((packed)) TaskControlBlock;
 
 extern TaskControlBlock *curTask;
+extern TaskControlBlock *runQ;
+extern TaskControlBlock *sleepQ;
 extern "C" void switchTask(TaskControlBlock *task);
+
+/* TEKPORARY Big Kernel Lock (not scheduler lock below) */
+void lock();
+void unlock();
+
+void nanosleepUntil(UInt64 when);
+void nanosleep(UInt64 nano);
+void sleep(UInt32 ms);
 
 class Scheduler
 {

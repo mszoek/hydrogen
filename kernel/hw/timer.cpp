@@ -10,6 +10,7 @@
 #include <hw/timer.h>
 #include <kernel.h>
 #include <kstdio.h>
+#include <sched.h>
 
 static void timerCallback(registers_t regs)
 {
@@ -53,5 +54,30 @@ UInt64 TimerController::getSeconds()
 
 void TimerController::tick()
 {
+  lock();
   ++tickCounter;
+
+  TaskControlBlock *task = sleepQ;
+  sleepQ = 0;
+
+  while(task != 0)
+  {
+    TaskControlBlock *cur = task;
+    task = task->next;
+
+    if(cur->wakeTime <= NANOTICKS*tickCounter)
+    {
+      cur->next = 0;
+      Scheduler::unblockTask(cur);
+    } else {
+      cur->next = sleepQ;
+      sleepQ = cur;
+    }    
+  }
+  unlock();
+
+  // now that we've unblocked tasks, make sure we try to run something
+  Scheduler::lock();
+  Scheduler::schedule();
+  Scheduler::unlock();
 }

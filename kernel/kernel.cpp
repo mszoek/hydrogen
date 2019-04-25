@@ -58,27 +58,18 @@ void testtask(void)
 
   while(1)
   {
-    if(timer->getTicks() > 5000 && neverPaused)
-    {
-      Scheduler::blockTask(sleeping);
-      neverPaused = false;
-    }
+    nanosleep(200*NANOTICKS);
+    oldx = screen->getX();
+    oldy = screen->getY();
+    screen->setXYChars(x, 12);
+    screen->printChar(' ');
+    x += (1*mod);
+    screen->setXYChars(x, 12);
+    screen->printChar('*');
+    if(x > 68 || x < 61)
+      mod = mod * -1;
+    screen->setXY(oldx, oldy);
 
-    ticks++;
-    if(ticks >= 1000000)
-    {
-      ticks = 0;
-      oldx = screen->getX();
-      oldy = screen->getY();
-      screen->setXYChars(x, 12);
-      screen->printChar(' ');
-      x += (1*mod);
-      screen->setXYChars(x, 12);
-      screen->printChar('*');
-      if(x > 68 || x < 61)
-        mod = mod * -1;
-      screen->setXY(oldx, oldy);
-    }
     Scheduler::lock();
     Scheduler::schedule();
     Scheduler::unlock();
@@ -90,13 +81,22 @@ void maintask(void)
   TimerController *timer = (TimerController *)g_controllers[CTRL_TIMER];
   while(1)
   {
+    shellCheckInput();
+    Scheduler::lock();
+    Scheduler::schedule();
+    Scheduler::unlock();
+  }
+}
+
+void status(void)
+{
+  TimerController *timer = (TimerController *)g_controllers[CTRL_TIMER];
+  while(1)
+  {
     if(timer->getTicks() % 250 == 0)
     {
       displayStatusLine();
     }
-
-    if(timer->getTicks() > 10000 && test->state == sleeping)
-      Scheduler::unblockTask(test);
 
     shellCheckInput();
     Scheduler::lock();
@@ -217,9 +217,11 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   curTask = root;
 
   test = Scheduler::createTask(testtask, "bouncer");
+  TaskControlBlock *foo = Scheduler::createTask(status, "status");
 
   // start multitasking!
-  asm volatile("mov %0, %%rdi; jmp switchTask" : : "m"(root)); // doesn't return
+  runQ = runQ->next;
+  asm volatile("mov %0, %%rdi; jmp switchTask" : : "m"(test)); // doesn't return
   panic();
 }
 
