@@ -57,22 +57,28 @@ void TimerController::tick()
   lock();
   ++tickCounter;
 
-  // see if we can wake sleeping tasks
-  TaskControlBlock *task = sleepList;
-  sleepList = 0;
+  TaskControlBlock *task = sleepQ;
+  sleepQ = 0;
 
   while(task != 0)
   {
     TaskControlBlock *cur = task;
     task = task->next;
-    if(cur->wakeTime <= tickCounter*NANOTICKS)
-      Scheduler::unblockTask(cur);
-    else
+
+    if(cur->wakeTime <= NANOTICKS*tickCounter)
     {
-      cur->next = sleepList;
-      sleepList = cur;
-    }
+      cur->wakeTime = 0;
+      cur->next = 0;
+      Scheduler::unblockTask(cur);
+    } else {
+      cur->next = sleepQ;
+      sleepQ = cur;
+    }    
   }
-  
   unlock();
+
+  // now that we've unblocked tasks, make sure we try to run something
+  Scheduler::lock();
+  Scheduler::schedule();
+  Scheduler::unlock();
 }

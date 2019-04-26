@@ -9,22 +9,72 @@
 #include <kstdio.h>
 
 TaskControlBlock *curTask = 0;
-
-/* tasks that are ready to run */
-TaskControlBlock *readyToRunStart = 0;
-TaskControlBlock *readyToRunEnd = 0;
-
-/* tasks that are sleeping */
-TaskControlBlock *sleepList = 0;
+TaskControlBlock *runQ = 0;
+TaskControlBlock *runQEnd = 0;
+TaskControlBlock *sleepQ = 0;
 
 UInt32 schedulerSpinlock = 0;
-UInt32 taskSwitchSpinlock = 0;
-bool taskSwitchWasPostponed = false;
+UInt32 locksHeld = 0;
+bool taskSwitchDeferred = false;
 
-CPUTime cputime;
-UInt64 lastIdleTime = 0;
+
+void nanosleepUntil(UInt64 when)
+{
+  TimerController *timer = (TimerController *)g_controllers[CTRL_TIMER];
+  UInt64 now = NANOTICKS * timer->getTicks();
+
+  lock();
+  if(when < now)
+  {
+    unlock();
+    return;
+  }
+
+  curTask->wakeTime = when;
+  curTask->next = sleepQ;
+  sleepQ = curTask;
+
+  unlock();
+  Scheduler::blockTask(sleeping);
+}
+
+void nanosleep(UInt64 nano)
+{
+  TimerController *timer = (TimerController *)g_controllers[CTRL_TIMER];
+  UInt64 now = NANOTICKS * timer->getTicks();
+  nanosleepUntil(now + nano);
+}
+
+void sleep(UInt32 ms)
+{
+  nanosleep(ms*NANOTICKS);
+}
 
 /* FIXME: a real spinlock is needed for SMP */
+void lock()
+{
+  asm("cli");
+  ++schedulerSpinlock;
+  ++locksHeld;
+}
+
+void unlock()
+{
+  --locksHeld;
+  if(locksHeld == 0)
+  {
+    if(taskSwitchDeferred)
+    {
+      taskSwitchDeferred = false;
+      Scheduler::schedule();
+    }
+  }
+
+  --schedulerSpinlock;
+  if(schedulerSpinlock == 0)
+    asm("sti");
+}
+
 void Scheduler::lock()
 {
   asm("cli");
@@ -38,79 +88,12 @@ void Scheduler::unlock()
     asm("sti");
 }
 
-/* big kernel lock - this can't stay! also: a real spinlock is needed for SMP */
-void lock()
-{
-  asm("cli");
-  ++schedulerSpinlock;
-  ++taskSwitchSpinlock;
-}
-
-void unlock()
-{
-  --taskSwitchSpinlock;
-  if(taskSwitchSpinlock == 0)
-  {
-    if(taskSwitchWasPostponed)
-    {
-      taskSwitchWasPostponed = false;
-      Scheduler::schedule();
-    }
-  }
-
-  --schedulerSpinlock;
-  if(schedulerSpinlock == 0)
-    asm("sti");
-}
-
-
-void nanosleepUntil(UInt64 when)
-{
-  lock(); // lock the kernel - ugh
-
-  TimerController *timer = (TimerController *)g_controllers[CTRL_TIMER];
-  if(when < timer->getTicks()*NANOTICKS)
-  {
-    unlock();
-    return;
-  }
-
-  curTask->wakeTime = when;
-  curTask->next = sleepList;
-  sleepList = curTask;
-
-  unlock();
-  Scheduler::blockTask(sleeping);
-}
-
-void nanosleep(UInt64 interval)
-{
-  TimerController *timer = (TimerController *)g_controllers[CTRL_TIMER];
-  nanosleepUntil(timer->getTicks()*NANOTICKS + interval);
-}
-
-void sleep(UInt32 ms)
-{
-  nanosleep(ms*1000000);
-}
-
-void Scheduler::init()
-{
-  memset((char *)&cputime, 0, sizeof(cputime));
-}
-
-CPUTime *Scheduler::getCPUTime()
-{
-  return &cputime;
-}
-
-void Scheduler::updateTimeUsed()
+void Scheduler::updateTimeUsed(TaskControlBlock *task)
 {
   UInt64 now = ((TimerController *)g_controllers[CTRL_TIMER])->getTicks();
-  int elapsed = (now - curTask->lastTime) * 1000; // microseconds? I think.
-  curTask->timeUsed += elapsed;
-  cputime.sys += elapsed;
-  curTask->lastTime = now;
+  int elapsed = (now - task->lastTime) * 1000; // microseconds? I think.
+  task->timeUsed += elapsed;
+  task->lastTime = now;
 }
 
 void Scheduler::blockTask(TaskState state)
@@ -125,14 +108,12 @@ void Scheduler::unblockTask(TaskControlBlock *task)
 {
   Scheduler::lock();
   task->state = readyToRun;
-  task->next = 0;
-  if(readyToRunStart != 0)
+  if(runQ != 0)
   {
     // there is something on the run queue. append this task to the end.
-    readyToRunEnd->next = task;
-    readyToRunEnd = task;
-  }
-  else {
+    runQEnd->next = task;
+    runQEnd = task;
+  } else {
     // there is only one currently running task. pre-empt it.
     switchTask(task);
   }
@@ -141,18 +122,17 @@ void Scheduler::unblockTask(TaskControlBlock *task)
 
 void Scheduler::schedule()
 {
-  if(taskSwitchSpinlock > 0)
+  if(locksHeld != 0)
   {
-    taskSwitchWasPostponed = true;
+    taskSwitchDeferred = true;
     return;
   }
 
-  if(readyToRunStart != 0)
+  updateTimeUsed(curTask);
+  if(runQ != 0)
   {
-    TaskControlBlock *task = readyToRunStart;
-    readyToRunStart = task->next;
-
-    updateTimeUsed();
+    TaskControlBlock *task = runQ;
+    runQ = runQ->next;
     switchTask(task);
   }
 }
@@ -185,17 +165,17 @@ TaskControlBlock *Scheduler::createTask(void (&entry)(), char *name)
     : "=m"(tcb->vas)
     : "r"(entry), "m"(tcb->sp)
   );
-  tcb->sp -= 80;
+  tcb->sp -= 136;
   tcb->next = 0;
 
-  if(readyToRunStart == 0)
-    readyToRunStart = tcb;
-  if(readyToRunEnd == 0)
-    readyToRunEnd = tcb;
+  if(runQ == 0)
+    runQ = tcb;
+  if(runQEnd == 0)
+    runQEnd = tcb;
   else
   {
-    readyToRunEnd->next = tcb;
-    readyToRunEnd = tcb;
+    runQEnd->next = tcb;
+    runQEnd = tcb;
   }
   return tcb;
 }

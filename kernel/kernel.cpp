@@ -55,8 +55,7 @@ void testtask(void)
 
   while(1)
   {
-    nanosleep(100*NANOTICKS);
-
+    nanosleep(200*NANOTICKS);
     oldx = screen->getX();
     oldy = screen->getY();
     screen->setXYChars(x, 12);
@@ -77,9 +76,23 @@ void maintask(void)
 {
   while(1)
   {
-    for(UInt64 x=0; x<100000; ++x)
-      ;
-    displayStatusLine();
+    shellCheckInput();
+    Scheduler::lock();
+    Scheduler::schedule();
+    Scheduler::unlock();
+  }
+}
+
+void status(void)
+{
+  TimerController *timer = (TimerController *)g_controllers[CTRL_TIMER];
+  while(1)
+  {
+    if(timer->getTicks() % 250 == 0)
+    {
+      displayStatusLine();
+    }
+
     shellCheckInput();
     Scheduler::lock();
     Scheduler::schedule();
@@ -199,9 +212,11 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   curTask = root;
 
   test = Scheduler::createTask(testtask, "bouncer");
+  TaskControlBlock *foo = Scheduler::createTask(status, "status");
 
   // start multitasking!
-  asm volatile("mov %0, %%rdi; jmp switchTask" : : "m"(root)); // doesn't return
+  runQ = runQ->next;
+  asm volatile("mov %0, %%rdi; jmp switchTask" : : "m"(test)); // doesn't return
   panic();
 }
 
@@ -225,17 +240,17 @@ void displayStatusLine()
   itoa(((TimerController *)g_controllers[CTRL_TIMER])->getSeconds(), 10, s);
   memcpy(line+strlen(line), s, strlen(s));
   memcpy(line+strlen(line), "s CPU idle:", 11);
-  CPUTime *cpu = Scheduler::getCPUTime();
-  UInt64 idle = cpu->idle;
-  UInt64 sys = cpu->sys;
-  itoa(idle/(1+idle+sys)*100, 10, s);
-  memcpy(line+strlen(line), s, strlen(s));
-  memcpy(line+strlen(line), "% sys:", 6);
-  itoa(sys/(1+idle+sys)*100, 10, s);
-  memcpy(line+strlen(line), s, strlen(s));
-  int i = strlen(line);
-  line[i] = '%';
-  line[i+1] = 0;
+  // CPUTime *cpu = Scheduler::getCPUTime();
+  // UInt64 idle = cpu->idle;
+  // UInt64 sys = cpu->sys;
+  // itoa(idle/(1+idle+sys)*100, 10, s);
+  // memcpy(line+strlen(line), s, strlen(s));
+  // memcpy(line+strlen(line), "% sys:", 6);
+  // itoa(sys/(1+idle+sys)*100, 10, s);
+  // memcpy(line+strlen(line), s, strlen(s));
+  // int i = strlen(line);
+  // line[i] = '%';
+  // line[i+1] = 0;
   memset(line+strlen(line), 0x20, sizeof(line)-strlen(line)-2); // space fill to right edge
   screen->setXY(0, 0);
   screen->setBackColor(0x00277c);

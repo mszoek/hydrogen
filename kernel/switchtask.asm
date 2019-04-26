@@ -1,21 +1,20 @@
 global switchTask
 extern curTask
-extern readyToRunStart
-extern readyToRunEnd
-extern taskSwitchSpinlock
-extern taskSwitchWasPostponed
+extern runQ
+extern runQEnd
+extern locksHeld
+extern taskSwitchDeferred
 
 bits 64
 section .text
 align 8
 
 switchTask:
-; check whether switches are postponed
     push rax
-    mov rax, taskSwitchSpinlock
-    cmp DWORD [rax], 0
+    mov rax, locksHeld
+    cmp QWORD [rax], 0
     je .notLocked
-    mov rax, taskSwitchWasPostponed
+    mov rax, taskSwitchDeferred
     mov DWORD [rax], 1
     pop rax
     ret
@@ -23,6 +22,7 @@ switchTask:
 .notLocked:
     pop rax
 ; callq only pushes the return address, so save everything
+    pushfq
     push rax
     push rbx
     push rcx
@@ -31,6 +31,12 @@ switchTask:
     push rsi
     push r8
     push r9
+    push r10
+    push r11
+    push r12
+    push r13
+    push r14
+    push r15
     push rbp
 
     mov rbx, curTask
@@ -39,21 +45,22 @@ switchTask:
     cmp BYTE [rsi+36], 1    ; still in 'running' state?
     jne .notRunning
     mov BYTE [rsi+36], 0    ; put in 'ready to run'
-    mov rax, readyToRunEnd  ; get end of run list
-    mov rdx, [rax]          ; value of variable
-    cmp rdx, 0              ; null?
+    mov rax, runQ           ; get start of run list
+    mov rdx, [rax]
+    cmp rdx, 0              ; start = null?
     je .noAppend
-    mov rsi, [rax]
-    mov rdx, [rbx]
-    mov [rsi], rdx          ; list end->next = curTask
+
+    mov rax, runQEnd        ; list end address
+    mov rdx, [rax]          ; value
+    mov [rdx], rsi          ; last_node->next = curTask
+    mov [rax], rsi          ; list end = curTask
+    jmp .notRunning
 
 .noAppend:
-    mov [rax], rdx          ; curTask is now end of list
-    mov rax, readyToRunStart
-    mov rsi, [rax]
-    cmp rsi, 0
-    jne .notRunning
-    mov [rax], rdx          ; set list start to curTask too since it was empty
+    mov [rax], rsi          ; list start = curTask
+    mov rax, runQEnd        ; list end address
+    mov rdx, [rax]          ; value
+    mov [rax], rsi          ; list end = curTask
 
 .notRunning:
     mov [rbx], rdi          ; curTask = what we passed in
@@ -67,6 +74,12 @@ switchTask:
 
 .sameVAS:
     pop rbp             ; get regs from the new stack
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop r11
+    pop r10
     pop r9
     pop r8
     pop rsi
@@ -75,5 +88,6 @@ switchTask:
     pop rcx
     pop rbx
     pop rax
+    popfq
 
     ret                 ; return to new task's saved IP
