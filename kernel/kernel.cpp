@@ -33,7 +33,6 @@ struct multiboot_info bootinfo;
 
 bool verbose = false;
 bool debug = false;
-TaskControlBlock *test = 0;
 
 // Prototypes
 void displayStatusLine();
@@ -55,7 +54,6 @@ void testtask(void)
 
   while(1)
   {
-    nanosleep(200*NANOTICKS);
     oldx = screen->getX();
     oldy = screen->getY();
     screen->setXYChars(x, 12);
@@ -66,9 +64,8 @@ void testtask(void)
     if(x > 68 || x < 61)
       mod = mod * -1;
     screen->setXY(oldx, oldy);
-    Scheduler::lock();
+    nanosleep(2*NANOTICKS);
     Scheduler::schedule();
-    Scheduler::unlock();
   }
 }
 
@@ -76,10 +73,8 @@ void maintask(void)
 {
   while(1)
   {
-    shellCheckInput();
-    Scheduler::lock();
+    for(int o=0; o < 1000; ++o) ;
     Scheduler::schedule();
-    Scheduler::unlock();
   }
 }
 
@@ -88,15 +83,10 @@ void status(void)
   TimerController *timer = (TimerController *)g_controllers[CTRL_TIMER];
   while(1)
   {
-    if(timer->getTicks() % 250 == 0)
-    {
-      displayStatusLine();
-    }
-
+    displayStatusLine();
     shellCheckInput();
-    Scheduler::lock();
+    nanosleep(3*NANOTICKS);
     Scheduler::schedule();
-    Scheduler::unlock();
   }
 }
 
@@ -191,32 +181,17 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 
   shellStart();
 
-  /* set up the kernel's root task (main loop)
-   * can't use createTask for this one because the ret addr
-   * and stack will be wrong.
-   */
-  TaskControlBlock *root = (TaskControlBlock *)vmm->malloc(sizeof(TaskControlBlock));
-  root->tid = 1;
-  asm(
-    "push %2;" // return address
-    "mov %%rsp, %0;"
-    "mov %%cr3, %%rbx;"
-    "mov %%rbx, %1" 
-    : "=m"(root->sp), "=m"(root->vas)
-    : "r"(maintask)
-  );
-  root->usersp = 0;
-  root->state = running;
-  strcpy(root->name, "main task");
-  root->next = 0;
-  curTask = root;
-
-  test = Scheduler::createTask(testtask, "bouncer");
+  TaskControlBlock *root = Scheduler::createTask(maintask, "main task");
+  TaskControlBlock *test = Scheduler::createTask(testtask, "bouncer");
   TaskControlBlock *foo = Scheduler::createTask(status, "status");
 
   // start multitasking!
-  runQ = runQ->next;
-  asm volatile("mov %0, %%rdi; jmp switchTask" : : "m"(test)); // doesn't return
+  curTask = root;
+  curTask->sp += 128;
+  runQ = test;
+  test->next = foo;
+  runQEnd = foo;
+  asm volatile("jmp initTasks"); // doesn't return
   panic();
 }
 

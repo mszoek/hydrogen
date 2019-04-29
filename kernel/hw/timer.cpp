@@ -54,9 +54,7 @@ UInt64 TimerController::getSeconds()
 
 void TimerController::tick()
 {
-  lock();
   ++tickCounter;
-
   TaskControlBlock *task = sleepQ;
   sleepQ = 0;
 
@@ -75,10 +73,4 @@ void TimerController::tick()
       sleepQ = cur;
     }    
   }
-  unlock();
-
-  // now that we've unblocked tasks, make sure we try to run something
-  Scheduler::lock();
-  Scheduler::schedule();
-  Scheduler::unlock();
 }

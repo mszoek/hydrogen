@@ -30,6 +30,7 @@ typedef struct _TaskControlBlock
 
 extern TaskControlBlock *curTask;
 extern TaskControlBlock *runQ;
+extern TaskControlBlock *runQEnd;
 extern TaskControlBlock *sleepQ;
 extern "C" void switchTask(TaskControlBlock *task);
 

@@ -23,19 +23,17 @@ void nanosleepUntil(UInt64 when)
   TimerController *timer = (TimerController *)g_controllers[CTRL_TIMER];
   UInt64 now = NANOTICKS * timer->getTicks();
 
-  lock();
   if(when < now)
   {
-    unlock();
     return;
   }
 
+  asm("cli");
   curTask->wakeTime = when;
   curTask->next = sleepQ;
+  curTask->state = sleeping;
   sleepQ = curTask;
-
-  unlock();
-  Scheduler::blockTask(sleeping);
+  asm("sti");
 }
 
 void nanosleep(UInt64 nano)
@@ -53,14 +51,14 @@ void sleep(UInt32 ms)
 /* FIXME: a real spinlock is needed for SMP */
 void lock()
 {
-  asm("cli");
-  ++schedulerSpinlock;
+  Scheduler::lock();
   ++locksHeld;
 }
 
 void unlock()
 {
   --locksHeld;
+  Scheduler::unlock();
   if(locksHeld == 0)
   {
     if(taskSwitchDeferred)
@@ -69,10 +67,6 @@ void unlock()
       Scheduler::schedule();
     }
   }
-
-  --schedulerSpinlock;
-  if(schedulerSpinlock == 0)
-    asm("sti");
 }
 
 void Scheduler::lock()
@@ -106,7 +100,6 @@ void Scheduler::blockTask(TaskState state)
 
 void Scheduler::unblockTask(TaskControlBlock *task)
 {
-  Scheduler::lock();
   task->state = readyToRun;
   if(runQ != 0)
   {
@@ -115,9 +108,9 @@ void Scheduler::unblockTask(TaskControlBlock *task)
     runQEnd = task;
   } else {
     // there is only one currently running task. pre-empt it.
+    updateTimeUsed(curTask);
     switchTask(task);
   }
-  Scheduler::unlock();
 }
 
 void Scheduler::schedule()
@@ -131,6 +124,7 @@ void Scheduler::schedule()
   updateTimeUsed(curTask);
   if(runQ != 0)
   {
+    asm("cli");
     TaskControlBlock *task = runQ;
     runQ = runQ->next;
     switchTask(task);
@@ -139,7 +133,7 @@ void Scheduler::schedule()
 
 TaskControlBlock *Scheduler::createTask(void (&entry)(), char *name)
 {
-  static UInt32 taskID = 2;
+  static UInt32 taskID = 1;
 
   TaskControlBlock *tcb = (TaskControlBlock *)vmm->malloc(sizeof(TaskControlBlock));
   tcb->tid = taskID++;
@@ -168,14 +162,5 @@ TaskControlBlock *Scheduler::createTask(void (&entry)(), char *name)
   tcb->sp -= 136;
   tcb->next = 0;
 
-  if(runQ == 0)
-    runQ = tcb;
-  if(runQEnd == 0)
-    runQEnd = tcb;
-  else
-  {
-    runQEnd->next = tcb;
-    runQEnd = tcb;
-  }
   return tcb;
 }

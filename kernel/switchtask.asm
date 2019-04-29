@@ -1,4 +1,5 @@
 global switchTask
+global initTasks
 extern curTask
 extern runQ
 extern runQEnd
@@ -20,6 +21,7 @@ switchTask:
     ret
 
 .notLocked:
+
     pop rax
 ; callq only pushes the return address, so save everything
     pushfq
@@ -44,6 +46,7 @@ switchTask:
     mov [rsi+12], rsp       ; save sp in curTask TCB slot
     cmp BYTE [rsi+36], 1    ; still in 'running' state?
     jne .notRunning
+    mov QWORD [rsi], 0      ; curTask->next = 0
     mov BYTE [rsi+36], 0    ; put in 'ready to run'
     mov rax, runQ           ; get start of run list
     mov rdx, [rax]
@@ -90,4 +93,19 @@ switchTask:
     pop rax
     popfq
 
+    sti
+    ret                 ; return to new task's saved IP
+
+
+initTasks:
+    mov rbx, curTask
+    mov rsi, [rbx]
+    mov rsp, [rsi+12]       ; load sp for new task
+    mov rbp, rsp
+    mov rax, [rsi+28]       ; load cr3 for new task
+    mov BYTE [rsi+36], 1    ; set 'running' state
+;    mov [TSS.rsp0], rbx
+;    cmp rax, rcx
+;    je .sameVAS
+;    mov cr3, rax
     ret                 ; return to new task's saved IP
