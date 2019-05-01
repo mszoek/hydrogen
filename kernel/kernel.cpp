@@ -38,54 +38,33 @@ bool debug = false;
 void displayStatusLine();
 void displayStartupMsg(unsigned int size);
 
-void testtask(void)
+void idletask(void)
 {
-  ScreenController *screen = (ScreenController *)g_controllers[CTRL_SCREEN];
-  int x = 60;
-  int mod = 1;
-
-  int oldx = screen->getX();
-  int oldy = screen->getY();
-  screen->setXYChars(59, 12);
-  screen->printChar('|');
-  screen->setXYChars(70, 12);
-  screen->printChar('|');
-  screen->setXY(oldx, oldy);
-
   while(1)
   {
-    oldx = screen->getX();
-    oldy = screen->getY();
-    screen->setXYChars(x, 12);
-    screen->printChar(' ');
-    x += (1*mod);
-    screen->setXYChars(x, 12);
-    screen->printChar('*');
-    if(x > 68 || x < 61)
-      mod = mod * -1;
-    screen->setXY(oldx, oldy);
-    nanosleep(2*NANOTICKS);
+    if(runQ == 0)
+      asm("hlt");
     Scheduler::schedule();
   }
 }
 
-void maintask(void)
+void shellinput(void)
 {
   while(1)
   {
-    for(int o=0; o < 1000; ++o) ;
+    shellCheckInput();
+    nanosleep(3*NANOTICKS);
     Scheduler::schedule();
   }
+
 }
 
 void status(void)
 {
-  TimerController *timer = (TimerController *)g_controllers[CTRL_TIMER];
   while(1)
   {
     displayStatusLine();
-    shellCheckInput();
-    nanosleep(3*NANOTICKS);
+    nanosleep(300*NANOTICKS);
     Scheduler::schedule();
   }
 }
@@ -181,16 +160,16 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 
   shellStart();
 
-  TaskControlBlock *root = Scheduler::createTask(maintask, "main task");
-  TaskControlBlock *test = Scheduler::createTask(testtask, "bouncer");
-  TaskControlBlock *foo = Scheduler::createTask(status, "status");
+  TaskControlBlock *idle = Scheduler::createTask(idletask, "idle task");
+  TaskControlBlock *updstatus = Scheduler::createTask(status, "status");
+  TaskControlBlock *shell = Scheduler::createTask(shellinput, "shell");
 
   // start multitasking!
-  curTask = root;
+  curTask = idle;
   curTask->sp += 128;
-  runQ = test;
-  test->next = foo;
-  runQEnd = foo;
+  runQ = updstatus;
+  updstatus->next = shell;
+  runQEnd = shell;
   asm volatile("jmp initTasks"); // doesn't return
   panic();
 }
@@ -215,17 +194,35 @@ void displayStatusLine()
   itoa(((TimerController *)g_controllers[CTRL_TIMER])->getSeconds(), 10, s);
   memcpy(line+strlen(line), s, strlen(s));
   memcpy(line+strlen(line), "s CPU idle:", 11);
-  // CPUTime *cpu = Scheduler::getCPUTime();
-  // UInt64 idle = cpu->idle;
-  // UInt64 sys = cpu->sys;
-  // itoa(idle/(1+idle+sys)*100, 10, s);
-  // memcpy(line+strlen(line), s, strlen(s));
-  // memcpy(line+strlen(line), "% sys:", 6);
-  // itoa(sys/(1+idle+sys)*100, 10, s);
-  // memcpy(line+strlen(line), s, strlen(s));
-  // int i = strlen(line);
-  // line[i] = '%';
-  // line[i+1] = 0;
+  CPUTime cpu = Scheduler::getCPUTime();
+  double idle = (double)(1 + cpu.idle);
+  double sys = (double)(1 + cpu.sys);
+  double total = (double)(1 + cpu.idle + cpu.sys + cpu.iowait + cpu.wait);
+  double idlepct = 100 * ((idle / total) + 0.00005);
+  double syspct = 100 * ((sys / total) + 0.00005);
+  unsigned a, b;
+  a = (unsigned)idlepct;
+  b = (unsigned)((idlepct - (double)a) * 100);
+  itoa(a , 10, s);
+  memcpy(line+strlen(line), s, strlen(s));
+  int i = strlen(line);
+  line[i] = '.';
+  line[i+1] = 0;
+  itoa(b, 10, s);
+  memcpy(line+strlen(line), s, strlen(s));
+  memcpy(line+strlen(line), "% sys:", 6);
+  a = (unsigned)syspct;
+  b = (unsigned)((syspct - (double)a) * 100);
+  itoa(a, 10, s);
+  memcpy(line+strlen(line), s, strlen(s));
+  i = strlen(line);
+  line[i] = '.';
+  line[i+1] = 0;
+  itoa(b, 10, s);
+  memcpy(line+strlen(line), s, strlen(s));
+  i = strlen(line);
+  line[i] = '%';
+  line[i+1] = 0;
   memset(line+strlen(line), 0x20, sizeof(line)-strlen(line)-2); // space fill to right edge
   screen->setXY(0, 0);
   screen->setBackColor(0x00277c);

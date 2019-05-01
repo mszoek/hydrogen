@@ -17,11 +17,16 @@ UInt32 schedulerSpinlock = 0;
 UInt32 locksHeld = 0;
 bool taskSwitchDeferred = false;
 
+CPUTime cputime;
+
+CPUTime Scheduler::getCPUTime()
+{
+  return cputime;
+}
 
 void nanosleepUntil(UInt64 when)
 {
-  TimerController *timer = (TimerController *)g_controllers[CTRL_TIMER];
-  UInt64 now = NANOTICKS * timer->getTicks();
+  UInt64 now = NANOTICKS * ((TimerController *)g_controllers[CTRL_TIMER])->getTicks();
 
   if(when < now)
   {
@@ -29,6 +34,7 @@ void nanosleepUntil(UInt64 when)
   }
 
   asm("cli");
+  Scheduler::updateTimeUsed();
   curTask->wakeTime = when;
   curTask->next = sleepQ;
   curTask->state = sleeping;
@@ -38,8 +44,7 @@ void nanosleepUntil(UInt64 when)
 
 void nanosleep(UInt64 nano)
 {
-  TimerController *timer = (TimerController *)g_controllers[CTRL_TIMER];
-  UInt64 now = NANOTICKS * timer->getTicks();
+  UInt64 now = NANOTICKS * ((TimerController *)g_controllers[CTRL_TIMER])->getTicks();
   nanosleepUntil(now + nano);
 }
 
@@ -82,12 +87,16 @@ void Scheduler::unlock()
     asm("sti");
 }
 
-void Scheduler::updateTimeUsed(TaskControlBlock *task)
+void Scheduler::updateTimeUsed()
 {
   UInt64 now = ((TimerController *)g_controllers[CTRL_TIMER])->getTicks();
-  int elapsed = (now - task->lastTime) * 1000; // microseconds? I think.
-  task->timeUsed += elapsed;
-  task->lastTime = now;
+  int elapsed = (now - curTask->lastTime) * 1000; // microseconds? I think.
+  curTask->timeUsed += elapsed;
+  curTask->lastTime = now;
+  if(curTask->tid == 1) // idle task
+    cputime.idle += elapsed;
+  else
+    cputime.sys += elapsed;
 }
 
 void Scheduler::blockTask(TaskState state)
@@ -108,7 +117,8 @@ void Scheduler::unblockTask(TaskControlBlock *task)
     runQEnd = task;
   } else {
     // there is only one currently running task. pre-empt it.
-    updateTimeUsed(curTask);
+    updateTimeUsed();
+    task->lastTime = ((TimerController *)g_controllers[CTRL_TIMER])->getTicks(); // runtime starts now
     switchTask(task);
   }
 }
@@ -121,12 +131,13 @@ void Scheduler::schedule()
     return;
   }
 
-  updateTimeUsed(curTask);
+  updateTimeUsed();
   if(runQ != 0)
   {
     asm("cli");
     TaskControlBlock *task = runQ;
     runQ = runQ->next;
+    task->lastTime = ((TimerController *)g_controllers[CTRL_TIMER])->getTicks();
     switchTask(task);
   }
 }

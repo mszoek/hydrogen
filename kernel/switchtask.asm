@@ -71,12 +71,13 @@ switchTask:
     mov rax, [rdi+28]       ; load cr3 for new task
     mov BYTE [rdi+36], 1    ; set 'running' state
 ;    mov [TSS.rsp0], rbx
-;    cmp rax, rcx
-;    je .sameVAS
-;    mov cr3, rax
+    mov rcx, cr3
+    cmp rax, rcx
+    je .sameVAS
+    mov cr3, rax
 
 .sameVAS:
-    pop rbp             ; get regs from the new stack
+    pop rbp                 ; get regs from the new stack
     pop r15
     pop r14
     pop r13
@@ -94,7 +95,7 @@ switchTask:
     popfq
 
     sti
-    ret                 ; return to new task's saved IP
+    ret                     ; return to new task's saved IP
 
 
 initTasks:
@@ -102,10 +103,5 @@ initTasks:
     mov rsi, [rbx]
     mov rsp, [rsi+12]       ; load sp for new task
     mov rbp, rsp
-    mov rax, [rsi+28]       ; load cr3 for new task
     mov BYTE [rsi+36], 1    ; set 'running' state
-;    mov [TSS.rsp0], rbx
-;    cmp rax, rcx
-;    je .sameVAS
-;    mov cr3, rax
-    ret                 ; return to new task's saved IP
+    ret                     ; return to new task's saved IP

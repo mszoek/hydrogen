@@ -114,19 +114,26 @@ void shellExecCommand()
     return;
   }
 
-  // if(strcmp(shellBuffer, "ps") == 0)
-  // {
-  //   kprintf(" TID      TIME     STACK       STATE  NAME\n");
-  //   for(TaskControlBlock *tcb = rootTask; tcb; tcb = tcb->next)
-  //   {
-  //     Scheduler::updateTimeUsed(tcb);
-  //     kprintf("%6d  %6ds  %9x       %d      %s\n", tcb->tid, tcb->timeUsed/1000000,
-  //       tcb->sp, tcb->state, tcb->name);
-  //     if(tcb->next == rootTask)
-  //       break;
-  //   }
-  //   return;
-  // }
+  if(strcmp(shellBuffer, "ps") == 0)
+  {
+    asm("cli");
+    kprintf(" TID        TIME       STACK       STATE  NAME\n");
+    kprintf("%6d  %9dus  %9x       %d      %s\n", curTask->tid, curTask->timeUsed/1000,
+      curTask->sp, curTask->state, curTask->name);
+    for(TaskControlBlock *tcb = runQ; tcb; tcb = tcb->next)
+    {
+      kprintf("%6d  %9dus  %9x       %d      %s\n", tcb->tid, tcb->timeUsed/1000,
+        tcb->sp, tcb->state, tcb->name);
+      if(tcb == runQEnd) break;
+    }
+    for(TaskControlBlock *tcb = sleepQ; tcb != 0; tcb = tcb->next)
+    {
+      kprintf("%6d  %9dus  %9x       %d      %s\n", tcb->tid, tcb->timeUsed/1000,
+        tcb->sp, tcb->state, tcb->name);
+    }
+    asm("sti");
+    return;
+  }
 
   kprint("Invalid command\n");
 }

@@ -11,6 +11,13 @@ typedef enum _TaskState
     readyToRun, running, sleeping, waitIO, waitLock, wait 
 } TaskState;
 
+typedef struct _CPUTime
+{
+    UInt64 idle;
+    UInt64 sys;
+    UInt64 iowait;
+    UInt64 wait;
+} CPUTime;
 
 // be sure to update switchTask if this struct is changed!
 typedef struct _TaskControlBlock
@@ -47,13 +54,13 @@ class Scheduler
 public:
     static void init();
     static TaskControlBlock *createTask(void (&entry)(), char *name = 0);
-    static void updateTimeUsed(TaskControlBlock *task);
+    static void updateTimeUsed();
     static void blockTask(TaskState state); // block the running task
     static void unblockTask(TaskControlBlock *task);
     static void schedule(); // caller must lock before calling & unlock after
     static void lock();
     static void unlock();
-    // static CPUTime *getCPUTime();
+    static CPUTime getCPUTime();
 };
 
 #endif // SCHED_H
