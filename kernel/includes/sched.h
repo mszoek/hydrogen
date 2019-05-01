@@ -35,6 +35,19 @@ typedef struct _TaskControlBlock
         char name[48]; 
 } __attribute__((packed)) TaskControlBlock;
 
+typedef struct _TaskStateSegment
+{
+    UInt32 rsv0;
+    UInt64 rsp0;
+    UInt64 rsp1;
+    UInt64 rsp2;
+    UInt64 rsv1;
+    UInt64 ist[8];
+    UInt64 rsv2;
+    UInt16 IOPBAddr;
+    UInt16 rsv3;
+} __attribute__((packed)) TaskStateSegment;
+
 extern TaskControlBlock *curTask;
 extern TaskControlBlock *runQ;
 extern TaskControlBlock *runQEnd;
