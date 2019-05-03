@@ -44,7 +44,6 @@ void idletask(void)
   {
     if(runQ == 0)
       asm("hlt");
-    Scheduler::schedule();
   }
 }
 
@@ -54,7 +53,6 @@ void shellinput(void)
   {
     shellCheckInput();
     nanosleep(3*NANOTICKS);
-    Scheduler::schedule();
   }
 
 }
@@ -65,7 +63,6 @@ void status(void)
   {
     displayStatusLine();
     nanosleep(300*NANOTICKS);
-    Scheduler::schedule();
   }
 }
 
@@ -160,11 +157,13 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 
   shellStart();
 
+  /* Start multitasking! */
+  Scheduler::init();
+
   TaskControlBlock *idle = Scheduler::createTask(idletask, "idle task");
   TaskControlBlock *updstatus = Scheduler::createTask(status, "status");
   TaskControlBlock *shell = Scheduler::createTask(shellinput, "shell");
 
-  // start multitasking!
   curTask = idle;
   curTask->sp += 128;
   runQ = updstatus;

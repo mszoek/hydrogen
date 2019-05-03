@@ -18,6 +18,8 @@
 #define CTRL_AHCI       4
 #define CONTROLLER_MAX  5
 
+#define MAX_CORES 16
+
 extern PhysicalMemoryManager *pmm;
 extern VirtualMemoryManager *vmm;
 extern UInt64 g_controllers[];

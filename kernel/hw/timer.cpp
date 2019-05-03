@@ -73,4 +73,13 @@ void TimerController::tick()
       sleepQ = cur;
     }    
   }
+
+  // need to preempt curTask?
+  if(curTask != 0)
+  {
+    if(curTask->timeSlice <= 1)
+      Scheduler::schedule();
+    else
+      curTask->timeSlice -= 1;
+  }
 }

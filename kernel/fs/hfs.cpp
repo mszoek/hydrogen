@@ -15,6 +15,8 @@
 #define htonl(x) bswap32(x)
 #define htons(x) bswap16(x)
 
+extern "C" void (*userfunc)() = 0;
+
 // our file descriptor table. slot = fd number.
 fdMapType fdMap[FD_MAX];
 

@@ -8,6 +8,9 @@
 #include <sched.h>
 #include <kstdio.h>
 
+GlobalDescriptorTable *gdt = 0;
+TaskStateSegment *tss = 0;
+
 TaskControlBlock *curTask = 0;
 TaskControlBlock *runQ = 0;
 TaskControlBlock *runQEnd = 0;
@@ -33,13 +36,16 @@ void nanosleepUntil(UInt64 when)
     return;
   }
 
-  asm("cli");
+  // asm("cli");
+  lock();
   Scheduler::updateTimeUsed();
   curTask->wakeTime = when;
   curTask->next = sleepQ;
   curTask->state = sleeping;
   sleepQ = curTask;
-  asm("sti");
+  unlock();
+  Scheduler::schedule(); // find something else to run
+  // asm("sti");
 }
 
 void nanosleep(UInt64 nano)
@@ -72,6 +78,51 @@ void unlock()
       Scheduler::schedule();
     }
   }
+}
+
+void Scheduler::init()
+{
+  /* First, we create a new GDT that has a TSS for each
+   * CPU we want to use. By default this is up to 16 cores.
+   */
+
+  // 8 bytes per TSS + kernel null, CS, DS. This is equiv to GDT64 + TSS
+  gdt = (GlobalDescriptorTable *)malloc(8*MAX_CORES + 48);
+  memset((char *)gdt, 0, 8*MAX_CORES + 48);
+  gdt[0].limit0 = 0xFFFF;
+  gdt[0].limit1 = 0x1;
+  gdt[1].access = 0x9A; // 10011010, read/exec
+  gdt[1].flags = 0xA; // graularity = 4K, 64-bit CS
+  gdt[2].access = 0x92; // 10010010, read/write
+  gdt[2].flags = 0x8; // granularity = 4K
+
+  // same things for ring 3
+  gdt[3].access = 0xFA; // 11111010, read/exec
+  gdt[3].flags = 0xA; // graularity = 4K, 64-bit CS
+  gdt[4].access = 0xF2; // 11110010, read/write
+  gdt[4].flags = 0x8; // granularity = 4K
+
+  // allocate the TSS memory and initialize one for cpu0
+  tss = (TaskStateSegment *)malloc(sizeof(TaskStateSegment));
+  memset((char *)tss, 0, sizeof(TaskStateSegment));
+  asm("mov %%rsp, %0" : "=m"(tss[0].rsp0));
+  tss[0].IOPBAddr = 104;
+
+
+  // Create a TSS structure and link it to our GDT
+  gdt[5].access = 0x89; // 10000010 system seg, read
+  gdt[5].flags = 0x4;
+  gdt[5].base0 = ((UInt64)&tss[0]) & 0xFFFF;
+  gdt[5].base1 = (((UInt64)&tss[0]) & 0xFF0000) >> 16;
+  gdt[5].base2 = (((UInt64)&tss[0]) & 0xFF000000) >> 24;
+  gdt[5].limit0 = sizeof(TaskStateSegment);
+
+  // load the new GDT and TSS
+  GDTReg gdtreg;
+  gdtreg.size = 8*MAX_CORES + 48;
+  gdtreg.address = (UInt64)gdt;
+  asm("lgdt %0; mov $0x10, %%ax; mov %%ax, %%ds; mov %%ax, %%es; mov %%ax, %%fs; mov %%ax, %%ss" :: "m"(gdtreg));
+  asm("mov $0x28, %ax; ltr %ax");
 }
 
 void Scheduler::lock()
@@ -109,16 +160,19 @@ void Scheduler::blockTask(TaskState state)
 
 void Scheduler::unblockTask(TaskControlBlock *task)
 {
+  lock();
   task->state = readyToRun;
   if(runQ != 0)
   {
     // there is something on the run queue. append this task to the end.
     runQEnd->next = task;
     runQEnd = task;
+    unlock();
   } else {
     // there is only one currently running task. pre-empt it.
     updateTimeUsed();
     task->lastTime = ((TimerController *)g_controllers[CTRL_TIMER])->getTicks(); // runtime starts now
+    unlock();
     switchTask(task);
   }
 }
@@ -134,7 +188,7 @@ void Scheduler::schedule()
   updateTimeUsed();
   if(runQ != 0)
   {
-    asm("cli");
+    // asm("cli");
     TaskControlBlock *task = runQ;
     runQ = runQ->next;
     task->lastTime = ((TimerController *)g_controllers[CTRL_TIMER])->getTicks();
@@ -148,10 +202,13 @@ TaskControlBlock *Scheduler::createTask(void (&entry)(), char *name)
 
   TaskControlBlock *tcb = (TaskControlBlock *)vmm->malloc(sizeof(TaskControlBlock));
   tcb->tid = taskID++;
-  tcb->sp = (UInt64)vmm->malloc(4096);
+  tcb->rsp0 = (UInt64)vmm->malloc(4096);
+  tcb->sp = tcb->rsp0;
   tcb->usersp = 0;
   tcb->lastTime = ((TimerController *)g_controllers[CTRL_TIMER])->getTicks();
   tcb->timeUsed = 0;
+  tcb->priority = 1;
+  tcb->timeSlice = 1 + tcb->priority;
   tcb->state = readyToRun;
   if(name)
     strcpy(tcb->name, name);

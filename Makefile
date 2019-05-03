@@ -50,7 +50,7 @@ hd.img:
 	nasm -f $(NASM_ARCH) -o $@ $<
 
 KERNEL_SRC=$(wildcard kernel/*.cpp kernel/hw/*.cpp kernel/fs/*.cpp kernel/fonts/*.cpp)
-KERNEL_ASMSRC=$(wildcard kernel/switchtask.asm)
+KERNEL_ASMSRC=$(wildcard kernel/switchtask.asm kernel/switchring3.asm)
 KERNEL_INC=$(wildcard includes/*.h includes/hw/*.h includes/fs/*.h includes/fonts/*.h)
 KERNEL_OBJ=kernel/loader.o ${KERNEL_SRC:.cpp=.o} ${KERNEL_ASMSRC:.asm=.o} kernel/hw/interrupt.o
 

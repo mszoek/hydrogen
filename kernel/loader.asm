@@ -211,14 +211,14 @@ GDT64:                           ; Global Descriptor Table (64-bit).
     dw 0                         ; Base (low).
     db 0                         ; Base (middle)
     db 10011010b                 ; Access (exec/read).
-    db 10101111b                 ; Granularity, 64 bits flag, limit19:16.
+    db 10100000b                 ; Granularity, 64 bits flag, limit19:16.
     db 0                         ; Base (high).
     .Data: equ $ - GDT64         ; The data descriptor.
     dw 0                         ; Limit (low).
     dw 0                         ; Base (low).
     db 0                         ; Base (middle)
     db 10010010b                 ; Access (read/write).
-    db 00000000b                 ; Granularity.
+    db 10000000b                 ; Granularity, limit19:16.
     db 0                         ; Base (high).
     .Pointer:                    ; The GDT-pointer.
     dw $ - GDT64 - 1             ; Limit.

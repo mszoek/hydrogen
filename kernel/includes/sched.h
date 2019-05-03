@@ -19,16 +19,37 @@ typedef struct _CPUTime
     UInt64 wait;
 } CPUTime;
 
+typedef struct _GlobalDescriptorTable
+{
+    UInt16 limit0;
+    UInt16 base0;
+    UInt8 base1;
+    UInt8 access;
+    UInt8 limit1:4;
+    UInt8 flags:4;
+    UInt8 base2;
+} __attribute__((packed)) GlobalDescriptorTable;
+
+typedef struct _GDTReg
+{
+    UInt16 size;
+    UInt64 address;
+} __attribute__((packed)) GDTReg;
+
+extern GlobalDescriptorTable *gdt;
+
 // be sure to update switchTask if this struct is changed!
 typedef struct _TaskControlBlock
 {
 /* 0 */ struct _TaskControlBlock *next;
 /* 8 */ UInt32 tid;     // task ID
-/* 12*/ UInt64 sp;      // address of kernel stack top
+/* 12*/ UInt64 sp;      // stack pointer
 /* 20*/ UInt64 usersp;  // address of user stack top (0 for kernel tasks)
-/* 28*/ UInt64 vas;     // PML4T address
-/* 36*/ UInt8 state;
-        UInt8 priority;
+/* 28*/ UInt64 rsp0;    // address of kernel stack top for TSS
+/* 36*/ UInt64 vas;     // PML4T address
+/* 44*/ UInt8 state;
+/* 45*/ UInt8 priority;
+/* 46*/ UInt64 timeSlice;
         UInt64 timeUsed;
         UInt64 lastTime;
         UInt64 wakeTime;
@@ -37,15 +58,15 @@ typedef struct _TaskControlBlock
 
 typedef struct _TaskStateSegment
 {
-    UInt32 rsv0;
+    UInt32 reserved0;
     UInt64 rsp0;
     UInt64 rsp1;
     UInt64 rsp2;
-    UInt64 rsv1;
+    UInt64 reserved1;
     UInt64 ist[8];
-    UInt64 rsv2;
+    UInt64 reserved2;
     UInt16 IOPBAddr;
-    UInt16 rsv3;
+    UInt16 reserved3;
 } __attribute__((packed)) TaskStateSegment;
 
 extern TaskControlBlock *curTask;
