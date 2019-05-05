@@ -7,12 +7,27 @@
 #include <hw/isr.h>
 #include <hw/idt.h>
 #include <kstdio.h>
+#include <sched.h>
 
 isr_t interruptHandlers[256];
 
 volatile void breakpoint()
 {
     asm volatile("nop");
+}
+
+void syscall(int nr, UInt64 arg0, UInt64 arg1, UInt64 arg2, UInt64 arg3, UInt64 arg4)
+{
+    kprintf("SYSCALL(%d) %d %d %d %d %d\n", nr, arg0, arg1, arg2, arg3, arg4);
+    switch(nr)
+    {
+        case 1: 
+            kprint(arg0);
+            break;
+        case 2:
+            Scheduler::terminateTask();
+            break;
+    }
 }
 
 /* Can't do this with a loop because we need the address
@@ -82,6 +97,9 @@ void isrInstall()
     setIDTGate(46, (UInt64)irq14);
     setIDTGate(47, (UInt64)irq15);
 
+    /* software interrupts */
+    setIDTGate(128, (UInt64)isr128);
+
     setIDT(); // Load with ASM
 }
 
@@ -126,15 +144,36 @@ char *exceptionMessages[] = {
 
 extern "C" void isrHandler(registers_t r)
 {
-    kprintf("DS:%x CS:%x SS:%x Exception:%d %s\n",
-        r.ds, r.cs, r.ss, r.int_no, exceptionMessages[r.int_no]);
-    kprintf("RAX:%x RBX:%x RCX:%x RDX:%x RIP:%x\n",
-        r.rax, r.rbx, r.rcx, r.rdx, r.rip);
-    kprintf("RSI:%x RDI:%x RBP:%x RSP:%x userRSP:%x\n",
-        r.rsi, r.rdi, r.rbp, r.rsp, r.userrsp);
-    kprintf("ErrorCode:%x Flags:%x\n",
-        r.err_code, r.rflags);
-    
+    if((UInt8)r.int_no == 128)
+    {
+        int nr;
+        UInt64 arg0, arg1, arg2, arg3, arg4;
+
+        asm volatile(
+            "mov %%r10, %0;"
+            "mov %%r11, %1;"
+            "mov %%r12, %2;"
+            "mov %%r13, %3;"
+            "mov %%r14, %4;"
+            "mov %%r15, %5;"
+            : "=m"(nr),"=m"(arg0),"=m"(arg1),"=m"(arg2),"=m"(arg3),"=m"(arg4)
+        );
+        syscall(nr, arg0, arg1, arg2, arg3, arg4);
+        return;
+    }
+
+    if(r.int_no < 32)
+    {
+        kprintf("DS:%x CS:%x SS:%x Exception:%d %s\n",
+            r.ds, r.cs, r.ss, r.int_no, exceptionMessages[r.int_no]);
+        kprintf("RAX:%x RBX:%x RCX:%x RDX:%x RIP:%x\n",
+            r.rax, r.rbx, r.rcx, r.rdx, r.rip);
+        kprintf("RSI:%x RDI:%x RBP:%x RSP:%x userRSP:%x\n",
+            r.rsi, r.rdi, r.rbp, r.rsp, r.userrsp);
+        kprintf("ErrorCode:%x Flags:%x\n",
+            r.err_code, r.rflags);
+    }
+
     switch(r.int_no)
     {
         case 3: /* Breakpoint */
@@ -145,7 +184,6 @@ extern "C" void isrHandler(registers_t r)
             asm volatile("movq %%cr2, %%rax; movq %%rax, %0" : "=m"(cr2));
             kprintf("Faulting address:%x\n", cr2);
     }
-    asm("hlt");
 }
 
 void registerInterruptHandler(UInt8 n, isr_t handler)

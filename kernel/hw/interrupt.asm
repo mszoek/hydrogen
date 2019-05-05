@@ -122,6 +122,8 @@ global isr28
 global isr29
 global isr30
 global isr31
+global isr128
+
 ; IRQs
 global irq0
 global irq1
@@ -356,6 +358,14 @@ isr31:
     cli
     push byte 0
     push byte 31
+    jmp isrCommonStub
+
+; --- SOFTWARE INTERRUPTS ---
+; 128: syscall
+isr128:
+    cli
+    push byte 0
+    push byte 128
     jmp isrCommonStub
 
 ; IRQ handlers

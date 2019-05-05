@@ -15,8 +15,6 @@
 #define htonl(x) bswap32(x)
 #define htons(x) bswap16(x)
 
-extern "C" void (*userfunc)() = 0;
-
 // our file descriptor table. slot = fd number.
 fdMapType fdMap[FD_MAX];
 
@@ -42,13 +40,13 @@ HierarchicalFileSystem::HierarchicalFileSystem(Partition *p)
     mounted = false;
     readVolumeHeader();
 
-    UInt8 *buf = (UInt8*)malloc(256);
-    int fd = open("foo.txt");
-    kprintf("fd = %d\n", fd);
-    kprintf("read %d bytes to %x\n", read(fd, buf, 256), (UInt64)buf);
-    close(fd);
-    kprintf("%s\n", (char *)buf);
-    free(buf);
+    // UInt8 *buf = (UInt8*)malloc(256);
+    // int fd = open("foo.txt");
+    // kprintf("fd = %d\n", fd);
+    // kprintf("read %d bytes to %x\n", read(fd, buf, 256), (UInt64)buf);
+    // close(fd);
+    // kprintf("%s\n", (char *)buf);
+    // free(buf);
 }
 
 HierarchicalFileSystem::~HierarchicalFileSystem()

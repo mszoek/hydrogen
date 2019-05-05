@@ -62,7 +62,24 @@ void status(void)
   while(1)
   {
     displayStatusLine();
-    nanosleep(300*NANOTICKS);
+    nanosleep(250*NANOTICKS);
+  }
+}
+
+extern "C" void (*userfunc)() = 0;
+extern "C" void switchUserland();
+void usertask(void)
+{
+  while(1)
+  {
+    UInt8 *buf = (UInt8*)malloc(256);
+    HierarchicalFileSystem *hfs = new HierarchicalFileSystem(rootPartition);
+    int fd = hfs->open("userfunc.bin");
+    kprintf("fd = %d\n", fd);
+    kprintf("read %d bytes to %x\n", hfs->read(fd, buf, 256), (UInt64)buf);
+    hfs->close(fd);
+    userfunc = (void (*)())buf;
+    switchUserland(); // enter userspace and run until process exits
   }
 }
 
@@ -163,12 +180,18 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   TaskControlBlock *idle = Scheduler::createTask(idletask, "idle task");
   TaskControlBlock *updstatus = Scheduler::createTask(status, "status");
   TaskControlBlock *shell = Scheduler::createTask(shellinput, "shell");
+  reaper = Scheduler::createTask(Scheduler::taskReaper, "reaper");
+  TaskControlBlock *user = Scheduler::createTask(usertask, "usertask");
+  user->rsp3 = (UInt64)malloc(USER_STACK_SIZE) + USER_STACK_SIZE;
+  user->usersp = user->rsp3;
 
   curTask = idle;
   curTask->sp += 128;
   runQ = updstatus;
   updstatus->next = shell;
-  runQEnd = shell;
+  shell->next = reaper;
+  reaper->next = user;
+  runQEnd = user;
   asm volatile("jmp initTasks"); // doesn't return
   panic();
 }

@@ -105,7 +105,7 @@ UInt64 VirtualMemoryManager::remap(UInt64 phys, UInt64 size, UInt64 virt)
 			// create a new pdpt for this 512GB
 			pml4t[pml4Idx] = (UInt64)pmm->allocBlock();
 			memset((UInt32 *)(pml4t[pml4Idx]+KERNEL_VMA), 0, 1024);
-			pml4t[pml4Idx] |= 3;
+			pml4t[pml4Idx] |= 7;
 		}
 
 		UInt64 *mypdpt = (UInt64 *)((pml4t[pml4Idx] & ~0x0FFF) | KERNEL_VMA);
@@ -114,7 +114,7 @@ UInt64 VirtualMemoryManager::remap(UInt64 phys, UInt64 size, UInt64 virt)
 			// create a new pdt for this 1GB
 			mypdpt[pdptIdx] = (UInt64)pmm->allocBlock();
 			memset((UInt32 *)(mypdpt[pdptIdx] | KERNEL_VMA), 0, 1024);
-			mypdpt[pdptIdx] |= 3;
+			mypdpt[pdptIdx] |= 7;
 		}
 
 		UInt64 *mypdt = (UInt64 *)((mypdpt[pdptIdx] & ~0x0FFF) | KERNEL_VMA);
@@ -123,11 +123,11 @@ UInt64 VirtualMemoryManager::remap(UInt64 phys, UInt64 size, UInt64 virt)
 			// create a new pt for this 2MB
 			mypdt[pdtIdx] = (UInt64)pmm->allocBlock();
 			memset((UInt32 *)(mypdt[pdtIdx] | KERNEL_VMA), 0, 1024);
-			mypdt[pdtIdx] |= 3;
+			mypdt[pdtIdx] |= 7;
 		}
 
 		UInt64 *mypt = (UInt64 *)((mypdt[pdtIdx] & ~0x0FFF) | KERNEL_VMA);
-		mypt[ptIdx] = phys | 3; // mark page present and writable
+		mypt[ptIdx] = phys | 7; // mark page present and writable
 
 		virt += 4096;
 		phys += 4096;
@@ -145,7 +145,7 @@ void *VirtualMemoryManager::malloc(const unsigned int size)
       // add a block if any pool is low on free chunks
       if(pools[i].nrFreeChunks < 2)
       {
-        void *initpool = pmm->allocBlock(2);
+        void *initpool = (void *)remap((UInt64)pmm->allocBlock(2), 2*PMM_BLOCK_SIZE);
 
         // memory for the poolNode structures
         UInt8 *initptr = (UInt8 *)initpool;
@@ -202,12 +202,12 @@ void *VirtualMemoryManager::malloc(const unsigned int size)
   } else {
     int newsize = size + sizeof(mallocHeader);
     int blocks = newsize / PMM_BLOCK_SIZE + (newsize % PMM_BLOCK_SIZE ? 1 : 0);
-    void *p = pmm->allocBlock(blocks);
+    void *p = (void *)remap((UInt64)pmm->allocBlock(blocks), newsize);
     ((mallocHeader *)p)->magic = 0xEE000000 | MALLOC_MAGIC;
     ((mallocHeader *)p)->node = (poolNode *)size; // we need this to free!
     // kprintf("malloc(%d)=%x p=%x blocks=%d magic=%x\n",size,p,(UInt32)p+sizeof(mallocHeader),blocks,((mallocHeader *)p)->magic);
     p = (void *)((UInt64)p + sizeof(mallocHeader));
-    return (void *)remap((UInt64)p, size);
+    return p;
   }
 
   kprintf("malloc(): no pool for alloc of %d bytes\n",size);

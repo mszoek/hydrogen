@@ -8,12 +8,13 @@
 idtGate idt[IDT_ENTRIES];
 idtRegister idt_reg;
 
+/* interrupts 128+ can be called from userspace */
 void setIDTGate(int n, UInt64 handler)
 {
     idt[n].offset0 = low16(handler);
     idt[n].sel = KERNEL_CS;
     idt[n].ist = 0;
-    idt[n].flags = 0x8E;
+    idt[n].flags = (n > 127 ? 0xEE : 0x8E);
     idt[n].offset1 = high16(handler);
     idt[n].offset2 = (handler >> 32);
     idt[n].zero = 0;

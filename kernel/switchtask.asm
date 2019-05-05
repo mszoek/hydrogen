@@ -72,7 +72,7 @@ switchTask:
     mov [rbx], rdi          ; curTask = what we passed in
     mov rsp, [rdi+12]       ; load sp for new task
     mov QWORD [rdi+46], 1   ; set timeslice
-    mov BYTE rax, [rdi+45]  ; task priority
+    mov rax, [rdi+45]       ; task priority
     add [rdi+46], rax
     mov rbx, [rdi+28]       ; load kernel stack top of new task
     mov BYTE [rdi+44], 1    ; set 'running' state
@@ -113,7 +113,7 @@ initTasks:
     mov rsp, [rsi+12]       ; load sp for new task
     mov rbp, rsp
     mov QWORD [rsi+46], 1
-    mov BYTE rax, [rsi+45]       ; task priority
+    mov rax, [rsi+45]       ; task priority
     add [rsi+46], rax
     mov rbx, [rsi+28]       ; load kernel stack top of new task
     mov BYTE [rsi+44], 1    ; set 'running' state

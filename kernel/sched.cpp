@@ -15,6 +15,9 @@ TaskControlBlock *curTask = 0;
 TaskControlBlock *runQ = 0;
 TaskControlBlock *runQEnd = 0;
 TaskControlBlock *sleepQ = 0;
+TaskControlBlock *termQ = 0;
+
+TaskControlBlock *reaper = 0;
 
 UInt32 schedulerSpinlock = 0;
 UInt32 locksHeld = 0;
@@ -36,16 +39,15 @@ void nanosleepUntil(UInt64 when)
     return;
   }
 
-  // asm("cli");
   lock();
   Scheduler::updateTimeUsed();
   curTask->wakeTime = when;
   curTask->next = sleepQ;
-  curTask->state = sleeping;
   sleepQ = curTask;
+  // curTask->state = sleeping;
+  Scheduler::blockTask(sleeping);
   unlock();
-  Scheduler::schedule(); // find something else to run
-  // asm("sti");
+  // Scheduler::schedule(); // find something else to run
 }
 
 void nanosleep(UInt64 nano)
@@ -202,7 +204,7 @@ TaskControlBlock *Scheduler::createTask(void (&entry)(), char *name)
 
   TaskControlBlock *tcb = (TaskControlBlock *)vmm->malloc(sizeof(TaskControlBlock));
   tcb->tid = taskID++;
-  tcb->rsp0 = (UInt64)vmm->malloc(4096);
+  tcb->rsp0 = (UInt64)vmm->malloc(KERNEL_STACK_SIZE) + KERNEL_STACK_SIZE;
   tcb->sp = tcb->rsp0;
   tcb->usersp = 0;
   tcb->lastTime = ((TimerController *)g_controllers[CTRL_TIMER])->getTicks();
@@ -231,4 +233,36 @@ TaskControlBlock *Scheduler::createTask(void (&entry)(), char *name)
   tcb->next = 0;
 
   return tcb;
+}
+
+void Scheduler::terminateTask(void)
+{
+  // close files, free userspace memory, etc
+  lock();
+  curTask->next = termQ;
+  termQ = curTask;
+  // curTask->state = terminated;
+  blockTask(terminated);
+  unblockTask(reaper);
+  unlock();
+}
+
+void Scheduler::taskReaper(void)
+{
+  TaskControlBlock *task;
+  while(1)
+  {
+    lock();
+    while(termQ != 0)
+    {
+      task = termQ;
+      termQ = termQ->next;
+      free((void *)(task->rsp0 - KERNEL_STACK_SIZE));
+      if(curTask->rsp3 != 0)
+        free((void *)(curTask->rsp3 - USER_STACK_SIZE));
+      free(task);
+    }
+    curTask->state = wait;
+    unlock();
+  }
 }
