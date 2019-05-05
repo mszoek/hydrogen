@@ -8,26 +8,13 @@
 #include <hw/idt.h>
 #include <kstdio.h>
 #include <sched.h>
+#include <syscall.h>
 
 isr_t interruptHandlers[256];
 
 volatile void breakpoint()
 {
     asm volatile("nop");
-}
-
-void syscall(int nr, UInt64 arg0, UInt64 arg1, UInt64 arg2, UInt64 arg3, UInt64 arg4)
-{
-    kprintf("SYSCALL(%d) %d %d %d %d %d\n", nr, arg0, arg1, arg2, arg3, arg4);
-    switch(nr)
-    {
-        case 1: 
-            kprint(arg0);
-            break;
-        case 2:
-            Scheduler::terminateTask();
-            break;
-    }
 }
 
 /* Can't do this with a loop because we need the address

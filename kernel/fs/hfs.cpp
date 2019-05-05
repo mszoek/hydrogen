@@ -92,12 +92,12 @@ void HierarchicalFileSystem::readVolumeHeader()
         * (blockSize / 512) + partition.getStartLBA();
     catalogEndSector = (ntohl(vhdr->catalogFile.extents[0].blockCount)
         * (blockSize / 512)) + catalogStartSector;
-    
+
     kprintf("HFS+: %d files, %d folders. %d / %d blocks free. Block size: %d\n",
         ntohl(vhdr->fileCount), ntohl(vhdr->folderCount),
         ntohl(vhdr->freeBlocks), ntohl(vhdr->totalBlocks),
         blockSize);
-    
+
     free(buf);
 }
 
@@ -114,7 +114,7 @@ void *HierarchicalFileSystem::searchCatalog(const char *path, UInt16 kind)
 
     BTHeaderRec *bthdrrec = (BTHeaderRec *)((UInt64)buf+sizeof(BTNodeDescriptor));
     int leafpos = ntohl(bthdrrec->firstLeafNode) * ntohs(bthdrrec->nodeSize);
-    BTNodeDescriptor *btnodedesc = (BTNodeDescriptor *)((UInt64)buf+leafpos); 
+    BTNodeDescriptor *btnodedesc = (BTNodeDescriptor *)((UInt64)buf+leafpos);
 
     // offset in words of the first catalog record pointer in 'buf'
     int pos = (leafpos + ntohs(bthdrrec->nodeSize)) / 2 - 1;
@@ -150,7 +150,7 @@ void *HierarchicalFileSystem::searchCatalog(const char *path, UInt16 kind)
         HFSPlusCatalogFile *catrec = (HFSPlusCatalogFile *)malloc(sizeof(HFSPlusCatalogFile));
         memcpy((char *)catrec, (char *)((UInt64)buf+offset+2+ntohs(catkey->keyLength)), sizeof(HFSPlusCatalogFile));
         free(buf);
-        return catrec;        
+        return catrec;
     }
 
     free(buf);
@@ -238,7 +238,7 @@ int HierarchicalFileSystem::read(int fd, UInt8 *buf, int len)
         } else {
             // what we want is within the extent. Read all but last sector.
             ahci->read(port, (UInt16 *)((UInt64)buf+bytesread), sector, desired - 1);
-            bytesread += desired * 512;
+            bytesread += (desired - 1) * 512;
             ahci->read(port, dbuf, sector+desired-1, 1);
             memcpy((char *)(buf+bytesread), (char *)dbuf, len - bytesread);
             bytesread += len-bytesread;

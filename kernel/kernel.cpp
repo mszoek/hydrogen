@@ -72,11 +72,11 @@ void usertask(void)
 {
   while(1)
   {
-    UInt8 *buf = (UInt8*)malloc(256);
     HierarchicalFileSystem *hfs = new HierarchicalFileSystem(rootPartition);
     int fd = hfs->open("userfunc.bin");
     kprintf("fd = %d\n", fd);
-    kprintf("read %d bytes to %x\n", hfs->read(fd, buf, 256), (UInt64)buf);
+    UInt8 *buf = (UInt8*)malloc(4300);
+    kprintf("read %d bytes to %x\n", hfs->read(fd, buf, 4300), (UInt64)buf);
     hfs->close(fd);
     userfunc = (void (*)())buf;
     switchUserland(); // enter userspace and run until process exits
@@ -89,7 +89,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   UInt64 mem = 0, mmap = 0, mmapLen = 0;
   int i = 0;
   char cmdline[256];
-  
+
   memset(cmdline, 0, sizeof(cmdline));
   memset(rootGUID, 0, sizeof(rootGUID));
   memcpy((char *)&bootinfo, (char *)binf, sizeof(bootinfo));
@@ -97,7 +97,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   /* Read data from the multiboot structure */
   if(binf->flags & 0x1)
     mem = binf->memHi + binf->memLo + 1024;
-  if(binf->flags & 0x40) 
+  if(binf->flags & 0x40)
   {
     mmap = binf->mmapAddr;
     mmapLen = binf->mmapLen;
@@ -157,7 +157,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   for(StorageList *iter = g_storage; iter != 0; iter = iter->next)
   {
     GUIDPartitionTable *gpt = 0;
-    
+
     if(iter->controllerType == CTRL_AHCI)
       gpt = new GUIDPartitionTable((AHCIController *)iter->controller, iter->port);
 
