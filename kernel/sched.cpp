@@ -162,19 +162,19 @@ void Scheduler::blockTask(TaskState state)
 
 void Scheduler::unblockTask(TaskControlBlock *task)
 {
-  lock();
+  ::lock();
   task->state = readyToRun;
   if(runQ != 0)
   {
     // there is something on the run queue. append this task to the end.
     runQEnd->next = task;
     runQEnd = task;
-    unlock();
+    ::unlock();
   } else {
     // there is only one currently running task. pre-empt it.
     updateTimeUsed();
     task->lastTime = ((TimerController *)g_controllers[CTRL_TIMER])->getTicks(); // runtime starts now
-    unlock();
+    ::unlock();
     switchTask(task);
   }
 }
@@ -238,13 +238,13 @@ TaskControlBlock *Scheduler::createTask(void (&entry)(), char *name)
 void Scheduler::terminateTask(void)
 {
   // close files, free userspace memory, etc
-  lock();
+  ::lock();
   curTask->next = termQ;
   termQ = curTask;
   // curTask->state = terminated;
   blockTask(terminated);
   unblockTask(reaper);
-  unlock();
+  ::unlock();
 }
 
 void Scheduler::taskReaper(void)
@@ -252,7 +252,7 @@ void Scheduler::taskReaper(void)
   TaskControlBlock *task;
   while(1)
   {
-    lock();
+    ::lock();
     while(termQ != 0)
     {
       task = termQ;
@@ -263,6 +263,6 @@ void Scheduler::taskReaper(void)
       free(task);
     }
     curTask->state = wait;
-    unlock();
+    ::unlock();
   }
 }

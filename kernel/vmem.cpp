@@ -74,6 +74,16 @@ VirtualMemoryManager::~VirtualMemoryManager()
 {
 }
 
+UInt64 VirtualMemoryManager::unmap(UInt64 virt)
+{
+  if(virt >= VMA_BASE)
+    return virt - VMA_BASE;
+  else if(virt >= KERNEL_VMA)
+    return virt - KERNEL_VMA;
+  else
+    return virt;  
+}
+
 UInt64 VirtualMemoryManager::remap(UInt64 phys, UInt64 size)
 {
 	return remap(phys, size, VMA_BASE+phys);
@@ -238,7 +248,7 @@ void VirtualMemoryManager::free(void *p)
         // not block aligned? something's weird.
         kprintf("free: freeing %d blocks at %x which is not aligned\n", blocks, (UInt64)p);
       }
-      pmm->freeBlock(p, blocks);
+      pmm->freeBlock((void *)unmap((UInt64)p), blocks);
       return;
     }
 
