@@ -131,35 +131,14 @@ char *exceptionMessages[] = {
 
 extern "C" void isrHandler(registers_t r)
 {
-    if((UInt8)r.int_no == 128)
-    {
-        int nr;
-        UInt64 arg0, arg1, arg2, arg3, arg4;
-
-        asm volatile(
-            "mov %%r10, %0;"
-            "mov %%r11, %1;"
-            "mov %%r12, %2;"
-            "mov %%r13, %3;"
-            "mov %%r14, %4;"
-            "mov %%r15, %5;"
-            : "=m"(nr),"=m"(arg0),"=m"(arg1),"=m"(arg2),"=m"(arg3),"=m"(arg4)
-        );
-        syscall(nr, arg0, arg1, arg2, arg3, arg4);
-        return;
-    }
-
-    if(r.int_no < 32)
-    {
-        kprintf("DS:%x CS:%x SS:%x Exception:%d %s\n",
-            r.ds, r.cs, r.ss, r.int_no, exceptionMessages[r.int_no]);
-        kprintf("RAX:%x RBX:%x RCX:%x RDX:%x RIP:%x\n",
-            r.rax, r.rbx, r.rcx, r.rdx, r.rip);
-        kprintf("RSI:%x RDI:%x RBP:%x RSP:%x userRSP:%x\n",
-            r.rsi, r.rdi, r.rbp, r.rsp, r.userrsp);
-        kprintf("ErrorCode:%x Flags:%x\n",
-            r.err_code, r.rflags);
-    }
+    kprintf("DS:%x CS:%x SS:%x Exception:%d %s\n",
+        r.ds, r.cs, r.ss, r.int_no, exceptionMessages[r.int_no]);
+    kprintf("RAX:%x RBX:%x RCX:%x RDX:%x RIP:%x\n",
+        r.rax, r.rbx, r.rcx, r.rdx, r.rip);
+    kprintf("RSI:%x RDI:%x RBP:%x RSP:%x userRSP:%x\n",
+        r.rsi, r.rdi, r.rbp, r.rsp, r.userrsp);
+    kprintf("ErrorCode:%x Flags:%x\n",
+        r.err_code, r.rflags);
 
     switch(r.int_no)
     {

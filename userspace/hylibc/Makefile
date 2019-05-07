@@ -1,5 +1,5 @@
 CC64=gcc
-CFLAGS=-g -Iincludes -I../../kernel/includes -nostdlib -ffreestanding -mno-red-zone -fno-exceptions
+CFLAGS=-g -Iincludes -I../../kernel/includes -nostdlib -ffreestanding -mno-red-zone -fstack-check=no -fstack-protector-explicit -fno-exceptions
 LIB_SRCS=$(wildcard src/*.c)
 LIB_OBJS=${LIB_SRCS:.c=.o}
 

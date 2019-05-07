@@ -1,6 +1,7 @@
 ; Defined in isr.c
 [extern isrHandler]
 [extern irqHandler]
+[extern _syscall]
 
 ; Common ISR code
 isrCommonStub:
@@ -14,7 +15,7 @@ isrCommonStub:
     push rdx;
     push rcx;
     push rax;
-	mov ax, ds ; Lower 16-bits of eax = ds.
+	mov ax, ds
 	push rax ; save the data segment descriptor
 	mov ax, 0x10  ; kernel data segment descriptor
 	mov ds, ax
@@ -23,9 +24,39 @@ isrCommonStub:
 	mov gs, ax
 
     ; 2. Call C handler
+    cmp BYTE [rsp+0x48], 0x80 ; int 0x80? (syscall)
+    je .syscallHandler
 	call isrHandler
+    jmp .restore
 
-    ; 3. Restore state
+.syscallHandler:
+    call _syscall
+    ; return code is in eax
+    mov rdi, rax
+
+    ; 3. Restore state (syscall)
+	pop rax
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+;	popa
+    pop rax;
+    pop rcx;
+    pop rdx;
+    pop rbx;
+    pop rsp;
+    pop rbp;
+    pop rsi;
+    mov rax, rdi ; get ret code back in rax
+    pop rdi;
+
+	add rsp, 0x10 ; Cleans up the pushed error code and pushed ISR number
+	sti
+	iretq ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
+
+.restore:
+    ; 3. Restore state (not syscall)
 	pop rax
 	mov ds, ax
 	mov es, ax
@@ -40,6 +71,7 @@ isrCommonStub:
     pop rbp;
     pop rsi;
     pop rdi;
+
 	add rsp, 0x10 ; Cleans up the pushed error code and pushed ISR number
 	sti
 	iretq ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP

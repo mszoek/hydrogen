@@ -3,6 +3,9 @@
 void _start(void)
 {
   char *s = "Hello from userspace!\n";
-  _syscall(SYSCALL_PRINTF, (UInt64)s, 0, 0, 0, 0);
-  _syscall(SYSCALL_EXIT, 0, 0, 0, 0, 0);
+  char *retcode = "Got -2 return\n";
+  int r = _syscall(SYSCALL_PRINTF, (UInt64)s, 0, 0, 0, 0);
+  if(r == -2)
+    _syscall(SYSCALL_PRINTF, (UInt64)retcode, 0, 0, 0, 0);
+  _syscall(SYSCALL_EXIT, r, 0, 0, 0, 0);
 }
