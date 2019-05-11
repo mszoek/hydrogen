@@ -204,13 +204,16 @@ TaskControlBlock *Scheduler::createTask(void (&entry)(), char *name)
 
   TaskControlBlock *tcb = (TaskControlBlock *)vmm->malloc(sizeof(TaskControlBlock));
   tcb->tid = taskID++;
-  tcb->rsp0 = (UInt64)vmm->malloc(KERNEL_STACK_SIZE) + KERNEL_STACK_SIZE;
+  tcb->rsp0 = (UInt64)vmm->malloc(KERNEL_STACK_SIZE);
+  memset((char *)tcb->rsp0, 0, KERNEL_STACK_SIZE);
+  tcb->rsp0 += KERNEL_STACK_SIZE;
   tcb->sp = tcb->rsp0;
   tcb->usersp = 0;
   tcb->lastTime = ((TimerController *)g_controllers[CTRL_TIMER])->getTicks();
   tcb->timeUsed = 0;
   tcb->priority = 1;
   tcb->timeSlice = 1 + tcb->priority;
+  tcb->entry = 0;
   tcb->state = readyToRun;
   if(name)
     strcpy(tcb->name, name);
@@ -258,11 +261,24 @@ void Scheduler::taskReaper(void)
       task = termQ;
       termQ = termQ->next;
       free((void *)(task->rsp0 - KERNEL_STACK_SIZE));
-      if(curTask->rsp3 != 0)
-        free((void *)(curTask->rsp3 - USER_STACK_SIZE));
+      if(task->rsp3 != 0)
+        free((void *)(task->rsp3 - USER_STACK_SIZE));
+      if(task->entry != 0)
+        free((void *)task->entry); // free memory used by process image
       free(task);
     }
     curTask->state = wait;
     ::unlock();
   }
+}
+
+TaskControlBlock *Scheduler::createProcess(UInt64 entry, char *name)
+{
+  TaskControlBlock *user = Scheduler::createTask(switchUserland, name);
+  user->rsp3 = (UInt64)malloc(USER_STACK_SIZE);
+  memset((char *)user->rsp3, 0, USER_STACK_SIZE);
+  user->rsp3 += USER_STACK_SIZE;
+  user->usersp = user->rsp3;
+  user->entry = entry;
+  return user;
 }

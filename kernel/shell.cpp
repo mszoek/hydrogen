@@ -16,6 +16,11 @@
 #include <shell.h>
 #include <sched.h>
 
+#define KERNEL_HFS
+#include <fs/hfs.h>
+
+extern Partition *rootPartition;
+
 // map scan codes 0x00 to 0x58 into en_US layout
 const char scanCodesToASCII_base[] =
 {
@@ -116,7 +121,7 @@ void shellExecCommand()
 
   if(strcmp(shellBuffer, "ps") == 0)
   {
-    asm("cli");
+    lock();
     kprintf(" TID        TIME       STACK       STATE  NAME\n");
     kprintf("%6d  %9dus  %9x       %d      %s\n", curTask->tid, curTask->timeUsed/1000,
       curTask->sp, curTask->state, curTask->name);
@@ -131,7 +136,23 @@ void shellExecCommand()
       kprintf("%6d  %9dus  %9x       %d      %s\n", tcb->tid, tcb->timeUsed/1000,
         tcb->sp, tcb->state, tcb->name);
     }
-    asm("sti");
+    unlock();
+    return;
+  }
+
+  if(strcmp(shellBuffer, "exec") == 0)
+  {
+    HierarchicalFileSystem *hfs = new HierarchicalFileSystem(rootPartition);
+    if(! hfs->mount())
+      return;
+    int fd = hfs->open("userfunc.bin");
+    kprintf("fd = %d\n", fd);
+    UInt8 *buf = (UInt8*)malloc(4300);
+    kprintf("read %d bytes to %x\n", hfs->read(fd, buf, 4300), (UInt64)buf);
+    hfs->close(fd);
+    delete hfs;
+    TaskControlBlock *user = Scheduler::createProcess((UInt64)buf, "userfunc");
+    Scheduler::unblockTask(user); // put on run Q
     return;
   }
 

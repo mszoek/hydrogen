@@ -66,23 +66,6 @@ void status(void)
   }
 }
 
-extern "C" void (*userfunc)() = 0;
-extern "C" void switchUserland();
-void usertask(void)
-{
-  while(1)
-  {
-    HierarchicalFileSystem *hfs = new HierarchicalFileSystem(rootPartition);
-    int fd = hfs->open("userfunc.bin");
-    kprintf("fd = %d\n", fd);
-    UInt8 *buf = (UInt8*)malloc(4300);
-    kprintf("read %d bytes to %x\n", hfs->read(fd, buf, 4300), (UInt64)buf);
-    hfs->close(fd);
-    userfunc = (void (*)())buf;
-    switchUserland(); // enter userspace and run until process exits
-  }
-}
-
 // Kernel entry function
 extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 {
@@ -168,7 +151,7 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 
       kprintf("Mounting %s root partition %s\n",
           (rootPartition->getTypeEntry())->name, rootPartition->getGUIDA());
-      HierarchicalFileSystem *hfs = new HierarchicalFileSystem(rootPartition);
+      // HierarchicalFileSystem *hfs = new HierarchicalFileSystem(rootPartition);
     }
   }
 
@@ -181,17 +164,13 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   TaskControlBlock *updstatus = Scheduler::createTask(status, "status");
   TaskControlBlock *shell = Scheduler::createTask(shellinput, "shell");
   reaper = Scheduler::createTask(Scheduler::taskReaper, "reaper");
-  TaskControlBlock *user = Scheduler::createTask(usertask, "usertask");
-  user->rsp3 = (UInt64)malloc(USER_STACK_SIZE) + USER_STACK_SIZE;
-  user->usersp = user->rsp3;
 
   curTask = idle;
   curTask->sp += 128;
   runQ = updstatus;
   updstatus->next = shell;
   shell->next = reaper;
-  reaper->next = user;
-  runQEnd = user;
+  runQEnd = reaper;
   asm volatile("jmp initTasks"); // doesn't return
   panic();
 }

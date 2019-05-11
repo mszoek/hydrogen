@@ -1,7 +1,7 @@
 global switchUserland
-global returnUserland
-extern userfunc
 extern curTask
+
+; extern "C" void switchUserland(void)
 
 [bits 64]
 switchUserland:
@@ -18,7 +18,6 @@ switchUserland:
     push rax        ; save stack pointer
     pushfq
     push 0x1B       ; user CS (0x18) with bottom bits set for ring 3
-    mov rax, userfunc
-    mov rsi, [rax]
-    push rsi
+    mov rax, [rsi+62] ; entry point
+    push rax
     iretq

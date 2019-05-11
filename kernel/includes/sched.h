@@ -52,7 +52,8 @@ typedef struct _TaskControlBlock
 /* 44*/ UInt8 state;
 /* 45*/ UInt8 priority;
 /* 46*/ UInt64 timeSlice;
-        UInt64 rsp3;    // user stack top (0 for kernel tasks)
+/* 54*/ UInt64 rsp3;    // user stack top (0 for kernel tasks)
+/* 62*/ UInt64 entry;   // entry point of this task's function
         UInt64 timeUsed;
         UInt64 lastTime;
         UInt64 wakeTime;
@@ -80,6 +81,7 @@ extern TaskControlBlock *termQ;   // terminated tasks
 extern TaskControlBlock *reaper;  // cleans up terminated tasks
 
 extern "C" void switchTask(TaskControlBlock *task);
+extern "C" void switchUserland();
 
 /* TEKPORARY Big Kernel Lock (not scheduler lock below) */
 void lock();
@@ -94,6 +96,7 @@ class Scheduler
 public:
     static void init();
     static TaskControlBlock *createTask(void (&entry)(), char *name = 0);
+    static TaskControlBlock *createProcess(UInt64 entry, char *name);
     static void updateTimeUsed();
     static void blockTask(TaskState state); // block the running task
     static void unblockTask(TaskControlBlock *task);

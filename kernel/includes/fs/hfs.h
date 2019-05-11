@@ -282,7 +282,7 @@ public:
     int read(int fd, UInt8 *buf, int len);
 
 private:
-    void readVolumeHeader();
+    bool readVolumeHeader();
     void *searchCatalog(const char *path, UInt16 kind);
 
     Partition partition; // where this fs lives

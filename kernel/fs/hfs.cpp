@@ -38,15 +38,6 @@ HierarchicalFileSystem::HierarchicalFileSystem(Partition *p)
     memcpy((char *)&partition, (char *)p, sizeof(partition));
     catalogStartSector = catalogEndSector = 0;
     mounted = false;
-    readVolumeHeader();
-
-    // UInt8 *buf = (UInt8*)malloc(256);
-    // int fd = open("foo.txt");
-    // kprintf("fd = %d\n", fd);
-    // kprintf("read %d bytes to %x\n", read(fd, buf, 256), (UInt64)buf);
-    // close(fd);
-    // kprintf("%s\n", (char *)buf);
-    // free(buf);
 }
 
 HierarchicalFileSystem::~HierarchicalFileSystem()
@@ -55,8 +46,12 @@ HierarchicalFileSystem::~HierarchicalFileSystem()
 
 bool HierarchicalFileSystem::mount()
 {
-    mounted = true;
-    return true;
+    if(readVolumeHeader())
+    {
+        mounted = true;
+        return true;
+    }
+    return false;
 }
 
 bool HierarchicalFileSystem::unmount()
@@ -70,7 +65,7 @@ bool HierarchicalFileSystem::isMounted()
     return mounted;
 }
 
-void HierarchicalFileSystem::readVolumeHeader()
+bool HierarchicalFileSystem::readVolumeHeader()
 {
     // allocate a buffer
     UInt16 *buf = (UInt16 *)malloc(8192);
@@ -85,7 +80,7 @@ void HierarchicalFileSystem::readVolumeHeader()
     {
         kprintf("Invalid HFS+ signature - not mounting\n");
         free(buf);
-        return;
+        return false;
     }
     blockSize = ntohl(vhdr->blockSize);
     catalogStartSector = ntohl(vhdr->catalogFile.extents[0].startBlock)
@@ -99,6 +94,7 @@ void HierarchicalFileSystem::readVolumeHeader()
         blockSize);
 
     free(buf);
+    return true;
 }
 
 void *HierarchicalFileSystem::searchCatalog(const char *path, UInt16 kind)
