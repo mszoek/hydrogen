@@ -11,6 +11,9 @@
 #include <vmem.h>
 #include <bootinfo.h>
 
+#define KERNEL_HFS
+#include <fs/hfs.h>
+
 #define CTRL_KEYBOARD   0
 #define CTRL_TIMER      1
 #define CTRL_SCREEN     2
@@ -36,6 +39,7 @@ typedef struct _storageListEntry
     int port;
 } StorageList;
 extern StorageList *g_storage;
+extern HierarchicalFileSystem *rootfs;
 
 extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size);
 

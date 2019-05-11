@@ -19,8 +19,6 @@
 #define KERNEL_HFS
 #include <fs/hfs.h>
 
-extern Partition *rootPartition;
-
 // map scan codes 0x00 to 0x58 into en_US layout
 const char scanCodesToASCII_base[] =
 {
@@ -140,18 +138,25 @@ void shellExecCommand()
     return;
   }
 
-  if(strcmp(shellBuffer, "exec") == 0)
+  if(strncmp(shellBuffer, "exec ", 5) == 0)
   {
-    HierarchicalFileSystem *hfs = new HierarchicalFileSystem(rootPartition);
-    if(! hfs->mount())
+    char *path = &shellBuffer[5];
+    if(path == 0 || *path == 0)
+      return;  
+      
+    if(! rootfs->isMounted())
       return;
-    int fd = hfs->open("userfunc.bin");
-    kprintf("fd = %d\n", fd);
+
+    int fd = rootfs->open(path);
+    if(fd < 0)
+    {
+      kprintf("Cannot open %s\n",path);
+      return;
+    }
     UInt8 *buf = (UInt8*)malloc(4300);
-    kprintf("read %d bytes to %x\n", hfs->read(fd, buf, 4300), (UInt64)buf);
-    hfs->close(fd);
-    delete hfs;
-    TaskControlBlock *user = Scheduler::createProcess((UInt64)buf, "userfunc");
+    kprintf("read %d bytes to %x\n", rootfs->read(fd, buf, 4300), (UInt64)buf);
+    rootfs->close(fd);
+    TaskControlBlock *user = Scheduler::createProcess((UInt64)buf, path);
     Scheduler::unblockTask(user); // put on run Q
     return;
   }

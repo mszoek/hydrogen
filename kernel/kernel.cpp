@@ -19,9 +19,6 @@
 #include <hw/byteswap.h>
 #include <sched.h>
 
-#define KERNEL_HFS
-#include <fs/hfs.h>
-
 // some global stuff
 PhysicalMemoryManager *pmm = 0;
 VirtualMemoryManager *vmm = 0;
@@ -29,6 +26,7 @@ UInt64 g_controllers[CONTROLLER_MAX];
 StorageList *g_storage = 0;
 char rootGUID[40]; // root filesystem GUID from cmdline
 Partition *rootPartition = 0;
+HierarchicalFileSystem *rootfs = 0;
 struct multiboot_info bootinfo;
 
 bool verbose = false;
@@ -151,7 +149,8 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 
       kprintf("Mounting %s root partition %s\n",
           (rootPartition->getTypeEntry())->name, rootPartition->getGUIDA());
-      // HierarchicalFileSystem *hfs = new HierarchicalFileSystem(rootPartition);
+      rootfs = new HierarchicalFileSystem(rootPartition);
+      rootfs->mount();
     }
   }
 
