@@ -10,15 +10,14 @@
 // be sure to update switchTask() if these are changed!
 typedef enum _TaskState
 {
-    readyToRun, running, sleeping, waitIO, waitLock, wait, terminated 
+    readyToRun, running, sleeping, waitIO, waitLock, waiting, terminated 
 } TaskState;
 
 typedef struct _CPUTime
 {
     UInt64 idle;
     UInt64 sys;
-    UInt64 iowait;
-    UInt64 wait;
+    UInt64 user;
 } CPUTime;
 
 typedef struct _GlobalDescriptorTable

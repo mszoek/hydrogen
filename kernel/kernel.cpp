@@ -188,32 +188,37 @@ void displayStatusLine()
   UInt32 bg = screen->getBackColor();
 
   memset(line, 0, sizeof(line));
-  memcpy(line, "Mem Free: ", 10);
   itoa(pmm->memFreeBlocks(), 10, s);
   memcpy(line+strlen(line), s, strlen(s));
-  memcpy(line+strlen(line), " blocks Uptime: ", 16);
+  memcpy(line+strlen(line), " blocks free Up: ", 16);
   itoa(((TimerController *)g_controllers[CTRL_TIMER])->getSeconds(), 10, s);
   memcpy(line+strlen(line), s, strlen(s));
-  memcpy(line+strlen(line), "s CPU idle:", 11);
+  memcpy(line+strlen(line), "s CPU sys:", 10);
+
   CPUTime cpu = Scheduler::getCPUTime();
   double idle = (double)(1 + cpu.idle);
   double sys = (double)(1 + cpu.sys);
-  double total = (double)(1 + cpu.idle + cpu.sys + cpu.iowait + cpu.wait);
+  double user = (double)(1 + cpu.user);
+  double total = (double)(1 + cpu.idle + cpu.sys + cpu.user);
   double idlepct = 100 * ((idle / total) + 0.00005);
   double syspct = 100 * ((sys / total) + 0.00005);
+  double userpct = 100 *((user / total) + 0.00005);
   unsigned a, b;
-  a = (unsigned)idlepct;
-  b = (unsigned)((idlepct - (double)a) * 100);
-  itoa(a , 10, s);
+
+  a = (unsigned)syspct;
+  b = (unsigned)((syspct - (double)a) * 100);
+  itoa(a, 10, s);
   memcpy(line+strlen(line), s, strlen(s));
   int i = strlen(line);
   line[i] = '.';
   line[i+1] = 0;
   itoa(b, 10, s);
   memcpy(line+strlen(line), s, strlen(s));
-  memcpy(line+strlen(line), "% sys:", 6);
-  a = (unsigned)syspct;
-  b = (unsigned)((syspct - (double)a) * 100);
+
+  memcpy(line+strlen(line), "% user:", 7);
+
+  a = (unsigned)userpct;
+  b = (unsigned)((userpct - (double)a) * 100);
   itoa(a, 10, s);
   memcpy(line+strlen(line), s, strlen(s));
   i = strlen(line);
@@ -221,9 +226,23 @@ void displayStatusLine()
   line[i+1] = 0;
   itoa(b, 10, s);
   memcpy(line+strlen(line), s, strlen(s));
+
+  memcpy(line+strlen(line), "% idle:", 7);
+
+  a = (unsigned)idlepct;
+  b = (unsigned)((idlepct - (double)a) * 100);
+  itoa(a , 10, s);
+  memcpy(line+strlen(line), s, strlen(s));
+  i = strlen(line);
+  line[i] = '.';
+  line[i+1] = 0;
+  itoa(b, 10, s);
+  memcpy(line+strlen(line), s, strlen(s));
+
   i = strlen(line);
   line[i] = '%';
   line[i+1] = 0;
+
   memset(line+strlen(line), 0x20, sizeof(line)-strlen(line)-2); // space fill to right edge
   screen->setXY(0, 0);
   screen->setBackColor(0x00277c);

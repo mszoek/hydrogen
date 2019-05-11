@@ -16,6 +16,7 @@ TaskControlBlock *runQ = 0;
 TaskControlBlock *runQEnd = 0;
 TaskControlBlock *sleepQ = 0;
 TaskControlBlock *termQ = 0;
+TaskControlBlock *waitQ = 0;
 
 TaskControlBlock *reaper = 0;
 
@@ -59,6 +60,32 @@ void nanosleep(UInt64 nano)
 void sleep(UInt32 ms)
 {
   nanosleep(ms*NANOTICKS);
+}
+
+// put task on waitQ. Must be unblocked by another task
+void wait(void)
+{
+  Scheduler::updateTimeUsed();
+  curTask->next = waitQ;
+  waitQ = curTask;
+  Scheduler::blockTask(waiting);
+}
+
+// remove tcb from waitQ
+void unwait(TaskControlBlock *tcb)
+{
+  TaskControlBlock *task = waitQ;
+  waitQ = 0;
+  while(task != 0)
+  {
+    TaskControlBlock *cur = task;
+    task = task->next;
+    if(cur != tcb)
+    {
+      cur->next = waitQ;
+      waitQ = cur;
+    }
+  }
 }
 
 /* FIXME: a real spinlock is needed for SMP */
@@ -148,6 +175,8 @@ void Scheduler::updateTimeUsed()
   curTask->lastTime = now;
   if(curTask->tid == 1) // idle task
     cputime.idle += elapsed;
+  else if(curTask->rsp3 != 0)
+    cputime.user += elapsed;
   else
     cputime.sys += elapsed;
 }
@@ -246,6 +275,8 @@ void Scheduler::terminateTask(void)
   termQ = curTask;
   // curTask->state = terminated;
   blockTask(terminated);
+
+  unwait(reaper);
   unblockTask(reaper);
   ::unlock();
 }
@@ -267,7 +298,7 @@ void Scheduler::taskReaper(void)
         free((void *)task->entry); // free memory used by process image
       free(task);
     }
-    curTask->state = wait;
+    wait();
     ::unlock();
   }
 }
