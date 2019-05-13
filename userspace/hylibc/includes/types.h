@@ -35,8 +35,8 @@ typedef signed        char SInt8;
 #define PB (TB * 1024)
 
 /* C types */
-typedef UInt64 size_t;
-typedef UInt64 time_t; // TODO: Determine if time_t is actually a UInt64 or not...
+//typedef UInt64 size_t;
+//typedef UInt64 time_t; // TODO: Determine if time_t is actually a UInt64 or not...
 
 
 #endif

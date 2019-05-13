@@ -78,6 +78,7 @@ extern TaskControlBlock *runQEnd; // ready-to-run queue tail
 extern TaskControlBlock *sleepQ;  // sleeping tasks
 extern TaskControlBlock *termQ;   // terminated tasks
 extern TaskControlBlock *reaper;  // cleans up terminated tasks
+extern TaskControlBlock *waitQ;   // waiting tasks (for i/o, mutex, etc)
 
 extern "C" void switchTask(TaskControlBlock *task);
 extern "C" void switchUserland();

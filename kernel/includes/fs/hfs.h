@@ -266,6 +266,24 @@ typedef struct {
     UInt32    reserved3[16];
 } __attribute__((packed, aligned(1))) BTHeaderRec;
 
+struct stat
+{
+  UInt16    st_dev;         /* ID of device containing file */
+  UInt64    st_ino;         /* Inode number */
+  UInt32    st_mode;        /* File type and mode */
+  UInt32    st_nlink;       /* Number of hard links */
+  UInt32    st_uid;         /* User ID of owner */
+  UInt32    st_gid;         /* Group ID of owner */
+  UInt32    st_rdev;        /* Device ID (if special file) */
+  UInt64    st_size;        /* Total size, in bytes */
+  UInt32    st_blksize;     /* Block size for filesystem I/O */
+  UInt64    st_blocks;      /* Number of 512B blocks allocated */
+  UInt32    st_atime;       /* Time of last access */
+  UInt32    st_mtime;       /* Time of last modification */
+  UInt32    st_ctime;       /* Time of last status change */
+};
+
+
 #ifdef KERNEL_HFS
 
 class HierarchicalFileSystem
@@ -280,6 +298,7 @@ public:
     int open(const char *path);
     void close(int fd);
     int read(int fd, UInt8 *buf, int len);
+    int stat(char *path, struct stat *s);
 
 private:
     bool readVolumeHeader();

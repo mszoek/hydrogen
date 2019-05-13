@@ -210,8 +210,8 @@ int HierarchicalFileSystem::read(int fd, UInt8 *buf, int len)
         if(cf->dataFork.extents[extent].startBlock == 0)
             continue;
 
-        UInt64 sector = ntohl(cf->dataFork.extents[0].startBlock) * (blockSize / 512) + partition.getStartLBA();
-        UInt64 count = ntohl(cf->dataFork.extents[0].blockCount) * (blockSize / 512);
+        UInt64 sector = ntohl(cf->dataFork.extents[extent].startBlock) * (blockSize / 512) + partition.getStartLBA();
+        UInt64 count = ntohl(cf->dataFork.extents[extent].blockCount) * (blockSize / 512);
 
         // only need to read one sector?
         if(len <= 512)
@@ -244,4 +244,40 @@ int HierarchicalFileSystem::read(int fd, UInt8 *buf, int len)
 
     free(dbuf);
     return bytesread;
+}
+
+int HierarchicalFileSystem::stat(char *path, struct stat *s)
+{
+    if(path == 0 || *path == 0 || s == 0)
+        return -1;
+
+    HFSPlusCatalogFile *cf = (HFSPlusCatalogFile *)searchCatalog(path, kHFSPlusFileRecord);
+    if(cf == 0)
+        return -1;
+
+    s->st_dev = 0x0800;
+    s->st_ino = bswap32(cf->permissions.special.iNodeNum);
+    s->st_mode = 0x10000 | bswap16(cf->permissions.fileMode);
+    s->st_nlink = 0;
+    s->st_uid = bswap32(cf->permissions.ownerID);
+    s->st_gid = bswap32(cf->permissions.groupID);
+    s->st_rdev = 0;
+    s->st_size = bswap64(cf->dataFork.logicalSize);
+    s->st_blksize = blockSize;
+    s->st_blocks = 0;
+
+    for(int i = 0; i < 8; ++i)
+    {
+        if(cf->dataFork.extents[i].startBlock != 0)
+        {
+            UInt64 count = ntohl(cf->dataFork.extents[i].blockCount) * (blockSize/512);
+            s->st_blocks += count;
+        }
+    }
+
+    s->st_atime = bswap32(cf->accessDate);
+    s->st_mtime = bswap32(cf->contentModDate);
+    s->st_ctime = bswap32(cf->attributeModDate);
+
+    return 0;
 }

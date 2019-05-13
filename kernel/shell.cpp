@@ -134,6 +134,11 @@ void shellExecCommand()
       kprintf("%6d  %9dus  %9x       %d      %s\n", tcb->tid, tcb->timeUsed/1000,
         tcb->sp, tcb->state, tcb->name);
     }
+    for(TaskControlBlock *tcb = waitQ; tcb != 0; tcb = tcb->next)
+    {
+      kprintf("%6d  %9dus  %9x       %d      %s\n", tcb->tid, tcb->timeUsed/1000,
+        tcb->sp, tcb->state, tcb->name);
+    }
     unlock();
     return;
   }
@@ -143,18 +148,25 @@ void shellExecCommand()
     char *path = &shellBuffer[5];
     if(path == 0 || *path == 0)
       return;  
-      
+
     if(! rootfs->isMounted())
       return;
 
     int fd = rootfs->open(path);
     if(fd < 0)
     {
-      kprintf("Cannot open %s\n",path);
+      kprintf("Cannot open %s\n", path);
       return;
     }
-    UInt8 *buf = (UInt8*)malloc(4300);
-    kprintf("read %d bytes to %x\n", rootfs->read(fd, buf, 4300), (UInt64)buf);
+
+    struct stat stbuf;
+    if(rootfs->stat(path, &stbuf) != 0)
+    {
+      kprintf("Cannot stat %s\n", path);
+      return;
+    }
+    UInt8 *buf = (UInt8*)malloc(stbuf.st_size);
+    rootfs->read(fd, buf, stbuf.st_size);
     rootfs->close(fd);
     TaskControlBlock *user = Scheduler::createProcess((UInt64)buf, path);
     Scheduler::unblockTask(user); // put on run Q

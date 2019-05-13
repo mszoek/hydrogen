@@ -8,6 +8,15 @@
 
 #include <fonts/font.h>
 
+struct fbInfo
+{
+    void *fb;
+    UInt32 pitch;
+    UInt32 width;
+    UInt32 height;
+    UInt8 bpp;
+};
+
 class ScreenController
 {
 public:
@@ -29,6 +38,7 @@ public:
     void setBackColor(UInt32 c);
     void setFont(int f);
     void drawLogo();
+    int getFBInfo(struct fbInfo *fi);
 
 private:
     void *framebuffer;

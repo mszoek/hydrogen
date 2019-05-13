@@ -241,6 +241,7 @@ bool AHCIController::read(hbaPort *port, UInt16 *buf, UInt32 lba, UInt16 sectors
 
     // load 8K (16 sectors) per PRDT
     int i;
+    UInt16 _sectors = sectors; 
     for(i = 0; i < hdr->prdtLen - 1; ++i)
     {
         tbl->prdtEntry[i].dbaLo = (UInt32)(vmm->unmap((UInt64)buf) & 0xFFFFFFFF);
@@ -248,17 +249,17 @@ bool AHCIController::read(hbaPort *port, UInt16 *buf, UInt32 lba, UInt16 sectors
         tbl->prdtEntry[i].dbc = 8191; // always 1 less than actual value (8192 = 8K)
         tbl->prdtEntry[i].i = 1; // interrupt when ready
         buf += 4096; // 4K words = 8K bytes
-        sectors -= 16;
+        _sectors -= 16;
     }
     tbl->prdtEntry[i].dbaLo = (UInt32)(vmm->unmap((UInt64)buf) & 0xFFFFFFFF);
     tbl->prdtEntry[i].dbaHi = (UInt32)(vmm->unmap((UInt64)buf) >> 32);
-    tbl->prdtEntry[i].dbc = (sectors << 9) - 1; // 512 bytes per sector
+    tbl->prdtEntry[i].dbc = (_sectors << 9) - 1; // 512 bytes per sector
     tbl->prdtEntry[i].i = 1;
 
     SataFISRegH2D *fis = (SataFISRegH2D *)(&tbl->cFIS);
     fis->fisType = eFISTypeRegH2D;
     fis->cc = 1; // command
-    fis->command = ATA_CMD_READ_PIO;
+    fis->command = ATA_CMD_READ_DMA;
     fis->lba0 = (UInt8)lba;
     fis->lba1 = (UInt8)(lba >> 8);
     fis->lba2 = (UInt8)(lba >> 16);

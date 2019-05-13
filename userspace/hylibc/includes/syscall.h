@@ -10,7 +10,7 @@
 #define H2_SYSCALL_H
 
 #include <types.h>
-#include <syscalls.h> /* in kernel/includes */
+#include <syscalls.h> 
 
 int _syscall(int nr, UInt64 arg0, UInt64 arg1, UInt64 arg2, UInt64 arg3, UInt64 arg4);
 

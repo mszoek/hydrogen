@@ -257,3 +257,13 @@ void ScreenController::drawLogo()
     }
     setXY(0, gimp_image.height+fontHeight+2);
 }
+
+int ScreenController::getFBInfo(struct fbInfo *fi)
+{
+    fi->fb = framebuffer;
+    fi->pitch = pitch;
+    fi->width = width;
+    fi->height = height;
+    fi->bpp = bpp;
+    return 0;
+}

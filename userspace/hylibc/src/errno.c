@@ -1,9 +1,37 @@
-/*
- * H2 Standard C Library
- * Copyright (C) 2019 Zoe & Alexis Knox. All rights reserved.
- *
- * Third-party code linked with this library may be distributed under any
- * terms, but this library itself may not be modified.
- */
+/* _PDCLIB_errno
 
-unsigned int errno;
+   This file is part of the Public Domain C Library (PDCLib).
+   Permission is granted to use, modify, and / or redistribute at will.
+*/
+
+#ifndef REGTEST
+
+#include "pdclib/_PDCLIB_int.h"
+
+static int _PDCLIB_errno = 0;
+
+int * _PDCLIB_errno_func()
+{
+    return &_PDCLIB_errno;
+}
+
+#endif
+
+#ifdef TEST
+
+#include "_PDCLIB_test.h"
+
+#include <errno.h>
+
+int main( void )
+{
+    errno = 0;
+    TESTCASE( errno == 0 );
+    errno = EDOM;
+    TESTCASE( errno == EDOM );
+    errno = ERANGE;
+    TESTCASE( errno == ERANGE );
+    return TEST_RESULTS;
+}
+
+#endif
