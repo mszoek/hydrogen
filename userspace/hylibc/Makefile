@@ -1,5 +1,5 @@
 CC64=gcc
-CFLAGS=-g -D__STDC_NO_THREADS__ -Iincludes -nostdlib -ffreestanding -mno-red-zone -fstack-check=no -fstack-protector-explicit -fno-exceptions
+CFLAGS=-g -D__hydrogen -D__STDC_NO_THREADS__ -Iincludes -nostdlib -nostdinc -ffreestanding -mno-red-zone -fstack-check=no -fstack-protector-explicit -fno-exceptions
 LIB_SRCS=$(wildcard src/*.c)
 LIB_OBJS=${LIB_SRCS:.c=.o}
 

@@ -15,7 +15,8 @@
 #define SYSCALL_SEEK 7
 #define SYSCALL_READ 8
 #define SYSCALL_RENAME 9
+#define SYSCALL_UNLINK 10
 
-#define NR_SYSCALLS 9
+#define NR_SYSCALLS 10
 
 #endif // SYSCALLS_H

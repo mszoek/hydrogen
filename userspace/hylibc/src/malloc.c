@@ -14,17 +14,18 @@
 
 /* Declared implicitly by dlmalloc. This declaration avoids the warning. */
 #include <stdint.h>
+#include <stddef.h>
 void * sbrk( intptr_t );
 
 #ifndef REGTEST
 
-#include "_PDCLIB_config.h"
+#include "pdclib/_PDCLIB_config.h"
 
 /* Have all functions herein use the dl* prefix */
 #define USE_DL_PREFIX 1
 
 /* Thread safety */
-#define USE_LOCKS 1
+#define USE_LOCKS 0
 
 /* Hide all functions herein as internal to the library */
 #define DLMALLOC_EXPORT _PDCLIB_LOCAL
@@ -589,55 +590,13 @@ MAX_RELEASE_CHECK_RATE   default: 4095 unless not HAVE_MMAP
 #define DLMALLOC_EXPORT extern
 #endif
 
-#ifndef WIN32
-#ifdef _WIN32
-#define WIN32 1
-#endif  /* _WIN32 */
-#ifdef _WIN32_WCE
-#define LACKS_FCNTL_H
-#define WIN32 1
-#endif /* _WIN32_WCE */
-#endif  /* WIN32 */
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <tchar.h>
-#define HAVE_MMAP 1
-#define HAVE_MORECORE 0
-#define LACKS_UNISTD_H
+/* Hydrogen defaults */
 #define LACKS_SYS_PARAM_H
+#define LACKS_UNISTD_H
 #define LACKS_SYS_MMAN_H
-#define LACKS_STRING_H
-#define LACKS_STRINGS_H
-#define LACKS_SYS_TYPES_H
-#define LACKS_ERRNO_H
-#define LACKS_SCHED_H
-#ifndef MALLOC_FAILURE_ACTION
-#define MALLOC_FAILURE_ACTION
-#endif /* MALLOC_FAILURE_ACTION */
-#ifndef MMAP_CLEARS
-#ifdef _WIN32_WCE /* WINCE reportedly does not clear */
-#define MMAP_CLEARS 0
-#else
-#define MMAP_CLEARS 1
-#endif /* _WIN32_WCE */
-#endif /*MMAP_CLEARS */
-#endif  /* WIN32 */
-
-#if defined(DARWIN) || defined(_DARWIN)
-/* Mac OSX docs advise not to use sbrk; it seems better to use mmap */
-#ifndef HAVE_MORECORE
-#define HAVE_MORECORE 0
-#define HAVE_MMAP 1
-/* OSX allocators provide 16 byte alignment */
-#ifndef MALLOC_ALIGNMENT
-#define MALLOC_ALIGNMENT ((size_t)16U)
-#endif
-#endif  /* HAVE_MORECORE */
-#endif  /* DARWIN */
 
 #ifndef LACKS_SYS_TYPES_H
-#include <sys/types.h>  /* For size_t */
+#include <types.h>  /* For size_t */
 #endif  /* LACKS_SYS_TYPES_H */
 
 /* The maximum possible size_t value has all bits set */
@@ -703,18 +662,13 @@ MAX_RELEASE_CHECK_RATE   default: 4095 unless not HAVE_MMAP
 #define MALLOC_INSPECT_ALL 0
 #endif  /* MALLOC_INSPECT_ALL */
 #ifndef HAVE_MMAP
-#define HAVE_MMAP 1
+#define HAVE_MMAP 0
 #endif  /* HAVE_MMAP */
 #ifndef MMAP_CLEARS
-#define MMAP_CLEARS 1
+#define MMAP_CLEARS 0
 #endif  /* MMAP_CLEARS */
 #ifndef HAVE_MREMAP
-#ifdef linux
-#define HAVE_MREMAP 1
-#define _GNU_SOURCE /* Turns on mremap() definition */
-#else   /* linux */
 #define HAVE_MREMAP 0
-#endif  /* linux */
 #endif  /* HAVE_MREMAP */
 #ifndef MALLOC_FAILURE_ACTION
 #define MALLOC_FAILURE_ACTION  errno = ENOMEM;

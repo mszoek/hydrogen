@@ -14,14 +14,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "sys/types.h"
-#include "sys/stat.h"
-#include "fcntl.h"
-#ifdef __ANDROID__
-/* Getting the sigset_t typedef for Termux */
-#include "bits/signal_types.h"
-#endif
-#include "unistd.h"
+#include <types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #ifndef __STDC_NO_THREADS__
 #include <threads.h>

@@ -4,20 +4,16 @@
    Permission is granted to use, modify, and / or redistribute at will.
 */
 
-/* This is an example implementation of remove() fit for use with POSIX kernels.
-*/
-
 #include <stdio.h>
+#include <syscall.h>
 
 #ifndef REGTEST
 
 #include <string.h>
 
-#include "/usr/include/errno.h"
+#include "errno.h"
 
 extern struct _PDCLIB_file_t * _PDCLIB_filelist;
-
-extern int unlink( const char * pathname );
 
 int remove( const char * pathname )
 {
@@ -31,7 +27,7 @@ int remove( const char * pathname )
         }
         current = current->next;
     }
-    if ( ( rc = unlink( pathname ) ) == -1 )
+    if ( ( rc = _syscall(SYSCALL_UNLINK, (UInt64)pathname, 0, 0, 0, 0) ) == -1 )
     {
         /* The 1:1 mapping in _PDCLIB_config.h ensures this works. */
         *_PDCLIB_errno_func() = errno;

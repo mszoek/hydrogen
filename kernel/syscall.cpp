@@ -44,10 +44,25 @@ int syscall(int nr, UInt64 arg0, UInt64 arg1, UInt64 arg2, UInt64 arg3, UInt64 a
             Scheduler::terminateTask();
             break;
         case SYSCALL_STAT:
-            rc = rootfs->stat((char *)arg0, (struct stat *)arg1);
+            if(arg2 == 0)
+                rc = rootfs->stat((char *)arg0, (struct stat *)arg1);
+            else if(arg2 == 1)
+                rc = rootfs->fstat(arg0, (struct stat *)arg1);
+            else
+                rc = -1;
             break;
         case SYSCALL_FBINFO:
             rc = ((ScreenController *)g_controllers[CTRL_SCREEN])->getFBInfo((struct fbInfo *)arg0);
+            break;
+        case SYSCALL_OPEN:
+            rc = rootfs->open((char *)arg0);
+            break;
+        case SYSCALL_CLOSE:
+            rc = 0;
+            rootfs->close(arg0);
+            break;
+        case SYSCALL_READ:
+            rc = rootfs->read(arg0, (UInt8 *)arg1, arg2);
             break;
     }
 

@@ -3,7 +3,7 @@ CFLAGS=-g -I../hylibc/includes -nostdlib -ffreestanding -mno-red-zone -fstack-ch
 LDFLAGS=-nostdlib -ffreestanding -L../hylibc -Wl,--oformat=binary
 LIBS=-lc
 
-all: clean statkern.bin box.bin userfunc.bin
+all: clean statkern.bin box.bin userfunc.bin hello.bin
 
 clean:
 	rm -f *.o

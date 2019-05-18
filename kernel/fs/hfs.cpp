@@ -246,15 +246,9 @@ int HierarchicalFileSystem::read(int fd, UInt8 *buf, int len)
     return bytesread;
 }
 
-int HierarchicalFileSystem::stat(char *path, struct stat *s)
+
+int HierarchicalFileSystem::_stat(HFSPlusCatalogFile *cf, struct stat *s)
 {
-    if(path == 0 || *path == 0 || s == 0)
-        return -1;
-
-    HFSPlusCatalogFile *cf = (HFSPlusCatalogFile *)searchCatalog(path, kHFSPlusFileRecord);
-    if(cf == 0)
-        return -1;
-
     s->st_dev = 0x0800;
     s->st_ino = bswap32(cf->permissions.special.iNodeNum);
     s->st_mode = 0x10000 | bswap16(cf->permissions.fileMode);
@@ -280,4 +274,25 @@ int HierarchicalFileSystem::stat(char *path, struct stat *s)
     s->st_ctime = bswap32(cf->attributeModDate);
 
     return 0;
+}
+
+int HierarchicalFileSystem::stat(char *path, struct stat *s)
+{
+    if(path == 0 || *path == 0 || s == 0)
+        return -1;
+
+    HFSPlusCatalogFile *cf = (HFSPlusCatalogFile *)searchCatalog(path, kHFSPlusFileRecord);
+    if(cf == 0)
+        return -1;
+
+    return _stat(cf, s);
+}
+
+int HierarchicalFileSystem::fstat(int fd, struct stat *s)
+{
+    if(fd < 0 || fd >= FD_MAX || fdMap[fd].fdtype != FDTYPE_CATFILE)
+        return -1;
+
+    HFSPlusCatalogFile *cf = (HFSPlusCatalogFile *)fdMap[fd].entry;
+    return _stat(cf, s);
 }

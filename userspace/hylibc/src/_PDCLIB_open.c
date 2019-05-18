@@ -5,16 +5,16 @@
 */
 
 #include <stdio.h>
+#include <types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <syscall.h>
 
 #ifndef REGTEST
 
 #include "pdclib/_PDCLIB_glue.h"
 
-#include "sys/types.h"
-#include "sys/stat.h"
-#include "fcntl.h"
-#include "unistd.h"
+// #include "unistd.h"
 
 #include "errno.h"
 

@@ -299,10 +299,12 @@ public:
     void close(int fd);
     int read(int fd, UInt8 *buf, int len);
     int stat(char *path, struct stat *s);
+    int fstat(int fd, struct stat *s);
 
 private:
     bool readVolumeHeader();
     void *searchCatalog(const char *path, UInt16 kind);
+    int _stat(HFSPlusCatalogFile *cf, struct stat *s);
 
     Partition partition; // where this fs lives
     bool mounted;
