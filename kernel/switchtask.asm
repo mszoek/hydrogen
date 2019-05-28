@@ -84,6 +84,7 @@ switchTask:
     cmp rax, rcx
     je .sameVAS
     mov cr3, rax
+    
 
 .sameVAS:
     pop rbp                 ; get regs from the new stack
