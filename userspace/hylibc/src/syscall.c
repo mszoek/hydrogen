@@ -9,9 +9,9 @@
 #include <syscall.h>
 #include <errno.h>
 
-int _syscall(int nr, UInt64 arg0, UInt64 arg1, UInt64 arg2, UInt64 arg3, UInt64 arg4)
+UInt64 _syscall(int nr, UInt64 arg0, UInt64 arg1, UInt64 arg2, UInt64 arg3, UInt64 arg4)
 {
-    int rc = 0;
+    UInt64 rc = 0;
 
     if(nr == 0 || nr > NR_SYSCALLS)
     {

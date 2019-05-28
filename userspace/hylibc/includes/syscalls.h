@@ -12,11 +12,13 @@
 #define SYSCALL_FBINFO 4
 #define SYSCALL_OPEN 5
 #define SYSCALL_CLOSE 6
-#define SYSCALL_SEEK 7
-#define SYSCALL_READ 8
-#define SYSCALL_RENAME 9
-#define SYSCALL_UNLINK 10
+#define SYSCALL_SEEK 7 /* FIXME: not impl */
+#define SYSCALL_READ 8 /* FIXME: handle reading from offset into file */
+#define SYSCALL_RENAME 9 /* FIXME: not impl */
+#define SYSCALL_UNLINK 10 /* FIXME: not impl */
+#define SYSCALL_SBRK 11
+#define SYSCALL_RTCREAD 12
 
-#define NR_SYSCALLS 10
+#define NR_SYSCALLS 12
 
 #endif // SYSCALLS_H

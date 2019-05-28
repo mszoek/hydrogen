@@ -11,11 +11,13 @@
 
 #include "pdclib/_PDCLIB_glue.h"
 
+extern void _fini(void);
 void _Exit( int status )
 {
     /* TODO: Flush and close open streams. Remove tmpfile() files. Make this
        called on process termination automatically.
     */
+    _fini();
     _PDCLIB_Exit( status );
 }
 

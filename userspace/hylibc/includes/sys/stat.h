@@ -9,7 +9,13 @@
 #ifndef H2_STAT_H
 #define H2_STAT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <types.h>
+
+#define FD_MAX 1024
 
 struct stat
 {
@@ -49,5 +55,12 @@ struct stat
 
 int stat(const char *path, struct stat *stbuf);
 int fstat(int fd, struct stat *stbuf);
+
+int open(const char *path, int flags, ...);
+int close(int fd);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

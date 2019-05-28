@@ -7,6 +7,10 @@
 #ifndef _PDCLIB_SIGNAL_H
 #define _PDCLIB_SIGNAL_H _PDCLIB_SIGNAL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "pdclib/_PDCLIB_config.h"
 
 /* Signals ------------------------------------------------------------------ */
@@ -80,5 +84,9 @@ void (*signal( int sig, void (*func)( int ) ) )( int );
    or SIG_IGN will end the program).
    Returns zero if successful, nonzero otherwise. */
 int raise( int sig );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

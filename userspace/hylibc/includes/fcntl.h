@@ -9,6 +9,10 @@
 #ifndef H2_FCNTL_H
 #define H2_FCNTL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define O_RDONLY 00
 #define O_WRONLY 01
 #define O_RDWR   02
@@ -19,5 +23,9 @@
 #define O_TRUNC    01000
 #define O_APPEND   02000
 #define O_NONBLOCK 04000
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
