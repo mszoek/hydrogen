@@ -4,29 +4,26 @@
    Permission is granted to use, modify, and / or redistribute at will.
 */
 
+#include <types.h>
 #include <time.h>
+#include <syscall.h>
 
 #ifndef REGTEST
 
-#ifdef __ANDROID__
-/* Getting the sigset_t typedef for Termux */
-#define _STRUCT_TIMESPEC
-#include "bits/signal_types.h"
-#endif
 #include "sys/time.h"
 
 /* See comments in time.h on the semantics of time_t. */
 
 time_t time( time_t * timer )
 {
-    struct timeval tv;
-    if ( gettimeofday( &tv, NULL ) == 0 )
+    UInt64 now = _syscall(SYSCALL_RTCREAD, 0, 0, 0, 0, 0);
+    if ( now > 0 )
     {
         if ( timer != NULL )
         {
-            *timer = tv.tv_sec;
+            *timer = now;
         }
-        return tv.tv_sec;
+        return now;
     }
     return -1;
 }

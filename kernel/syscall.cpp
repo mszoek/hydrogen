@@ -9,6 +9,7 @@
 #include <kstdio.h>
 #include <kernel.h>
 #include <hw/screen.h>
+#include <hw/rtc.h>
 
 #define KERNEL_HFS
 #include <fs/hfs.h>
@@ -30,14 +31,18 @@ extern "C" int _syscall(void)
     return syscall(nr, arg0, arg1, arg2, arg3, arg4);
 }
 
-int syscall(int nr, UInt64 arg0, UInt64 arg1, UInt64 arg2, UInt64 arg3, UInt64 arg4)
+UInt64 syscall(int nr, UInt64 arg0, UInt64 arg1, UInt64 arg2, UInt64 arg3, UInt64 arg4)
 {
-    int rc = 0;
+    UInt64 rc = 0;
     switch(nr)
-    {   
+    {
         case SYSCALL_WRITE:
-            kprint(arg0);
-            rc = 0;
+            /* FIXME: do proper write! arg0: fd, arg1: buffer, arg2: length */
+            if(arg0 > 0 && arg0 < 3) /* stdout or stderr */
+                kprint((const char *)arg1);
+            else
+                kprintf("syscall write: %d,%x,%d",arg0,arg1,arg2);
+            rc = arg2; // return number of bytes written
             break;
         case SYSCALL_EXIT:
             rc = 0;
@@ -63,6 +68,12 @@ int syscall(int nr, UInt64 arg0, UInt64 arg1, UInt64 arg2, UInt64 arg3, UInt64 a
             break;
         case SYSCALL_READ:
             rc = rootfs->read(arg0, (UInt8 *)arg1, arg2);
+            break;
+        case SYSCALL_SBRK:
+            rc = (UInt64)vmm->sbrk(arg0);
+            break;
+        case SYSCALL_RTCREAD:
+            rc = (UInt64)rtcRead();
             break;
     }
 

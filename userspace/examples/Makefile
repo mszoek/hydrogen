@@ -1,18 +1,27 @@
+LIBC=../hylibc
 CC=gcc
 CFLAGS=-g -I../hylibc/includes -nostdlib -ffreestanding -mno-red-zone -fstack-check=no -fstack-protector-explicit -fno-exceptions
-LDFLAGS=-nostdlib -ffreestanding -L../hylibc -Wl,--oformat=binary
 LIBS=-lc
+LD=ld
+LDFLAGS=-Tlinker.ld -L$(LIBC) -e_start
+CRTI=$(LIBC)/crti.o
+CRTN=$(LIBC)/crtn.o
+CRT0=$(LIBC)/crt0.o
 
-all: clean statkern.bin box.bin userfunc.bin hello.bin
+all: distclean gettime.bin statkern.bin box.bin userfunc.bin hello.bin
 
 clean:
 	rm -f *.o
 
 distclean: clean
-	rm -f *.bin
+	rm -f *.bin *.elf
 
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 %.bin: %.o
-	$(CC) $(LDFLAGS) -o $@ $< $(LIBS)
+	$(LD) --oformat=binary $(LDFLAGS) -o $@ $(CRT0) $(CRTI) $< $(LIBS) $(CRTN)
+
+%.elf: %.o
+	$(LD) $(LDFLAGS) -o $@ $(CRT0) $(CRTI) $< $(LIBS) $(CRTN)
+
