@@ -56,6 +56,7 @@ typedef struct _TaskControlBlock
         UInt64 timeUsed;
         UInt64 lastTime;
         UInt64 wakeTime;
+        UInt64 brk;     // end of process data segment (0 for kernel tasks)
         char name[48]; 
 } __attribute__((packed)) TaskControlBlock;
 
@@ -83,7 +84,7 @@ extern TaskControlBlock *waitQ;   // waiting tasks (for i/o, mutex, etc)
 extern "C" void switchTask(TaskControlBlock *task);
 extern "C" void switchUserland();
 
-/* TEKPORARY Big Kernel Lock (not scheduler lock below) */
+/* TEMPORARY Big Kernel Lock (not scheduler lock below) */
 void lock();
 void unlock();
 
@@ -96,7 +97,7 @@ class Scheduler
 public:
     static void init();
     static TaskControlBlock *createTask(void (&entry)(), char *name = 0);
-    static TaskControlBlock *createProcess(UInt64 entry, char *name);
+    static TaskControlBlock *createProcess(UInt64 entry, UInt64 brk, char *name);
     static void updateTimeUsed();
     static void blockTask(TaskState state); // block the running task
     static void unblockTask(TaskControlBlock *task);

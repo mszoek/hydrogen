@@ -18,6 +18,7 @@
 #include <shell.h>
 #include <hw/byteswap.h>
 #include <sched.h>
+#include <hw/rtc.h>
 
 // some global stuff
 PhysicalMemoryManager *pmm = 0;
@@ -28,6 +29,7 @@ char rootGUID[40]; // root filesystem GUID from cmdline
 Partition *rootPartition = 0;
 HierarchicalFileSystem *rootfs = 0;
 struct multiboot_info bootinfo;
+UInt64 bootTime; // POSIX time (seconds since the Epoch)
 
 bool verbose = false;
 bool debug = false;
@@ -132,6 +134,8 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
   ctrlPCI->pciEnumBuses();
   asm volatile("sti"); // Start interrupts!
   ctrlPCI->startDevices();
+
+  bootTime = rtcRead();
 
   // look for partition tables if we found some disks.
   // enumerate them all so they get displayed, even if no root UUID to mount

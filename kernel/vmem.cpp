@@ -6,6 +6,7 @@
 #include <kernel.h>
 #include <kstdio.h>
 #include <vmem.h>
+#include <sched.h> // for curTask in sbrk()
 
 VirtualMemoryManager::VirtualMemoryManager()
 {
@@ -86,13 +87,23 @@ UInt64 VirtualMemoryManager::unmap(UInt64 virt)
 
 UInt64 VirtualMemoryManager::remap(UInt64 phys, UInt64 size)
 {
-	return remap(phys, size, VMA_BASE+phys);
+	return remap((UInt64)pml4t, phys, size, VMA_BASE+phys);
 }
 
 UInt64 VirtualMemoryManager::remap(UInt64 phys, UInt64 size, UInt64 virt)
 {
+	return remap((UInt64)pml4t, phys, size, virt);
+}
+
+UInt64 VirtualMemoryManager::remap(UInt64 cr3, UInt64 phys, UInt64 size, UInt64 virt)
+{
 	if(phys < 0x100000)
 		return phys;	// first 1MB is identity mapped
+
+  UInt64 *mypml4t = (UInt64 *)cr3;
+  int perm = 3; // supervisor (ring 0) page
+  if(mypml4t != pml4t)
+    perm = 7; // user (ring 3) page
 
 	UInt64 orig = virt;
 	UInt64 end = virt+size;
@@ -113,18 +124,18 @@ UInt64 VirtualMemoryManager::remap(UInt64 phys, UInt64 size, UInt64 virt)
 		if(pml4t[pml4Idx] == 0)
 		{
 			// create a new pdpt for this 512GB
-			pml4t[pml4Idx] = (UInt64)pmm->allocBlock();
-			memset((UInt32 *)(pml4t[pml4Idx]+KERNEL_VMA), 0, 1024);
-			pml4t[pml4Idx] |= 7;
+			mypml4t[pml4Idx] = (UInt64)pmm->allocBlock();
+			memset((UInt32 *)(mypml4t[pml4Idx]+KERNEL_VMA), 0, 1024);
+			mypml4t[pml4Idx] |= perm;
 		}
 
-		UInt64 *mypdpt = (UInt64 *)((pml4t[pml4Idx] & ~0x0FFF) | KERNEL_VMA);
+		UInt64 *mypdpt = (UInt64 *)((mypml4t[pml4Idx] & ~0x0FFF) | KERNEL_VMA);
 		if(mypdpt[pdptIdx] == 0)
 		{
 			// create a new pdt for this 1GB
 			mypdpt[pdptIdx] = (UInt64)pmm->allocBlock();
 			memset((UInt32 *)(mypdpt[pdptIdx] | KERNEL_VMA), 0, 1024);
-			mypdpt[pdptIdx] |= 7;
+			mypdpt[pdptIdx] |= perm;
 		}
 
 		UInt64 *mypdt = (UInt64 *)((mypdpt[pdptIdx] & ~0x0FFF) | KERNEL_VMA);
@@ -133,11 +144,11 @@ UInt64 VirtualMemoryManager::remap(UInt64 phys, UInt64 size, UInt64 virt)
 			// create a new pt for this 2MB
 			mypdt[pdtIdx] = (UInt64)pmm->allocBlock();
 			memset((UInt32 *)(mypdt[pdtIdx] | KERNEL_VMA), 0, 1024);
-			mypdt[pdtIdx] |= 7;
+			mypdt[pdtIdx] |= perm;
 		}
 
 		UInt64 *mypt = (UInt64 *)((mypdt[pdtIdx] & ~0x0FFF) | KERNEL_VMA);
-		mypt[ptIdx] = phys | 7; // mark page present and writable
+		mypt[ptIdx] = phys | perm; // mark page present and writable
 
 		virt += 4096;
 		phys += 4096;
@@ -157,29 +168,32 @@ void *VirtualMemoryManager::malloc(const unsigned int size)
       {
         void *initpool = (void *)remap((UInt64)pmm->allocBlock(2), 2*PMM_BLOCK_SIZE);
 
-        // memory for the poolNode structures
-        UInt8 *initptr = (UInt8 *)initpool;
-
-        // and a block for this pool
-        void *block = initptr + PMM_BLOCK_SIZE;
-        memset((char *)block, 0, PMM_BLOCK_SIZE);
-
-        // carve the block into 'size' chunks on the free list
-        int count = PMM_BLOCK_SIZE / (pools[i].size + sizeof(mallocHeader)) - 1;
-        while(count >= 0)
+        if(initpool != 0)
         {
-          poolNode *tmp = (poolNode *)initptr;
-          tmp->chunk = (UInt8 *)block + (count * (pools[i].size + sizeof(mallocHeader)));
-          tmp->prev = 0;
-          tmp->next = pools[i].free;
-          pools[i].free->prev = tmp;
-          pools[i].free = tmp;
+          // memory for the poolNode structures
+          UInt8 *initptr = (UInt8 *)initpool;
 
-          count--;
-          initptr += sizeof(poolNode);
-          pools[i].nrFreeChunks++;
+          // and a block for this pool
+          void *block = initptr + PMM_BLOCK_SIZE;
+          memset((char *)block, 0, PMM_BLOCK_SIZE);
+
+          // carve the block into 'size' chunks on the free list
+          int count = PMM_BLOCK_SIZE / (pools[i].size + sizeof(mallocHeader)) - 1;
+          while(count >= 0)
+          {
+            poolNode *tmp = (poolNode *)initptr;
+            tmp->chunk = (UInt8 *)block + (count * (pools[i].size + sizeof(mallocHeader)));
+            tmp->prev = 0;
+            tmp->next = pools[i].free;
+            pools[i].free->prev = tmp;
+            pools[i].free = tmp;
+
+            count--;
+            initptr += sizeof(poolNode);
+            pools[i].nrFreeChunks++;
+          }
+          // kprintf("pool %d poolsize %d new free chunks %d\n",i,pools[i].size,pools[i].nrFreeChunks);
         }
-        // kprintf("pool %d poolsize %d new free chunks %d\n",i,pools[i].size,pools[i].nrFreeChunks);
       }
       
       if(size <= pools[i].size && pools[i].nrFreeChunks > 0)
@@ -213,6 +227,8 @@ void *VirtualMemoryManager::malloc(const unsigned int size)
     int newsize = size + sizeof(mallocHeader);
     int blocks = newsize / PMM_BLOCK_SIZE + (newsize % PMM_BLOCK_SIZE ? 1 : 0);
     void *p = (void *)remap((UInt64)pmm->allocBlock(blocks), newsize);
+    if(p == 0)
+      return 0; // out of memory!
     ((mallocHeader *)p)->magic = 0xEE000000 | MALLOC_MAGIC;
     ((mallocHeader *)p)->node = (poolNode *)size; // we need this to free!
     // kprintf("malloc(%d)=%x p=%x blocks=%d magic=%x\n",size,p,(UInt32)p+sizeof(mallocHeader),blocks,((mallocHeader *)p)->magic);
@@ -220,7 +236,7 @@ void *VirtualMemoryManager::malloc(const unsigned int size)
     return p;
   }
 
-  kprintf("malloc(): no pool for alloc of %d bytes\n",size);
+  kprintf("malloc(): cannot alloc %d bytes\n",size);
   return (void *)0;
 }
 
@@ -281,4 +297,26 @@ void VirtualMemoryManager::free(void *p)
     // kprintf("free() %x magic=%x INVALID\n", p, magic);
     kprintf("free: %x invalid malloc header! Memory corrupt or double free?\n",p);
   }  
+}
+
+void *VirtualMemoryManager::sbrk(SInt64 increment)
+{
+  /* We're adding memory to a user process by increasing its data segment.
+   * Generally: malloc some bytes, map into contiguous memory above the 
+   * current segment end, return the start of the new region
+   * 
+   * sbrk() should free memory with a negative increment but this one never
+   * gives back what was allocated.
+   */
+
+  if(increment <= 0)
+    return curTask->brk;
+
+  void *block = malloc(increment);
+  if(block == 0)
+    return (void *)-1;
+  UInt64 brk = curTask->brk;
+  remap(curTask->vas, block, increment, brk);
+  curTask->brk = brk+increment;
+  return (void *)brk;
 }

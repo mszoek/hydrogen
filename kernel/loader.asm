@@ -57,7 +57,7 @@ start:
 
 	mov edi, cr3
 	mov ebx, pdpt - base
-	or ebx, 7
+	or ebx, 3
 	mov DWORD [edi], ebx ; point PML4T to PDPT
 
 	mov edi, pdpt - base
@@ -67,7 +67,7 @@ start:
 
 	mov edi, pdpt - base
 	mov ebx, pdt - base
-	or ebx, 7
+	or ebx, 3
 	mov DWORD [edi], ebx ; point PDPT to PDT
 	add edi, 0xf80
 	add ebx, 0x1000
@@ -80,7 +80,7 @@ start:
 
 	mov edi, pdt - base
 	mov ebx, pt - base
-	or ebx, 7
+	or ebx, 3
 	mov DWORD [edi], ebx ; point PDT[0] to PT[0]
 	add ebx, 0x1000
 	add edi, 8
@@ -93,7 +93,7 @@ start:
 	add edi, 0x1000 ; base of our PDT for this 1GB
 	mov ebx, pt - base
 	add ebx, 0x3000
-	or ebx, 7
+	or ebx, 3
 	mov DWORD [edi], ebx ; point PDT[512] to PT[1536]
 	add edi, 8
 	add ebx, 0x1000
@@ -116,7 +116,7 @@ setEntry:
 	; map the same 6MB into 0x7C00000000
 	mov edi, pt - base
 	add edi, 0x3000
-	mov ebx, 0x7
+	mov ebx, 0x3
 	mov ecx, 0x600
 setEntry4:
 	mov DWORD [edi], ebx

@@ -168,7 +168,7 @@ void shellExecCommand()
     UInt8 *buf = (UInt8*)malloc(stbuf.st_size);
     rootfs->read(fd, buf, stbuf.st_size);
     rootfs->close(fd);
-    TaskControlBlock *user = Scheduler::createProcess((UInt64)buf, path);
+    TaskControlBlock *user = Scheduler::createProcess((UInt64)buf, buf + stbuf.st_size, path);
     Scheduler::unblockTask(user); // put on run Q
     return;
   }

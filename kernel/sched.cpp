@@ -243,6 +243,7 @@ TaskControlBlock *Scheduler::createTask(void (&entry)(), char *name)
   tcb->priority = 1;
   tcb->timeSlice = 1 + tcb->priority;
   tcb->entry = 0;
+  tcb->brk = 0;
   tcb->state = readyToRun;
   if(name)
     strcpy(tcb->name, name);
@@ -296,6 +297,7 @@ void Scheduler::taskReaper(void)
         free((void *)(task->rsp3 - USER_STACK_SIZE));
       if(task->entry != 0)
         free((void *)task->entry); // free memory used by process image
+      // FIXME: free user page tables and stack
       free(task);
     }
     wait();
@@ -303,13 +305,41 @@ void Scheduler::taskReaper(void)
   }
 }
 
-TaskControlBlock *Scheduler::createProcess(UInt64 entry, char *name)
+TaskControlBlock *Scheduler::createProcess(UInt64 entry, UInt64 brk, char *name)
 {
   TaskControlBlock *user = Scheduler::createTask(switchUserland, name);
   user->rsp3 = (UInt64)malloc(USER_STACK_SIZE);
   memset((char *)user->rsp3, 0, USER_STACK_SIZE);
+
+  /* Set up page tables for this process. We need to copy the kernel tables
+   * so that switchTask can continue executing past the CR3 update. All user
+   * memory should be in user page tables so the kernel tables will only have
+   * kernel pages - we hope! I don't want process A to be able to read process B
+   * memory.
+   */
+  UInt64 *l4 = (UInt64 *)pmm->allocBlock();
+  user->vas = (UInt64)l4;
+  l4 = vmm->remap(l4, PMM_BLOCK_SIZE, KERNEL_VMA);
+  memcpy((char *)l4, (char *)pml4t, 4096);
+
+  UInt64 *pdp = (UInt64 *)pmm->allocBlock();
+  l4[0] = (UInt64)pdp | 7; // map 0-512 GB
+  pdp = vmm->remap(pdp, PMM_BLOCK_SIZE, KERNEL_VMA);
+  memcpy((char *)pdp, (char *)pdpt, 4096);
+
+  UInt64 *pd = (UInt64 *)pmm->allocBlock();
+  pdp[0] = (UInt64)pd | 7; // map 0-1 GB
+  pd = vmm->remap(pd, PMM_BLOCK_SIZE, KERNEL_VMA);
+  memcpy((char *)pd, (char *)pdt, 4096);
+
+  // now map the process image at 6 MB
+  vmm->remap((UInt64)l4, (UInt64)vmm->unmap(entry), brk - entry, 0x600000);
+  // and its stack at 4 MB
+  vmm->remap((UInt64)l4, (UInt64)vmm->unmap(user->rsp3), USER_STACK_SIZE, 0x400000);
+
   user->rsp3 += USER_STACK_SIZE;
-  user->usersp = user->rsp3;
-  user->entry = entry;
+  user->usersp = 0x400010 + USER_STACK_SIZE;
+  user->brk = 0x600010 + (brk - entry);
+
   return user;
 }

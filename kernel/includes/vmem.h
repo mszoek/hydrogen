@@ -37,8 +37,11 @@ public:
     UInt64 unmap(UInt64 virt);
 	UInt64 remap(UInt64 phys, UInt64 size);
 	UInt64 remap(UInt64 phys, UInt64 size, UInt64 virt);
+	UInt64 remap(UInt64 cr3, UInt64 phys, UInt64 size, UInt64 virt);
 	void *malloc(unsigned int size);
     void free(void *p);
+    void *sbrk(SInt64 increment); // used by libc malloc
+    UInt64 mapuser(UInt64 virt, UInt64 size, UInt64 dest);
 
 private:
 	/* memory pools for small allocs */

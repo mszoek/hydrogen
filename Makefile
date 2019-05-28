@@ -14,7 +14,7 @@ CXXFLAGS=$(CFLAGS) -fno-rtti -fpermissive -Wno-write-strings
 HDSIZE=20480
 
 
-all: clean kernel.bin mkiso
+all: clean kernel.bin mkiso libc bin
 
 mkiso:
 	cp -f kernel.bin iso/kernel.bin
@@ -71,3 +71,9 @@ clean:
 	rm -f bootsect.bin kernel.bin kernel.o
 	rm -f kernel.elf $(KERNEL_OBJ)
 	find . -name \*.o.s -exec rm {} \;
+
+libc:
+	$(MAKE) -C userspace/hylibc
+
+bin:
+	$(MAKE) -C userspace/examples
