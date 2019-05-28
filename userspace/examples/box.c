@@ -10,7 +10,7 @@ struct fbInfo
 } fbi;
 void putpixel(int x, int y, unsigned int color);
 
-void _start(void)
+int main(int argc, char **argv)
 {
     int r = _syscall(SYSCALL_FBINFO, (UInt64)&fbi, 0, 0, 0, 0);
     int x1 = 200, x2 = 1720, y1 = 400, y2 = 800;
@@ -37,7 +37,7 @@ void _start(void)
         color += 0x0408;
     }
 
-    _syscall(SYSCALL_EXIT, r, 0, 0, 0, 0);
+    return 0;
 }
 
 void putpixel(int x, int y, unsigned int color)

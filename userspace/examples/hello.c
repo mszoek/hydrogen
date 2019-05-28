@@ -1,9 +1,5 @@
 #include <stdio.h>
-
-int _start(void)
-{
-    return main();
-}
+#include <stdlib.h>
 
 int main(void)
 {

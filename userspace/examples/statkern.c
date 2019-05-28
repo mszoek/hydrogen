@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
-void _start(void)
+int main(int argc, char **argv)
 {
   const char *s = "kernel.bin";
   struct stat stbuf;
