@@ -75,5 +75,8 @@ clean:
 libc:
 	$(MAKE) -C userspace/hylibc
 
-bin:
+examples:
 	$(MAKE) -C userspace/examples
+
+bin:
+	$(MAKE) -C userspace/bin

@@ -85,6 +85,50 @@ UInt64 VirtualMemoryManager::unmap(UInt64 virt)
     return virt;  
 }
 
+UInt64 VirtualMemoryManager::unmap(UInt64 virt, UInt64 size, UInt64 cr3)
+{
+  UInt64 phys = unmap(virt);
+
+	if(phys < 0x100000)
+		return phys;	// first 1MB is identity mapped
+
+  UInt64 *mypml4t = (UInt64 *)cr3;
+	UInt64 orig = virt;
+	UInt64 end = virt+size;
+	while(virt < end)
+	{
+		// find the page table indexes for our virtual addr
+		int pml4Idx = (UInt64)(virt / (512UL*GB));
+		UInt64 v = (virt - (512*GB*pml4Idx));
+
+		int pdptIdx = v / GB;
+		v = v - (pdptIdx*GB);
+
+		int pdtIdx = v / (2*MB);
+		v = v - (pdtIdx*2*MB);
+
+		int ptIdx = v / 4096;
+
+		if(pml4t[pml4Idx] == 0) // not mapped if not in table
+      return phys;
+
+		UInt64 *mypdpt = (UInt64 *)((mypml4t[pml4Idx] & ~0x0FFF) | KERNEL_VMA);
+		if(mypdpt[pdptIdx] == 0) // not mapped if not in table
+      return phys;
+
+		UInt64 *mypdt = (UInt64 *)((mypdpt[pdptIdx] & ~0x0FFF) | KERNEL_VMA);
+		if(mypdt[pdtIdx] == 0) // not mapped if not in table
+      return phys;
+
+		UInt64 *mypt = (UInt64 *)((mypdt[pdtIdx] & ~0x0FFF) | KERNEL_VMA);
+		mypt[ptIdx] = 0; // mark page absent
+
+		virt += 4096;
+  }
+
+  return phys;
+}
+
 UInt64 VirtualMemoryManager::remap(UInt64 phys, UInt64 size)
 {
 	return remap((UInt64)pml4t, phys, size, VMA_BASE+phys);
@@ -121,7 +165,7 @@ UInt64 VirtualMemoryManager::remap(UInt64 cr3, UInt64 phys, UInt64 size, UInt64 
 
 		int ptIdx = v / 4096;
 
-		if(pml4t[pml4Idx] == 0)
+		if(mypml4t[pml4Idx] == 0)
 		{
 			// create a new pdpt for this 512GB
 			mypml4t[pml4Idx] = (UInt64)pmm->allocBlock();
@@ -310,13 +354,13 @@ void *VirtualMemoryManager::sbrk(SInt64 increment)
    */
 
   if(increment <= 0)
-    return curTask->brk;
+    return (void *)curTask->brk;
 
   void *block = malloc(increment);
   if(block == 0)
     return (void *)-1;
   UInt64 brk = curTask->brk;
-  remap(curTask->vas, block, increment, brk);
+  remap(curTask->vas, (UInt64)block, increment, brk);
   curTask->brk = brk+increment;
   return (void *)brk;
 }

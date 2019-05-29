@@ -297,7 +297,32 @@ void Scheduler::taskReaper(void)
         free((void *)(task->rsp3 - USER_STACK_SIZE));
       if(task->entry != 0)
         free((void *)task->entry); // free memory used by process image
-      // FIXME: free user page tables and stack
+      if(task->vas != (UInt64)pml4t) // free user page tables
+      {
+        UInt64 *l4 = (UInt64 *)vmm->remap(task->vas, 4096);
+        UInt64 *pdp = (UInt64 *)vmm->remap((UInt64)l4[0] & ~0x0FFF, 4096);
+        for(int i = 0; i < 64; ++i) // max user process = 64GB
+        {
+          if(pdp[i] != 0)
+          {
+            UInt64 *pd = (UInt64 *)vmm->remap((UInt64)pdp[i] & ~0x0FFF, 4096);
+            for(int j = (i == 0 ? 1 : 0); j < 512; ++j) // be sure we don't free 0-1MB!
+            {
+              if(pd[j] != 0)
+              {
+                UInt64 pt = (UInt64)pd[j] & ~0x0FFF;
+                pmm->freeBlock((void *)pt); // free the page table
+              }
+            }
+            pd = vmm->unmap((UInt64)pd, 4096, (UInt64)pml4t);
+            pmm->freeBlock(pd); // free the page directory
+          }
+        }
+        pdp = vmm->unmap((UInt64)pdp, 4096, (UInt64)pml4t);
+        l4 = vmm->unmap((UInt64)l4, 4096, (UInt64)pml4t);
+        pmm->freeBlock(pdp);
+        pmm->freeBlock(l4);
+      }
       free(task);
     }
     wait();
@@ -319,17 +344,17 @@ TaskControlBlock *Scheduler::createProcess(UInt64 entry, UInt64 brk, char *name)
    */
   UInt64 *l4 = (UInt64 *)pmm->allocBlock();
   user->vas = (UInt64)l4;
-  l4 = vmm->remap(l4, PMM_BLOCK_SIZE, KERNEL_VMA);
+  l4 = (UInt64 *)vmm->remap((UInt64)l4, PMM_BLOCK_SIZE, KERNEL_VMA);
   memcpy((char *)l4, (char *)pml4t, 4096);
 
   UInt64 *pdp = (UInt64 *)pmm->allocBlock();
   l4[0] = (UInt64)pdp | 7; // map 0-512 GB
-  pdp = vmm->remap(pdp, PMM_BLOCK_SIZE, KERNEL_VMA);
+  pdp = (UInt64 *)vmm->remap((UInt64)pdp, PMM_BLOCK_SIZE, KERNEL_VMA);
   memcpy((char *)pdp, (char *)pdpt, 4096);
 
   UInt64 *pd = (UInt64 *)pmm->allocBlock();
   pdp[0] = (UInt64)pd | 7; // map 0-1 GB
-  pd = vmm->remap(pd, PMM_BLOCK_SIZE, KERNEL_VMA);
+  pd = (UInt64 *)vmm->remap((UInt64)pd, PMM_BLOCK_SIZE, KERNEL_VMA);
   memcpy((char *)pd, (char *)pdt, 4096);
 
   // now map the process image at 6 MB
