@@ -77,24 +77,64 @@ VirtualMemoryManager::~VirtualMemoryManager()
 
 UInt64 VirtualMemoryManager::unmap(UInt64 virt)
 {
-  if(virt >= VMA_BASE)
-    return virt - VMA_BASE;
-  else if(virt >= KERNEL_VMA)
-    return virt - KERNEL_VMA;
-  else
-    return virt;  
+  return unmap(virt, (UInt64)pml4t);
+}
+
+UInt64 VirtualMemoryManager::unmap(UInt64 virt, UInt64 cr3)
+{
+	if(virt < 0x100000)
+		return virt;	// first 1MB is identity mapped
+
+  UInt64 *mypml4t = (UInt64 *)cr3;
+
+  // find the page table indexes for our virtual addr
+  int pml4Idx = (UInt64)(virt / (512UL*GB));
+  UInt64 v = (virt - (512*GB*pml4Idx));
+
+  int pdptIdx = v / GB;
+  v = v - (pdptIdx*GB);
+
+  int pdtIdx = v / (2*MB);
+  v = v - (pdtIdx*2*MB);
+
+  int ptIdx = v / 4096;
+
+  if(pml4t[pml4Idx] == 0) // not mapped if not in table
+    return virt;
+
+  UInt64 *mypdpt = (UInt64 *)((mypml4t[pml4Idx] & ~0x0FFF) | KERNEL_VMA);
+  if(mypdpt[pdptIdx] == 0) // not mapped if not in table
+    return virt;
+
+  UInt64 *mypdt = (UInt64 *)((mypdpt[pdptIdx] & ~0x0FFF) | KERNEL_VMA);
+  if(mypdt[pdtIdx] == 0) // not mapped if not in table
+    return virt;
+
+  UInt64 *mypt = (UInt64 *)((mypdt[pdtIdx] & ~0x0FFF) | KERNEL_VMA);
+  return (mypt[ptIdx] & ~0x0FFF) | (virt & 0x0FFF);
+
+
+  // if(virt >= VMA_BASE)
+  //   return virt - VMA_BASE;
+  // else if(virt >= KERNEL_VMA)
+  //   return virt - KERNEL_VMA;
+  // else
+  //   return virt;  
 }
 
 UInt64 VirtualMemoryManager::unmap(UInt64 virt, UInt64 size, UInt64 cr3)
 {
-  UInt64 phys = unmap(virt);
+  // UInt64 phys = unmap(virt);
 
-	if(phys < 0x100000)
-		return phys;	// first 1MB is identity mapped
+	if(virt < 0x100000)
+		return virt;	// first 1MB is identity mapped
 
   UInt64 *mypml4t = (UInt64 *)cr3;
 	UInt64 orig = virt;
 	UInt64 end = virt+size;
+  bool first = true;
+  UInt64 phys = 0;
+
 	while(virt < end)
 	{
 		// find the page table indexes for our virtual addr
@@ -110,17 +150,22 @@ UInt64 VirtualMemoryManager::unmap(UInt64 virt, UInt64 size, UInt64 cr3)
 		int ptIdx = v / 4096;
 
 		if(pml4t[pml4Idx] == 0) // not mapped if not in table
-      return phys;
+      return virt;
 
 		UInt64 *mypdpt = (UInt64 *)((mypml4t[pml4Idx] & ~0x0FFF) | KERNEL_VMA);
 		if(mypdpt[pdptIdx] == 0) // not mapped if not in table
-      return phys;
+      return virt;
 
 		UInt64 *mypdt = (UInt64 *)((mypdpt[pdptIdx] & ~0x0FFF) | KERNEL_VMA);
 		if(mypdt[pdtIdx] == 0) // not mapped if not in table
-      return phys;
+      return virt;
 
 		UInt64 *mypt = (UInt64 *)((mypdt[pdtIdx] & ~0x0FFF) | KERNEL_VMA);
+    if(first)
+    {
+      phys = (mypt[ptIdx] & ~0x0FFF) | (virt & 0x0FFF);
+      first = false;
+    }
 		mypt[ptIdx] = 0; // mark page absent
 
 		virt += 4096;

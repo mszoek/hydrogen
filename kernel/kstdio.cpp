@@ -18,6 +18,16 @@ void kprint(const char *message)
         screen->printChar(message[i++]);
 }
 
+void kwrite(const char *message, int len)
+{
+    ScreenController *screen = (ScreenController *)g_controllers[CTRL_SCREEN];
+    if(!screen) return;
+
+    int i = 0;
+    while(i < len)
+        screen->printChar(message[i++]);
+}
+
 int kprintf(const char* str, ...)
 {
     ScreenController *screen = (ScreenController *)g_controllers[CTRL_SCREEN];

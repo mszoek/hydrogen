@@ -152,11 +152,12 @@ int PhysicalMemoryManager::findFirstFree(UInt32 size)
 	if (size == 1)
 		return findFirstFree();
 
-	for(UInt32 i = 0; i < memSizeBlocks() / 32; i++)
+  int blocks = memSizeBlocks() / 32;
+	for(UInt32 i = 0; i <  blocks; ++i)
   {
 		if(physMemoryMap[i] != 0xffffffff)
     {
-			for(int j = 0; j < 32; j++)
+			for(int j = 0; j < 32; ++j)
       {
 				int bit = 1<<j;
 				if(!(physMemoryMap[i] & bit))
@@ -167,7 +168,7 @@ int PhysicalMemoryManager::findFirstFree(UInt32 size)
 					for(UInt32 count = 0; count <= size; count++)
           {
 						if(!pmmBitmapTest(startingBit + count))
-							free++;
+							++free;
 
 						if(free == size)
 							return i*32 + j;

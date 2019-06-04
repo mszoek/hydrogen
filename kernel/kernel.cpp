@@ -158,22 +158,44 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
     }
   }
 
-  shellStart();
+  // shellStart();
 
   /* Start multitasking! */
   Scheduler::init();
 
   TaskControlBlock *idle = Scheduler::createTask(idletask, "idle task");
-  TaskControlBlock *updstatus = Scheduler::createTask(status, "status");
-  TaskControlBlock *shell = Scheduler::createTask(shellinput, "shell");
+  // TaskControlBlock *updstatus = Scheduler::createTask(status, "status");
+  // TaskControlBlock *shell = Scheduler::createTask(shellinput, "shell");
   reaper = Scheduler::createTask(Scheduler::taskReaper, "reaper");
+  runQ = reaper;
+
+  if(rootfs->isMounted())
+  {
+    int fd = rootfs->open("Init.bin");
+    if(fd < 0)
+      kprintf("Cannot open Init!\n");
+    else
+    {
+      struct stat stbuf;
+      rootfs->stat("Init.bin", &stbuf);
+      UInt8 *buf = (UInt8*)malloc(stbuf.st_size);
+      rootfs->read(fd, buf, stbuf.st_size);
+      rootfs->close(fd);
+      TaskControlBlock *user = Scheduler::createProcess((UInt64)buf, (UInt64)buf + stbuf.st_size, "Init");
+      runQ = user;
+      user->next = reaper;
+      kprint("Starting Init\n");
+    }
+  }
 
   curTask = idle;
   curTask->sp += 128;
-  runQ = updstatus;
-  updstatus->next = shell;
-  shell->next = reaper;
+  // runQ = updstatus;
+  // updstatus->next = reaper /*shell*/;
+  // shell->next = reaper;
   runQEnd = reaper;
+
+
   asm volatile("jmp initTasks"); // doesn't return
   panic();
 }

@@ -35,6 +35,7 @@ public:
 	virtual ~VirtualMemoryManager();
 
     UInt64 unmap(UInt64 virt);
+    UInt64 unmap(UInt64 virt, UInt64 cr3);
     UInt64 unmap(UInt64 virt, UInt64 size, UInt64 cr3);
 	UInt64 remap(UInt64 phys, UInt64 size);
 	UInt64 remap(UInt64 phys, UInt64 size, UInt64 virt);

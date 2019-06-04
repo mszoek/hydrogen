@@ -12,6 +12,7 @@
 
 void kprintAt(const char *message, int col, int row, char attr);
 void kprint(const char *message);
+void kwrite(const char *message, int len);
 int kprintf(const char* str, ...);
 void printdata(UInt8* nodedata, int len);
 

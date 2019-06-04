@@ -8,7 +8,7 @@ CRTI=$(LIBC)/crti.o
 CRTN=$(LIBC)/crtn.o
 CRT0=$(LIBC)/crt0.o
 
-all: distclean gettime.bin statkern.bin box.bin userfunc.bin hello.bin
+all: distclean Init.bin
 
 clean:
 	rm -f *.o

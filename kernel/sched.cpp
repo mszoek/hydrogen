@@ -314,12 +314,12 @@ void Scheduler::taskReaper(void)
                 pmm->freeBlock((void *)pt); // free the page table
               }
             }
-            pd = vmm->unmap((UInt64)pd, 4096, (UInt64)pml4t);
+            pd = (UInt64 *)vmm->unmap((UInt64)pd, 4096, (UInt64)pml4t);
             pmm->freeBlock(pd); // free the page directory
           }
         }
-        pdp = vmm->unmap((UInt64)pdp, 4096, (UInt64)pml4t);
-        l4 = vmm->unmap((UInt64)l4, 4096, (UInt64)pml4t);
+        pdp = (UInt64 *)vmm->unmap((UInt64)pdp, 4096, (UInt64)pml4t);
+        l4 = (UInt64 *)vmm->unmap((UInt64)l4, 4096, (UInt64)pml4t);
         pmm->freeBlock(pdp);
         pmm->freeBlock(l4);
       }
