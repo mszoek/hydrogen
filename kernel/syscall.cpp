@@ -64,7 +64,7 @@ UInt64 syscall(int nr, UInt64 arg0, UInt64 arg1, UInt64 arg2, UInt64 arg3, UInt6
             if(arg2 == 0)
                 rc = rootfs->stat((char *)arg0, (struct stat *)arg1);
             else if(arg2 == 1)
-                rc = rootfs->fstat(arg0, (struct stat *)arg1);
+                rc = rootfs->fstat(arg0 - 3, (struct stat *)arg1);
             else
                 rc = -EINVAL;
             break;
@@ -73,10 +73,15 @@ UInt64 syscall(int nr, UInt64 arg0, UInt64 arg1, UInt64 arg2, UInt64 arg3, UInt6
             break;
         case SYSCALL_OPEN:
             rc = rootfs->open((char *)arg0);
+            if(rc >= 0)
+                rc += 3;
             break;
         case SYSCALL_CLOSE:
             rc = 0;
-            rootfs->close(arg0);
+            if(arg0 < 3) // cannot close negative fd, stdin, stdout, or stderr
+                rc = -EBADF;
+            else
+                rootfs->close(arg0 - 3);
             break;
         case SYSCALL_READ:
             /* FIXME: do proper read! Userspace fds are adjusted by 3. 0 is 
