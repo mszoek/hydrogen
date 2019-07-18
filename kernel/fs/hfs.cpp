@@ -167,6 +167,7 @@ int HierarchicalFileSystem::open(const char *path)
     {
         fdMap[fd].entry = catfile;
         fdMap[fd].fdtype = FDTYPE_CATFILE;
+        fdMap[fd].offset = 0;
         return fd;
     }
     free(catfile);
@@ -182,6 +183,7 @@ void HierarchicalFileSystem::close(int fd)
         free(fdMap[fd].entry);
         fdMap[fd].entry = 0;
         fdMap[fd].fdtype = FDTYPE_EMPTY;
+        fdMap[fd].offset = 0;
     }
 }
 
@@ -200,9 +202,10 @@ int HierarchicalFileSystem::read(int fd, UInt8 *buf, int len)
     HFSPlusCatalogFile *cf = (HFSPlusCatalogFile *)fdMap[fd].entry;
     int bytesread = 0;
     int extent = 0;
+    UInt64 offset = fdMap[fd].offset;
 
-    if(bswap64(cf->dataFork.logicalSize) < len)
-        len = bswap64(cf->dataFork.logicalSize); // can't read more than we have!
+    if(bswap64(cf->dataFork.logicalSize) - offset < len)
+        len = bswap64(cf->dataFork.logicalSize) - offset; // can't read more than we have!
 
     UInt16 *dbuf = (UInt16 *)malloc(256);
     while(bytesread < len && extent < 8)
@@ -210,7 +213,15 @@ int HierarchicalFileSystem::read(int fd, UInt8 *buf, int len)
         if(cf->dataFork.extents[extent].startBlock == 0)
             continue;
 
-        UInt64 sector = ntohl(cf->dataFork.extents[extent].startBlock) * (blockSize / 512) + partition.getStartLBA();
+        UInt64 extentBytes = (blockSize / 512) * ntohl(cf->dataFork.extents[extent].blockCount);
+        if(offset > extentBytes)
+        {
+            ++extent;
+            offset -= extentBytes;
+            continue;
+        }
+
+        UInt64 sector = ntohl(cf->dataFork.extents[extent].startBlock) * (blockSize / 512) + partition.getStartLBA() + (offset / 512);
         UInt64 count = ntohl(cf->dataFork.extents[extent].blockCount) * (blockSize / 512);
 
         // only need to read one sector?
@@ -243,6 +254,7 @@ int HierarchicalFileSystem::read(int fd, UInt8 *buf, int len)
     }
 
     free(dbuf);
+    fdMap[fd].offset += bytesread;
     return bytesread;
 }
 

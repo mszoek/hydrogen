@@ -10,6 +10,7 @@
 typedef struct _fdMapType
 {
   UInt16 fdtype;
+  UInt64 offset;
   void *entry;
 } fdMapType;
 extern fdMapType fdMap[FD_MAX];
