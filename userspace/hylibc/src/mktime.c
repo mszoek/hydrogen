@@ -4,7 +4,7 @@
    Permission is granted to use, modify, and / or redistribute at will.
 */
 
-#include <time.h>
+#include <sys/time.h>
 
 #ifndef REGTEST
 

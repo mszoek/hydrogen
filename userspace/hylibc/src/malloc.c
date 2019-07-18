@@ -1472,7 +1472,7 @@ DLMALLOC_EXPORT int mspace_mallopt(int, int);
 #define DEBUG 0
 #endif /* DEBUG */
 #if !defined(WIN32) && !defined(LACKS_TIME_H)
-#include <time.h>        /* for magic initialization */
+#include <sys/time.h>        /* for magic initialization */
 #endif /* WIN32 */
 #ifndef LACKS_STDLIB_H
 #include <stdlib.h>      /* for abort() */

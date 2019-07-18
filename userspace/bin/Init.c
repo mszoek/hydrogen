@@ -8,8 +8,26 @@ int main(void)
     char input[1024];
     int inpos = 0;
     int running = 1;
+    char *foo;
+    FILE *fp;
+    int bytes;
+
 
     printf("H2 Init Started - %d\n", time(0));
+
+    foo = malloc(64*1024); // alloc 64K
+    printf("malloc'd 64K at %x\n", (unsigned long long)foo);
+    fp = fopen("foo.txt", "r");
+    bytes = fread(foo, 1, 64*1024, fp);
+    if(bytes > 0)
+    {
+        foo[bytes] = 0;
+        printf("%s\n",foo);
+    }
+    else
+        perror("fread");
+    fclose(fp);
+
     do {
         int ch = fgetc(stdin);
         fputc(ch, stdout);

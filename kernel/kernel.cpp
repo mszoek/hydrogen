@@ -47,25 +47,6 @@ void idletask(void)
   }
 }
 
-void shellinput(void)
-{
-  while(1)
-  {
-    shellCheckInput();
-    nanosleep(3*NANOTICKS);
-  }
-
-}
-
-void status(void)
-{
-  while(1)
-  {
-    displayStatusLine();
-    nanosleep(250*NANOTICKS);
-  }
-}
-
 // Kernel entry function
 extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 {
@@ -158,14 +139,10 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
     }
   }
 
-  // shellStart();
-
   /* Start multitasking! */
   Scheduler::init();
 
   TaskControlBlock *idle = Scheduler::createTask(idletask, "idle task");
-  // TaskControlBlock *updstatus = Scheduler::createTask(status, "status");
-  // TaskControlBlock *shell = Scheduler::createTask(shellinput, "shell");
   reaper = Scheduler::createTask(Scheduler::taskReaper, "reaper");
   runQ = reaper;
 
@@ -190,90 +167,11 @@ extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 
   curTask = idle;
   curTask->sp += 128;
-  // runQ = updstatus;
-  // updstatus->next = reaper /*shell*/;
-  // shell->next = reaper;
   runQEnd = reaper;
 
-
-  asm volatile("jmp initTasks"); // doesn't return
+  if(runQ != reaper)
+    asm volatile("jmp initTasks"); // doesn't return
   panic();
-}
-
-void displayStatusLine()
-{
-  char s[25], line[81];
-
-  ScreenController *screen = (ScreenController *)g_controllers[CTRL_SCREEN];
-  if(!screen)
-    return;
-
-  UInt32 x = screen->getX();
-  UInt32 y = screen->getY();
-  UInt32 bg = screen->getBackColor();
-
-  memset(line, 0, sizeof(line));
-  itoa(pmm->memFreeBlocks(), 10, s);
-  memcpy(line+strlen(line), s, strlen(s));
-  memcpy(line+strlen(line), " blocks free Up: ", 16);
-  itoa(((TimerController *)g_controllers[CTRL_TIMER])->getSeconds(), 10, s);
-  memcpy(line+strlen(line), s, strlen(s));
-  memcpy(line+strlen(line), "s CPU sys:", 10);
-
-  CPUTime cpu = Scheduler::getCPUTime();
-  double idle = (double)(1 + cpu.idle);
-  double sys = (double)(1 + cpu.sys);
-  double user = (double)(1 + cpu.user);
-  double total = (double)(1 + cpu.idle + cpu.sys + cpu.user);
-  double idlepct = 100 * ((idle / total) + 0.00005);
-  double syspct = 100 * ((sys / total) + 0.00005);
-  double userpct = 100 *((user / total) + 0.00005);
-  unsigned a, b;
-
-  a = (unsigned)syspct;
-  b = (unsigned)((syspct - (double)a) * 100);
-  itoa(a, 10, s);
-  memcpy(line+strlen(line), s, strlen(s));
-  int i = strlen(line);
-  line[i] = '.';
-  line[i+1] = 0;
-  itoa(b, 10, s);
-  memcpy(line+strlen(line), s, strlen(s));
-
-  memcpy(line+strlen(line), "% user:", 7);
-
-  a = (unsigned)userpct;
-  b = (unsigned)((userpct - (double)a) * 100);
-  itoa(a, 10, s);
-  memcpy(line+strlen(line), s, strlen(s));
-  i = strlen(line);
-  line[i] = '.';
-  line[i+1] = 0;
-  itoa(b, 10, s);
-  memcpy(line+strlen(line), s, strlen(s));
-
-  memcpy(line+strlen(line), "% idle:", 7);
-
-  a = (unsigned)idlepct;
-  b = (unsigned)((idlepct - (double)a) * 100);
-  itoa(a , 10, s);
-  memcpy(line+strlen(line), s, strlen(s));
-  i = strlen(line);
-  line[i] = '.';
-  line[i+1] = 0;
-  itoa(b, 10, s);
-  memcpy(line+strlen(line), s, strlen(s));
-
-  i = strlen(line);
-  line[i] = '%';
-  line[i+1] = 0;
-
-  memset(line+strlen(line), 0x20, sizeof(line)-strlen(line)-2); // space fill to right edge
-  screen->setXY(0, 0);
-  screen->setBackColor(0x00277c);
-  kprint(line);
-  screen->setXY(x, y);
-  screen->setBackColor(bg);
 }
 
 void panic()
