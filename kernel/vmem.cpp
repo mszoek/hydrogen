@@ -393,6 +393,7 @@ void *VirtualMemoryManager::sbrk(SInt64 increment)
   /* We're adding memory to a user process by increasing its data segment.
    * Generally: malloc some bytes, map into contiguous memory above the 
    * current segment end, return the start of the new region
+   * Increment is rounded to the nearest 4K page boundary
    * 
    * sbrk() should free memory with a negative increment but this one never
    * gives back what was allocated.
@@ -401,11 +402,15 @@ void *VirtualMemoryManager::sbrk(SInt64 increment)
   if(increment <= 0)
     return (void *)curTask->brk;
 
-  void *block = malloc(increment);
+  int blocks = (increment / PMM_BLOCK_SIZE);
+  if(blocks == 0)
+    ++blocks;
+
+  void *block = pmm->allocBlock(blocks);
   if(block == 0)
     return (void *)-1;
   UInt64 brk = curTask->brk;
-  remap(curTask->vas, (UInt64)block, increment, brk);
-  curTask->brk = brk+increment;
+  remap(curTask->vas, (UInt64)block, blocks*PMM_BLOCK_SIZE, brk);
+  curTask->brk = brk+(blocks*PMM_BLOCK_SIZE);
   return (void *)brk;
 }
