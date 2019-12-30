@@ -19,6 +19,8 @@
 #define SYSCALL_SBRK 11
 #define SYSCALL_RTCREAD 12
 
-#define NR_SYSCALLS 12
+#define SYSCALL_EXEC 13
+
+#define NR_SYSCALLS 13
 
 #endif // SYSCALLS_H

@@ -13,6 +13,7 @@ void putpixel(int x, int y, unsigned int color);
 int main(int argc, char **argv)
 {
     int r = _syscall(SYSCALL_FBINFO, (UInt64)&fbi, 0, 0, 0, 0);
+    printf("r=%d fb at %lx %dx%d\n",r,fbi.fb,fbi.width,fbi.height);
     int x1 = 200, x2 = 1720, y1 = 400, y2 = 800;
 
     int color = 0x407000;

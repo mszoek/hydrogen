@@ -33,17 +33,20 @@ extern "C" int _syscall(void)
     return syscall(nr, arg0, arg1, arg2, arg3, arg4);
 }
 
+extern volatile void breakpoint();
 UInt64 syscall(int nr, UInt64 arg0, UInt64 arg1, UInt64 arg2, UInt64 arg3, UInt64 arg4)
 {
     UInt64 rc = 0;
     UInt64 bufaddr = 0;
+
+    UInt64 L4 = vmm->remap(curTask->vas, 4096);
 
     switch(nr)
     {
         case SYSCALL_WRITE:
             /* FIXME: do proper write! arg0: fd, arg1: buffer, arg2: length */
             // map the buffer into kernel memory (it's only in user page tables)
-            bufaddr = vmm->unmap(arg1, curTask->vas);
+            bufaddr = vmm->unmap(arg1, L4);
             bufaddr = vmm->remap(bufaddr, arg2);
 
             rc = arg2; // return number of bytes written
@@ -69,8 +72,18 @@ UInt64 syscall(int nr, UInt64 arg0, UInt64 arg1, UInt64 arg2, UInt64 arg3, UInt6
                 rc = -EINVAL;
             break;
         case SYSCALL_FBINFO:
-            rc = ((ScreenController *)g_controllers[CTRL_SCREEN])->getFBInfo((struct fbInfo *)arg0);
+        {
+            bufaddr = arg0;
+            rc = ((ScreenController *)g_controllers[CTRL_SCREEN])->getFBInfo((struct fbInfo *)bufaddr);
+
+            /* map the framebuffer VMA into userspace */
+            UInt64 fbphys = vmm->unmap(FRAMEBUFFER_VMA, (UInt64)pml4t); // get phys addr from kern tables
+            UInt64 x = vmm->remap(L4, fbphys,
+                bootinfo.framebufferPitch*(bootinfo.framebufferHeight+1),
+                FRAMEBUFFER_USER_VMA);
+            ((struct fbInfo *)bufaddr)->fb = (void *)x;
             break;
+        }
         case SYSCALL_OPEN:
             rc = rootfs->open((char *)arg0);
             if(rc >= 0)
@@ -88,7 +101,7 @@ UInt64 syscall(int nr, UInt64 arg0, UInt64 arg1, UInt64 arg2, UInt64 arg3, UInt6
              * alway stdin. 1 = stdout, 2 = stderr. FD 3+ are kernel fds 0+
              */
             // map the buffer into kernel memory (it's only in user page tables)
-            bufaddr = vmm->unmap(arg1, curTask->vas);
+            bufaddr = vmm->unmap(arg1, L4);
             bufaddr = vmm->remap(bufaddr, arg2);
 
             if(arg0 == 0) /* stdin */
@@ -121,6 +134,34 @@ UInt64 syscall(int nr, UInt64 arg0, UInt64 arg1, UInt64 arg2, UInt64 arg3, UInt6
         case SYSCALL_RTCREAD:
             rc = (UInt64)rtcRead();
             break;
+        case SYSCALL_EXEC:
+        {            
+            if(! rootfs->isMounted())
+            {
+                rc = -ENOENT;
+                break;
+            }
+
+            int fd = rootfs->open((char *)arg0);
+            if(fd < 0)
+            {
+                rc = -ENOENT;
+                break;
+            }
+
+            struct stat stbuf;
+            rc = rootfs->stat((char *)arg0, &stbuf);
+            if(rc != 0)
+                break;
+
+            UInt8 *buf = (UInt8*)malloc(stbuf.st_size);
+            rootfs->read(fd, buf, stbuf.st_size);
+            rootfs->close(fd);
+            TaskControlBlock *user = Scheduler::createProcess((UInt64)buf, (UInt64)buf + stbuf.st_size, (char *)arg0);
+            Scheduler::unblockTask(user); // put on run Q
+            kprintf("SYSCALL_EXEC scheduled task %x\n",user);
+            break;
+        }
     }
 
     return rc;

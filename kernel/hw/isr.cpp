@@ -149,6 +149,7 @@ extern "C" void isrHandler(registers_t r)
             UInt64 cr2;
             asm volatile("movq %%cr2, %%rax; movq %%rax, %0" : "=m"(cr2));
             kprintf("Faulting address:%x\n", cr2);
+            asm("hlt");
     }
 }
 

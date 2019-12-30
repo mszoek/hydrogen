@@ -344,17 +344,17 @@ TaskControlBlock *Scheduler::createProcess(UInt64 entry, UInt64 brk, char *name)
    */
   UInt64 *l4 = (UInt64 *)pmm->allocBlock();
   user->vas = (UInt64)l4;
-  l4 = (UInt64 *)vmm->remap((UInt64)l4, PMM_BLOCK_SIZE, KERNEL_VMA);
+  l4 = (UInt64 *)vmm->remap((UInt64)l4, PMM_BLOCK_SIZE, KERNEL_VMA+user->vas);
   memcpy((char *)l4, (char *)pml4t, 4096);
 
   UInt64 *pdp = (UInt64 *)pmm->allocBlock();
   l4[0] = (UInt64)pdp | 7; // map 0-512 GB
-  pdp = (UInt64 *)vmm->remap((UInt64)pdp, PMM_BLOCK_SIZE, KERNEL_VMA);
+  pdp = (UInt64 *)vmm->remap((UInt64)pdp, PMM_BLOCK_SIZE, KERNEL_VMA+(UInt64)pdp);
   memcpy((char *)pdp, (char *)pdpt, 4096);
 
   UInt64 *pd = (UInt64 *)pmm->allocBlock();
   pdp[0] = (UInt64)pd | 7; // map 0-1 GB
-  pd = (UInt64 *)vmm->remap((UInt64)pd, PMM_BLOCK_SIZE, KERNEL_VMA);
+  pd = (UInt64 *)vmm->remap((UInt64)pd, PMM_BLOCK_SIZE, KERNEL_VMA+(UInt64)pd);
   memcpy((char *)pd, (char *)pdt, 4096);
 
   // now map the process image at 6 MB

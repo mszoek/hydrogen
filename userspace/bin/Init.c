@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+#include <syscall.h>
 
 int main(void)
 {
@@ -43,6 +44,15 @@ int main(void)
             input[inpos] = 0;
             if(!strcmp(input, "exit"))
                 running = 0;
+            else
+            {
+                int rc = _syscall(SYSCALL_EXEC, (UInt64)input, 0, 0, 0, 0);
+                if(rc < 0)
+                {
+                    perror("exec");
+                }
+            }
+            
             inpos = 0;
         }
     } while(running);

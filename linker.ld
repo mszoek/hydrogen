@@ -10,12 +10,12 @@ SECTIONS
 
 	.header :
 	{
+		*(.multiboot)
 		KEEP(*(.header))
 	}
 
 	.inittext :
 	{
-		*(.multiboot)
 		*(.inittext)
 	}
 
