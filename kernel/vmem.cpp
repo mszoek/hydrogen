@@ -66,8 +66,8 @@ VirtualMemoryManager::VirtualMemoryManager()
       pools[i].nrFreeChunks++;
     }
     size *= 2;
-    if(size >= 2048)
-      size = 2032; // +16 byte header gives 2 chunks per 4K block
+    if(size >= (PMM_BLOCK_SIZE/2))
+      size = PMM_BLOCK_SIZE/2 - sizeof(mallocHeader); // +16 byte header gives 2 chunks per 4K block
   }
 }
 
@@ -248,7 +248,7 @@ UInt64 VirtualMemoryManager::remap(UInt64 cr3, UInt64 phys, UInt64 size, UInt64 
 
 void *VirtualMemoryManager::malloc(const unsigned int size)
 {
-  if(size <= 2032)
+  if(size <= (PMM_BLOCK_SIZE/2 - sizeof(mallocHeader)))
   {
     for(int i = 0; i < NR_POOLS; ++i)
     {
