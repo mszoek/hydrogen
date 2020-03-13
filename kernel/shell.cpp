@@ -1,9 +1,23 @@
-#include <drivers/keyboard.h>
-#include <drivers/screen.h>
+/*
+ * H2 Kernel
+ * Copyright (C) 2017-2019 Zoe & Alexis Knox. All rights reserved.
+ */
+
+
+#include <hw/types.h>
+#include <hw/keyboard.h>
+#include <hw/screen.h>
+#include <hw/pci.h>
+#include <hw/ata.h>
+#include <kstdio.h>
 #include <kmem.h>
 #include <kstring.h>
-#include <hw/types.h>
+#include <kernel.h>
 #include <shell.h>
+#include <sched.h>
+
+#define KERNEL_HFS
+#include <fs/hfs.h>
 
 // map scan codes 0x00 to 0x58 into en_US layout
 const char scanCodesToASCII_base[] =
@@ -44,29 +58,130 @@ void shellStart()
 
 void shellExecCommand()
 {
+  ScreenController *screen = (ScreenController *)g_controllers[CTRL_SCREEN];
+
   if(strlen(shellBuffer) < 1) return;
 
-  if(strcmp(shellBuffer, "exit") == 0)
+  if(strcmp(shellBuffer, "help") == 0)
   {
-    kprint("kk, kthxbye!\n");
-    asm("cli");
-    asm("hlt");
-  }
-  if(strcmp(shellBuffer, "hello") == 0)
-  {
-    kprint("'ello gorgeous!\n");
+    kprintf("Commands:\n"
+    "  break - invoke breakpoint\n  clear - clear the screen\n  lspci - list pci devices\n"
+    "  printdata ADDR - print memory contents\n  meminfo - show memory pool info\n"
+    "  ps - show kernel tasks\n\n");
     return;
   }
 
-  kprintAt("Invalid command\n", -1, -1, 0x0c);
+  if(strcmp(shellBuffer, "clear") == 0)
+  {
+    if(screen)
+    {
+      screen->clearScreen();
+    }
+    return;
+  }
+
+  if(strcmp(shellBuffer, "lspci") == 0)
+  {
+    PCIController *pci = (PCIController *)g_controllers[CTRL_PCI];
+    if(!pci) return;
+
+    bool temp = verbose;
+    verbose = true;
+    pci->pciEnumBuses();
+    verbose = temp;
+    return;
+  }
+
+  if(strncmp(shellBuffer, "printdata", 9) == 0)
+  {
+    UInt64 index = 0;
+    char *p = strtok(shellBuffer, " ", (int *)&index);
+    p = strtok(shellBuffer, " ", (int *)&index);
+    if(p != 0)
+      index = atoi16(p);
+    else
+      index = KERNEL_VMA;
+    printdata((UInt8 *)index, 256);
+    return;
+  }
+
+  if(strcmp(shellBuffer, "meminfo") == 0)
+  {
+    pmm->printStats();
+    return;
+  }
+
+  if(strcmp(shellBuffer, "break") == 0)
+  {
+    asm volatile("int3");
+    return;
+  }
+
+  if(strcmp(shellBuffer, "ps") == 0)
+  {
+    lock();
+    kprintf(" TID        TIME       STACK       STATE  NAME\n");
+    kprintf("%6d  %9dus  %9x       %d      %s\n", curTask->tid, curTask->timeUsed/1000,
+      curTask->sp, curTask->state, curTask->name);
+    for(TaskControlBlock *tcb = runQ; tcb; tcb = tcb->next)
+    {
+      kprintf("%6d  %9dus  %9x       %d      %s\n", tcb->tid, tcb->timeUsed/1000,
+        tcb->sp, tcb->state, tcb->name);
+      if(tcb == runQEnd) break;
+    }
+    for(TaskControlBlock *tcb = sleepQ; tcb != 0; tcb = tcb->next)
+    {
+      kprintf("%6d  %9dus  %9x       %d      %s\n", tcb->tid, tcb->timeUsed/1000,
+        tcb->sp, tcb->state, tcb->name);
+    }
+    for(TaskControlBlock *tcb = waitQ; tcb != 0; tcb = tcb->next)
+    {
+      kprintf("%6d  %9dus  %9x       %d      %s\n", tcb->tid, tcb->timeUsed/1000,
+        tcb->sp, tcb->state, tcb->name);
+    }
+    unlock();
+    return;
+  }
+
+  if(strncmp(shellBuffer, "exec ", 5) == 0)
+  {
+    char *path = &shellBuffer[5];
+    if(path == 0 || *path == 0)
+      return;  
+
+    if(! rootfs->isMounted())
+      return;
+
+    int fd = rootfs->open(path);
+    if(fd < 0)
+    {
+      kprintf("Cannot open %s\n", path);
+      return;
+    }
+
+    struct stat stbuf;
+    if(rootfs->stat(path, &stbuf) != 0)
+    {
+      kprintf("Cannot stat %s\n", path);
+      return;
+    }
+    UInt8 *buf = (UInt8*)malloc(stbuf.st_size);
+    rootfs->read(fd, buf, stbuf.st_size);
+    rootfs->close(fd);
+    TaskControlBlock *user = Scheduler::createProcess((UInt64)buf, (UInt64)buf + stbuf.st_size, path);
+    Scheduler::unblockTask(user); // put on run Q
+    return;
+  }
+
+  kprint("Invalid command\n");
 }
 
 void shellCheckInput()
 {
   char code;
   int keyUp = 0;
-  char buf[1024];
-  int length = getKeyboardBuffer(buf, 1023);
+  UInt8 buf[1024];
+  int length = ((KeyboardController *)g_controllers[CTRL_KEYBOARD])->getKeyboardBuffer(buf, 1023);
 
   for(int i = 0; i < length; ++i)
   {
@@ -93,12 +208,12 @@ void shellCheckInput()
     {
       if(code == 0x1C)
       {
-        kprint("\n");
+        kprintf("\n");
         shellBuffer[shellBufferPos++] = 0;
         shellExecCommand();
         shellBufferPos = 0;
         shellBuffer[0] = 0;
-        kprint(PROMPT);
+        kprintf(PROMPT);
         return;
       }
       if(code == 0x0E)
@@ -106,7 +221,9 @@ void shellCheckInput()
         if(shellBufferPos > 0)
         {
           shellBuffer[--shellBufferPos] = 0;
-          printBackspace();
+          ScreenController *screen = (ScreenController *)g_controllers[CTRL_SCREEN];
+          if(screen)
+            screen->printBackspace();
         }
         return;
       }
@@ -122,7 +239,7 @@ void shellCheckInput()
       char key[2];
       key[0]=code;
       key[1]=0;
-      kprint(key);
+      kprintf(key);
     }
   }
 }

@@ -1,0 +1,1050 @@
+
+Discarded input sections
+
+ .comment       0x0000000000000000       0x12 kernel/kstdio.o
+ .comment       0x0000000000000000       0x12 kernel/syscall.o
+ .group         0x0000000000000000        0xc kernel/kernel.o
+ .comment       0x0000000000000000       0x12 kernel/kernel.o
+ .group         0x0000000000000000        0x8 kernel/kmem.o
+ .group         0x0000000000000000        0x8 kernel/kmem.o
+ .group         0x0000000000000000        0x8 kernel/kmem.o
+ .group         0x0000000000000000        0xc kernel/kmem.o
+ .comment       0x0000000000000000       0x12 kernel/kmem.o
+ .group         0x0000000000000000        0xc kernel/vmem.o
+ .comment       0x0000000000000000       0x12 kernel/vmem.o
+ .comment       0x0000000000000000       0x12 kernel/h2logo.o
+ .comment       0x0000000000000000       0x12 kernel/shell.o
+ .comment       0x0000000000000000       0x12 kernel/sched.o
+ .comment       0x0000000000000000       0x12 kernel/font.o
+ .comment       0x0000000000000000       0x12 kernel/kstring.o
+ .group         0x0000000000000000        0xc kernel/hw/keyboard.o
+ .comment       0x0000000000000000       0x12 kernel/hw/keyboard.o
+ .group         0x0000000000000000        0x8 kernel/hw/rtc.o
+ .group         0x0000000000000000        0xc kernel/hw/rtc.o
+ .comment       0x0000000000000000       0x12 kernel/hw/rtc.o
+ .group         0x0000000000000000        0xc kernel/hw/timer.o
+ .comment       0x0000000000000000       0x12 kernel/hw/timer.o
+ .comment       0x0000000000000000       0x12 kernel/hw/wifi.o
+ .comment       0x0000000000000000       0x12 kernel/hw/isr.o
+ .group         0x0000000000000000        0xc kernel/hw/screen.o
+ .comment       0x0000000000000000       0x12 kernel/hw/screen.o
+ .group         0x0000000000000000        0xc kernel/hw/pci.o
+ .comment       0x0000000000000000       0x12 kernel/hw/pci.o
+ .comment       0x0000000000000000       0x12 kernel/hw/cmos.o
+ .group         0x0000000000000000        0xc kernel/hw/ata.o
+ .comment       0x0000000000000000       0x12 kernel/hw/ata.o
+ .comment       0x0000000000000000       0x12 kernel/hw/port_io.o
+ .comment       0x0000000000000000       0x12 kernel/hw/idt.o
+ .group         0x0000000000000000        0xc kernel/fs/hfs.o
+ .comment       0x0000000000000000       0x12 kernel/fs/hfs.o
+ .group         0x0000000000000000        0xc kernel/fs/gpt.o
+ .group         0x0000000000000000        0xc kernel/fs/gpt.o
+ .comment       0x0000000000000000       0x12 kernel/fs/gpt.o
+ .comment       0x0000000000000000       0x12 kernel/fonts/hack20.o
+ .comment       0x0000000000000000       0x12 kernel/fonts/plex16.o
+ .comment       0x0000000000000000       0x12 kernel/fonts/anon16.o
+ .comment       0x0000000000000000       0x12 kernel/fonts/plex20.o
+ .comment       0x0000000000000000       0x12 kernel/fonts/hack16.o
+ .comment       0x0000000000000000       0x12 kernel/fonts/anon20.o
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map
+
+                0x0000000000100000                phys = 0x100000
+                0x0000007c00000000                base = 0x7c00000000
+                0x0000000000100000                . = phys
+
+.header         0x0000000000100000       0x30
+ *(.multiboot)
+ .multiboot     0x0000000000100000       0x30 kernel/loader.o
+ *(.header)
+
+.inittext       0x0000000000100030      0x145
+ *(.inittext)
+ .inittext      0x0000000000100030      0x145 kernel/loader.o
+                0x0000000000100038                start
+                0x0000007c00100175                . = (. + base)
+
+.text           0x0000007c00100180     0xae80 load address 0x0000000000100180
+                0x0000007c00100180                code = .
+ *(.text)
+ .text          0x0000007c00100180       0x57 kernel/loader.o
+ .text          0x0000007c001001d7      0x551 kernel/kstdio.o
+                0x0000007c001001d7                kprint(char const*)
+                0x0000007c0010023c                kwrite(char const*, int)
+                0x0000007c00100298                kprintf(char const*, ...)
+                0x0000007c00100634                printdata(unsigned char*, int)
+ .text          0x0000007c00100728      0x6c7 kernel/syscall.o
+                0x0000007c00100728                _syscall
+                0x0000007c0010076e                syscall(int, unsigned long long, unsigned long long, unsigned long long, unsigned long long, unsigned long long)
+ .text          0x0000007c00100def      0x7ee kernel/kernel.o
+                0x0000007c00100def                idletask()
+                0x0000007c00100e02                kernelMain
+                0x0000007c001015c3                panic()
+ *fill*         0x0000007c001015dd        0x1 
+ .text          0x0000007c001015de      0x9cf kernel/kmem.o
+                0x0000007c001015de                PhysicalMemoryManager::PhysicalMemoryManager(unsigned long long, unsigned long long, unsigned int, PhysicalMemoryManager::RegionInfo*, unsigned int)
+                0x0000007c001015de                PhysicalMemoryManager::PhysicalMemoryManager(unsigned long long, unsigned long long, unsigned int, PhysicalMemoryManager::RegionInfo*, unsigned int)
+                0x0000007c00101816                PhysicalMemoryManager::~PhysicalMemoryManager()
+                0x0000007c00101816                PhysicalMemoryManager::~PhysicalMemoryManager()
+                0x0000007c00101834                PhysicalMemoryManager::~PhysicalMemoryManager()
+                0x0000007c00101860                PhysicalMemoryManager::printStats()
+                0x0000007c001018bc                PhysicalMemoryManager::memSize()
+                0x0000007c001018d4                PhysicalMemoryManager::memSizeBlocks()
+                0x0000007c001018ec                PhysicalMemoryManager::memFree()
+                0x0000007c0010190e                PhysicalMemoryManager::memFreeBlocks()
+                0x0000007c00101930                PhysicalMemoryManager::findFirstFree()
+                0x0000007c001019e0                PhysicalMemoryManager::findFirstFree(unsigned int)
+                0x0000007c00101b1a                PhysicalMemoryManager::initRegion(unsigned long long, unsigned long long)
+                0x0000007c00101b9a                PhysicalMemoryManager::dropRegion(unsigned long long, unsigned long long)
+                0x0000007c00101c08                PhysicalMemoryManager::allocBlock()
+                0x0000007c00101c82                PhysicalMemoryManager::freeBlock(void*)
+                0x0000007c00101cca                PhysicalMemoryManager::allocBlock(unsigned int)
+                0x0000007c00101d6c                PhysicalMemoryManager::freeBlock(void*, unsigned int)
+                0x0000007c00101dd5                operator new(unsigned long)
+                0x0000007c00101df8                operator delete(void*, unsigned long)
+                0x0000007c00101e21                malloc(unsigned int)
+                0x0000007c00101e42                free(void*)
+                0x0000007c00101e67                memcpy(char*, char*, unsigned int)
+                0x0000007c00101eb1                memset(char*, char, int)
+                0x0000007c00101eee                memset(unsigned int*, unsigned int, int)
+                0x0000007c00101f28                memcmp(char*, char*, int)
+ *fill*         0x0000007c00101fad        0x1 
+ .text          0x0000007c00101fae     0x1409 kernel/vmem.o
+                0x0000007c00101fae                VirtualMemoryManager::VirtualMemoryManager()
+                0x0000007c00101fae                VirtualMemoryManager::VirtualMemoryManager()
+                0x0000007c001022da                VirtualMemoryManager::~VirtualMemoryManager()
+                0x0000007c001022da                VirtualMemoryManager::~VirtualMemoryManager()
+                0x0000007c001022f8                VirtualMemoryManager::~VirtualMemoryManager()
+                0x0000007c00102324                VirtualMemoryManager::unmap(unsigned long long)
+                0x0000007c00102350                VirtualMemoryManager::unmap(unsigned long long, unsigned long long)
+                0x0000007c00102518                VirtualMemoryManager::unmap(unsigned long long, unsigned long long, unsigned long long)
+                0x0000007c00102752                VirtualMemoryManager::remap(unsigned long long, unsigned long long)
+                0x0000007c00102798                VirtualMemoryManager::remap(unsigned long long, unsigned long long, unsigned long long)
+                0x0000007c001027d4                VirtualMemoryManager::remap(unsigned long long, unsigned long long, unsigned long long, unsigned long long)
+                0x0000007c00102ba2                VirtualMemoryManager::malloc(unsigned int)
+                0x0000007c00103060                VirtualMemoryManager::free(void*)
+                0x0000007c001032ea                VirtualMemoryManager::sbrk(long long)
+ .text          0x0000007c001033b7        0x0 kernel/h2logo.o
+ .text          0x0000007c001033b7      0x862 kernel/shell.o
+                0x0000007c001033b7                shellStart()
+                0x0000007c001033ed                shellExecCommand()
+                0x0000007c001039d6                shellCheckInput()
+ *fill*         0x0000007c00103c19        0x1 
+ .text          0x0000007c00103c1a      0xcfd kernel/sched.o
+                0x0000007c00103c1a                Scheduler::getCPUTime()
+                0x0000007c00103c50                nanosleepUntil(unsigned long long)
+                0x0000007c00103ccc                nanosleep(unsigned long long)
+                0x0000007c00103d08                sleep(unsigned int)
+                0x0000007c00103d29                wait()
+                0x0000007c00103d5e                unwait(_TaskControlBlock*)
+                0x0000007c00103dc2                lock()
+                0x0000007c00103ddd                unlock()
+                0x0000007c00103e1a                Scheduler::init()
+                0x0000007c00103ffe                Scheduler::lock()
+                0x0000007c00104016                Scheduler::unlock()
+                0x0000007c00104038                Scheduler::updateTimeUsed()
+                0x0000007c00104108                Scheduler::blockTask(_TaskState)
+                0x0000007c00104132                Scheduler::unblockTask(_TaskControlBlock*)
+                0x0000007c001041a8                Scheduler::schedule()
+                0x0000007c00104216                Scheduler::createTask(void (&)(), char*)
+                0x0000007c0010439a                Scheduler::terminateTask()
+                0x0000007c001043f2                Scheduler::taskReaper()
+                0x0000007c001046aa                Scheduler::createProcess(unsigned long long, unsigned long long, char*)
+ .text          0x0000007c00104917        0x0 kernel/font.o
+ .text          0x0000007c00104917      0x6c0 kernel/kstring.o
+                0x0000007c00104917                isprint(unsigned char)
+                0x0000007c0010493e                toupper(int)
+                0x0000007c00104962                strlen(char*)
+                0x0000007c00104992                strcmp(char*, char*)
+                0x0000007c00104a3d                strncmp(char*, char*, int)
+                0x0000007c00104ace                hexdigit(unsigned char)
+                0x0000007c00104b3f                strcpy(char*, char*)
+                0x0000007c00104b94                atoi(char*)
+                0x0000007c00104c02                atoi16(char*)
+                0x0000007c00104c8c                reverse(char*)
+                0x0000007c00104d0d                append(char*, char)
+                0x0000007c00104d56                backspace(char*)
+                0x0000007c00104d87                itoa(unsigned long long, unsigned int, char*)
+                0x0000007c00104e49                strcat(char*, char const*)
+                0x0000007c00104ee4                strtok(char*, char*, int*)
+ *fill*         0x0000007c00104fd7        0x1 
+ .text          0x0000007c00104fd8      0x3dd kernel/hw/keyboard.o
+                0x0000007c001050dc                KeyboardController::KeyboardController()
+                0x0000007c001050dc                KeyboardController::KeyboardController()
+                0x0000007c00105146                KeyboardController::~KeyboardController()
+                0x0000007c00105146                KeyboardController::~KeyboardController()
+                0x0000007c0010517e                KeyboardController::~KeyboardController()
+                0x0000007c001051aa                KeyboardController::insertBuffer(unsigned char)
+                0x0000007c00105216                KeyboardController::getKeyboardBuffer(unsigned char*, unsigned short)
+                0x0000007c001052d8                KeyboardController::translateCodes(unsigned char*, unsigned short)
+ .text          0x0000007c001053b5      0x2e8 kernel/hw/rtc.o
+                0x0000007c001053b5                rtcUpdateInProgress()
+                0x0000007c001053d5                rtcRead()
+ *fill*         0x0000007c0010569d        0x1 
+ .text          0x0000007c0010569e      0x269 kernel/hw/timer.o
+                0x0000007c001056c0                TimerController::TimerController()
+                0x0000007c001056c0                TimerController::TimerController()
+                0x0000007c00105772                TimerController::~TimerController()
+                0x0000007c00105772                TimerController::~TimerController()
+                0x0000007c001057aa                TimerController::~TimerController()
+                0x0000007c001057d6                TimerController::getTicks()
+                0x0000007c001057ec                TimerController::getSeconds()
+                0x0000007c0010581a                TimerController::tick()
+ *fill*         0x0000007c00105907        0x1 
+ .text          0x0000007c00105908       0x1f kernel/hw/wifi.o
+                0x0000007c00105908                WirelessController::WirelessController()
+                0x0000007c00105908                WirelessController::WirelessController()
+                0x0000007c00105918                WirelessController::~WirelessController()
+                0x0000007c00105918                WirelessController::~WirelessController()
+ .text          0x0000007c00105927      0x65b kernel/hw/isr.o
+                0x0000007c00105927                breakpoint()
+                0x0000007c0010592f                isrInstall()
+                0x0000007c00105da5                isrHandler
+                0x0000007c00105ea7                registerInterruptHandler(unsigned char, void (*)(registers_t))
+                0x0000007c00105ed8                irqHandler
+ .text          0x0000007c00105f82      0xb23 kernel/hw/screen.o
+                0x0000007c00105f82                ScreenController::ScreenController()
+                0x0000007c00105f82                ScreenController::ScreenController()
+                0x0000007c001060bc                ScreenController::~ScreenController()
+                0x0000007c001060bc                ScreenController::~ScreenController()
+                0x0000007c001060e4                ScreenController::~ScreenController()
+                0x0000007c00106110                ScreenController::setFont(int)
+                0x0000007c00106222                ScreenController::putpixel(int, int, unsigned int)
+                0x0000007c00106282                ScreenController::printBackspace()
+                0x0000007c00106388                ScreenController::printChar(unsigned char)
+                0x0000007c00106802                ScreenController::getX()
+                0x0000007c00106818                ScreenController::getY()
+                0x0000007c0010682e                ScreenController::getColor()
+                0x0000007c00106844                ScreenController::getBackColor()
+                0x0000007c0010685a                ScreenController::setXY(unsigned int, unsigned int)
+                0x0000007c0010689e                ScreenController::setXYChars(unsigned int, unsigned int)
+                0x0000007c00106906                ScreenController::setColor(unsigned int)
+                0x0000007c00106922                ScreenController::setBackColor(unsigned int)
+                0x0000007c0010693e                ScreenController::clearScreen()
+                0x0000007c00106992                ScreenController::drawLogo()
+                0x0000007c00106a46                ScreenController::getFBInfo(fbInfo*)
+ *fill*         0x0000007c00106aa5        0x1 
+ .text          0x0000007c00106aa6      0x885 kernel/hw/pci.o
+                0x0000007c00106aa6                PCIController::PCIController()
+                0x0000007c00106aa6                PCIController::PCIController()
+                0x0000007c00106b38                PCIController::~PCIController()
+                0x0000007c00106b38                PCIController::~PCIController()
+                0x0000007c00106b60                PCIController::~PCIController()
+                0x0000007c00106b8c                PCIController::pciReadCfgWord(unsigned int, unsigned int, unsigned int, unsigned int)
+                0x0000007c00106bd0                PCIController::pciReadCfgDWord(unsigned int, unsigned int, unsigned int, unsigned int)
+                0x0000007c00106c2e                PCIController::pciCheckDevice(unsigned int, unsigned int)
+                0x0000007c001070cc                PCIController::pciEnumBuses()
+                0x0000007c0010714e                PCIController::startDevices()
+ .text          0x0000007c0010732b       0x73 kernel/hw/cmos.o
+                0x0000007c0010732b                cmosRead(unsigned char)
+                0x0000007c00107362                cmosWrite(unsigned char, unsigned char)
+ .text          0x0000007c0010739e      0xcce kernel/hw/ata.o
+                0x0000007c0010741c                AHCIController::AHCIController(hbaMem*)
+                0x0000007c0010741c                AHCIController::AHCIController(hbaMem*)
+                0x0000007c001074b2                AHCIController::~AHCIController()
+                0x0000007c001074b2                AHCIController::~AHCIController()
+                0x0000007c001074fc                AHCIController::~AHCIController()
+                0x0000007c00107528                AHCIController::checkDriveType(hbaPort_tag volatile*)
+                0x0000007c001075ac                AHCIController::getPort(int)
+                0x0000007c001075d6                AHCIController::probeSATAPorts()
+                0x0000007c00107748                AHCIController::rebasePort(hbaPort_tag volatile*, int)
+                0x0000007c001078c0                AHCIController::stopCommand(hbaPort_tag volatile*)
+                0x0000007c00107910                AHCIController::startCommand(hbaPort_tag volatile*)
+                0x0000007c00107960                AHCIController::findCmdSlot(hbaPort_tag volatile*)
+                0x0000007c001079ba                AHCIController::swapBytes(unsigned char*, unsigned int)
+                0x0000007c00107a0c                AHCIController::identifyPort(hbaPort_tag volatile*)
+                0x0000007c00107cb4                AHCIController::read(hbaPort_tag volatile*, unsigned short*, unsigned int, unsigned short)
+ .text          0x0000007c0010806c       0xb9 kernel/hw/port_io.o
+                0x0000007c0010806c                portByteIn(unsigned short)
+                0x0000007c0010808a                portByteOut(unsigned short, unsigned char)
+                0x0000007c001080ab                portWordIn(unsigned short)
+                0x0000007c001080cb                portWordOut(unsigned short, unsigned short)
+                0x0000007c001080ec                portDWordIn(unsigned short)
+                0x0000007c00108109                portDWordOut(unsigned short, unsigned int)
+ .text          0x0000007c00108125      0x10a kernel/hw/idt.o
+                0x0000007c00108125                setIDTGate(int, unsigned long long)
+                0x0000007c00108207                setIDT()
+ *fill*         0x0000007c0010822f        0x1 
+ .text          0x0000007c00108230     0x10ff kernel/fs/hfs.o
+                0x0000007c00108283                vacantFD()
+                0x0000007c001082f8                HierarchicalFileSystem::HierarchicalFileSystem(Partition*)
+                0x0000007c001082f8                HierarchicalFileSystem::HierarchicalFileSystem(Partition*)
+                0x0000007c00108398                HierarchicalFileSystem::~HierarchicalFileSystem()
+                0x0000007c00108398                HierarchicalFileSystem::~HierarchicalFileSystem()
+                0x0000007c001083c6                HierarchicalFileSystem::~HierarchicalFileSystem()
+                0x0000007c001083f2                HierarchicalFileSystem::mount()
+                0x0000007c00108428                HierarchicalFileSystem::unmount()
+                0x0000007c00108446                HierarchicalFileSystem::isMounted()
+                0x0000007c00108460                HierarchicalFileSystem::readVolumeHeader()
+                0x0000007c00108640                HierarchicalFileSystem::searchCatalog(char const*, unsigned short)
+                0x0000007c00108a4c                HierarchicalFileSystem::open(char const*)
+                0x0000007c00108b38                HierarchicalFileSystem::close(int)
+                0x0000007c00108c4e                HierarchicalFileSystem::read(int, unsigned char*, int)
+                0x0000007c001090a6                HierarchicalFileSystem::_stat(HFSPlusCatalogFile*, stat*)
+                0x0000007c00109228                HierarchicalFileSystem::stat(char*, stat*)
+                0x0000007c001092a0                HierarchicalFileSystem::fstat(int, stat*)
+ *fill*         0x0000007c0010932f        0x1 
+ .text          0x0000007c00109330      0xfb4 kernel/fs/gpt.o
+                0x0000007c00109330                GUIDPartitionTable::stringifyGUID(unsigned char*, char*)
+                0x0000007c001096c2                GUIDPartitionTable::unstringifyGUID(char*, unsigned char*)
+                0x0000007c0010986a                GUIDPartitionTable::getPartType(char*)
+                0x0000007c001098e8                GUIDPartitionTable::GUIDPartitionTable(AHCIController*, int)
+                0x0000007c001098e8                GUIDPartitionTable::GUIDPartitionTable(AHCIController*, int)
+                0x0000007c00109dd0                GUIDPartitionTable::~GUIDPartitionTable()
+                0x0000007c00109dd0                GUIDPartitionTable::~GUIDPartitionTable()
+                0x0000007c00109e40                GUIDPartitionTable::~GUIDPartitionTable()
+                0x0000007c00109e6c                GUIDPartitionTable::isValid()
+                0x0000007c00109e82                GUIDPartitionTable::getPartition(int)
+                0x0000007c00109ed2                GUIDPartitionTable::getPartitionByGUID(char*)
+                0x0000007c00109f7a                GUIDPartitionTable::getPartitionByGUID(unsigned char*)
+                0x0000007c0010a01e                Partition::Partition()
+                0x0000007c0010a01e                Partition::Partition()
+                0x0000007c0010a07e                Partition::Partition(AHCIController*, int, _GPTEntry*, _TypeGUIDEntry*)
+                0x0000007c0010a07e                Partition::Partition(AHCIController*, int, _GPTEntry*, _TypeGUIDEntry*)
+                0x0000007c0010a1ba                Partition::~Partition()
+                0x0000007c0010a1ba                Partition::~Partition()
+                0x0000007c0010a1d8                Partition::~Partition()
+                0x0000007c0010a204                Partition::getController()
+                0x0000007c0010a21a                Partition::getPort()
+                0x0000007c0010a230                Partition::getTypeEntry()
+                0x0000007c0010a246                Partition::getGUID()
+                0x0000007c0010a25c                Partition::getGUIDA()
+                0x0000007c0010a274                Partition::getStartLBA()
+                0x0000007c0010a28a                Partition::getEndLBA()
+                0x0000007c0010a2a0                Partition::getFlags()
+                0x0000007c0010a2b6                Partition::getNameA()
+                0x0000007c0010a2ce                Partition::getName()
+ .text          0x0000007c0010a2e4        0x0 kernel/fonts/hack20.o
+ .text          0x0000007c0010a2e4        0x0 kernel/fonts/plex16.o
+ .text          0x0000007c0010a2e4        0x0 kernel/fonts/anon16.o
+ .text          0x0000007c0010a2e4        0x0 kernel/fonts/plex20.o
+ .text          0x0000007c0010a2e4        0x0 kernel/fonts/hack16.o
+ .text          0x0000007c0010a2e4        0x0 kernel/fonts/anon20.o
+ *fill*         0x0000007c0010a2e4        0xc 
+ .text          0x0000007c0010a2f0      0x130 kernel/switchtask.o
+                0x0000007c0010a2f0                switchTask
+                0x0000007c0010a3e2                initTasks
+ .text          0x0000007c0010a420       0x2a kernel/switchring3.o
+                0x0000007c0010a420                switchUserland
+ *fill*         0x0000007c0010a44a        0x6 
+ .text          0x0000007c0010a450      0x274 kernel/hw/interrupt.o
+                0x0000007c0010a4e6                isr0
+                0x0000007c0010a4f0                isr1
+                0x0000007c0010a4fa                isr2
+                0x0000007c0010a504                isr3
+                0x0000007c0010a50e                isr4
+                0x0000007c0010a518                isr5
+                0x0000007c0010a522                isr6
+                0x0000007c0010a52c                isr7
+                0x0000007c0010a536                isr8
+                0x0000007c0010a53e                isr9
+                0x0000007c0010a548                isr10
+                0x0000007c0010a550                isr11
+                0x0000007c0010a558                isr12
+                0x0000007c0010a560                isr13
+                0x0000007c0010a568                isr14
+                0x0000007c0010a570                isr15
+                0x0000007c0010a57a                isr16
+                0x0000007c0010a584                isr17
+                0x0000007c0010a58e                isr18
+                0x0000007c0010a598                isr19
+                0x0000007c0010a5a2                isr20
+                0x0000007c0010a5ac                isr21
+                0x0000007c0010a5b6                isr22
+                0x0000007c0010a5c0                isr23
+                0x0000007c0010a5ca                isr24
+                0x0000007c0010a5d4                isr25
+                0x0000007c0010a5de                isr26
+                0x0000007c0010a5e8                isr27
+                0x0000007c0010a5f2                isr28
+                0x0000007c0010a5fc                isr29
+                0x0000007c0010a606                isr30
+                0x0000007c0010a610                isr31
+                0x0000007c0010a61a                isr128
+                0x0000007c0010a624                irq0
+                0x0000007c0010a62e                irq1
+                0x0000007c0010a638                irq2
+                0x0000007c0010a642                irq3
+                0x0000007c0010a64c                irq4
+                0x0000007c0010a656                irq5
+                0x0000007c0010a660                irq6
+                0x0000007c0010a66a                irq7
+                0x0000007c0010a674                irq8
+                0x0000007c0010a67e                irq9
+                0x0000007c0010a688                irq10
+                0x0000007c0010a692                irq11
+                0x0000007c0010a69c                irq12
+                0x0000007c0010a6a6                irq13
+                0x0000007c0010a6b0                irq14
+                0x0000007c0010a6ba                irq15
+                0x0000007c0010b000                . = ALIGN (0x1000)
+ *fill*         0x0000007c0010a6c4      0x93c 
+
+.iplt           0x0000007c0010b000        0x0 load address 0x000000000010b000
+ .iplt          0x0000007c0010b000        0x0 kernel/loader.o
+
+.text._ZN9PartitionC2ERKS_
+                0x0000007c0010b000      0x180 load address 0x000000000010b000
+ .text._ZN9PartitionC2ERKS_
+                0x0000007c0010b000      0x180 kernel/kernel.o
+                0x0000007c0010b000                Partition::Partition(Partition const&)
+                0x0000007c0010b000                Partition::Partition(Partition const&)
+
+.text._ZN21PhysicalMemoryManager12pmmBitmapSetEi
+                0x0000007c0010b180       0x69 load address 0x000000000010b180
+ .text._ZN21PhysicalMemoryManager12pmmBitmapSetEi
+                0x0000007c0010b180       0x69 kernel/kmem.o
+                0x0000007c0010b180                PhysicalMemoryManager::pmmBitmapSet(int)
+
+.text._ZN21PhysicalMemoryManager14pmmBitmapUnsetEi
+                0x0000007c0010b1ea       0x6b load address 0x000000000010b1ea
+ .text._ZN21PhysicalMemoryManager14pmmBitmapUnsetEi
+                0x0000007c0010b1ea       0x6b kernel/kmem.o
+                0x0000007c0010b1ea                PhysicalMemoryManager::pmmBitmapUnset(int)
+
+.text._ZN21PhysicalMemoryManager13pmmBitmapTestEi
+                0x0000007c0010b256       0x4d load address 0x000000000010b256
+ .text._ZN21PhysicalMemoryManager13pmmBitmapTestEi
+                0x0000007c0010b256       0x4d kernel/kmem.o
+                0x0000007c0010b256                PhysicalMemoryManager::pmmBitmapTest(int)
+
+.text._Z12rtcDecodeBCDh
+                0x0000007c0010b2a3       0x2f load address 0x000000000010b2a3
+ .text._Z12rtcDecodeBCDh
+                0x0000007c0010b2a3       0x2f kernel/hw/rtc.o
+                0x0000007c0010b2a3                rtcDecodeBCD(unsigned char)
+
+.text._Z13daysSinceJan1hh
+                0x0000007c0010b2d2       0x5a load address 0x000000000010b2d2
+ .text._Z13daysSinceJan1hh
+                0x0000007c0010b2d2       0x5a kernel/hw/rtc.o
+                0x0000007c0010b2d2                daysSinceJan1(unsigned char, unsigned char)
+
+.data           0x0000007c0010b340      0xcc0 load address 0x000000000010b340
+                0x0000007c0010b340                data = .
+ *(.data)
+ .data          0x0000007c0010b340        0x0 kernel/kstdio.o
+ .data          0x0000007c0010b340        0x0 kernel/syscall.o
+ .data          0x0000007c0010b340        0x4 kernel/kernel.o
+ .data          0x0000007c0010b344        0x0 kernel/kmem.o
+ .data          0x0000007c0010b344        0x0 kernel/vmem.o
+ .data          0x0000007c0010b344        0x0 kernel/h2logo.o
+ .data          0x0000007c0010b344        0x0 kernel/shell.o
+ .data          0x0000007c0010b344        0x4 kernel/sched.o
+ .data          0x0000007c0010b348        0x0 kernel/font.o
+ .data          0x0000007c0010b348        0x0 kernel/kstring.o
+ .data          0x0000007c0010b348        0x0 kernel/hw/keyboard.o
+ .data          0x0000007c0010b348        0x0 kernel/hw/rtc.o
+ .data          0x0000007c0010b348        0x0 kernel/hw/timer.o
+ .data          0x0000007c0010b348        0x0 kernel/hw/wifi.o
+ .data          0x0000007c0010b348        0x0 kernel/hw/isr.o
+ .data          0x0000007c0010b348        0x0 kernel/hw/screen.o
+ *fill*         0x0000007c0010b348       0x18 
+ .data          0x0000007c0010b360       0xa0 kernel/hw/pci.o
+ .data          0x0000007c0010b400        0x0 kernel/hw/cmos.o
+ .data          0x0000007c0010b400        0xc kernel/hw/ata.o
+ .data          0x0000007c0010b40c        0x0 kernel/hw/port_io.o
+ .data          0x0000007c0010b40c        0x0 kernel/hw/idt.o
+ .data          0x0000007c0010b40c        0x0 kernel/fs/hfs.o
+ .data          0x0000007c0010b40c        0x0 kernel/fs/gpt.o
+ .data          0x0000007c0010b40c        0x0 kernel/fonts/hack20.o
+ .data          0x0000007c0010b40c        0x0 kernel/fonts/plex16.o
+ .data          0x0000007c0010b40c        0x0 kernel/fonts/anon16.o
+ .data          0x0000007c0010b40c        0x0 kernel/fonts/plex20.o
+ .data          0x0000007c0010b40c        0x0 kernel/fonts/hack16.o
+ .data          0x0000007c0010b40c        0x0 kernel/fonts/anon20.o
+                0x0000007c0010c000                . = ALIGN (0x1000)
+ *fill*         0x0000007c0010b40c      0xbf4 
+                0x0000007c0010c000                dataend = .
+
+.got            0x0000007c0010c000      0x198 load address 0x000000000010c000
+ .got           0x0000007c0010c000      0x198 kernel/loader.o
+
+.got.plt        0x0000007c0010c198       0x18 load address 0x000000000010c198
+ .got.plt       0x0000007c0010c198       0x18 kernel/loader.o
+                0x0000007c0010c198                _GLOBAL_OFFSET_TABLE_
+
+.igot.plt       0x0000007c0010c1b0        0x0 load address 0x000000000010c1b0
+ .igot.plt      0x0000007c0010c1b0        0x0 kernel/loader.o
+
+.data.rel.ro.local._ZTV21PhysicalMemoryManager
+                0x0000007c0010c1b0       0x20 load address 0x000000000010c1b0
+ .data.rel.ro.local._ZTV21PhysicalMemoryManager
+                0x0000007c0010c1b0       0x20 kernel/kmem.o
+                0x0000007c0010c1b0                vtable for PhysicalMemoryManager
+
+.data.rel.ro.local._ZTV20VirtualMemoryManager
+                0x0000007c0010c1d0       0x20 load address 0x000000000010c1d0
+ .data.rel.ro.local._ZTV20VirtualMemoryManager
+                0x0000007c0010c1d0       0x20 kernel/vmem.o
+                0x0000007c0010c1d0                vtable for VirtualMemoryManager
+
+.data.rel.local
+                0x0000007c0010c200      0x120 load address 0x000000000010c200
+ .data.rel.local
+                0x0000007c0010c200        0x8 kernel/shell.o
+                0x0000007c0010c200                PROMPT
+ *fill*         0x0000007c0010c208       0x18 
+ .data.rel.local
+                0x0000007c0010c220      0x100 kernel/hw/isr.o
+                0x0000007c0010c220                exceptionMessages
+
+.data.rel       0x0000007c0010c320       0xf0 load address 0x000000000010c320
+ .data.rel      0x0000007c0010c320       0xf0 kernel/font.o
+                0x0000007c0010c320                systemFonts
+
+.data.rel.ro.local._ZTV18KeyboardController
+                0x0000007c0010c410       0x20 load address 0x000000000010c410
+ .data.rel.ro.local._ZTV18KeyboardController
+                0x0000007c0010c410       0x20 kernel/hw/keyboard.o
+                0x0000007c0010c410                vtable for KeyboardController
+
+.data.rel.ro.local._ZTV15TimerController
+                0x0000007c0010c430       0x20 load address 0x000000000010c430
+ .data.rel.ro.local._ZTV15TimerController
+                0x0000007c0010c430       0x20 kernel/hw/timer.o
+                0x0000007c0010c430                vtable for TimerController
+
+.data.rel.ro.local._ZTV16ScreenController
+                0x0000007c0010c450       0x20 load address 0x000000000010c450
+ .data.rel.ro.local._ZTV16ScreenController
+                0x0000007c0010c450       0x20 kernel/hw/screen.o
+                0x0000007c0010c450                vtable for ScreenController
+
+.data.rel.ro.local._ZTV13PCIController
+                0x0000007c0010c470       0x20 load address 0x000000000010c470
+ .data.rel.ro.local._ZTV13PCIController
+                0x0000007c0010c470       0x20 kernel/hw/pci.o
+                0x0000007c0010c470                vtable for PCIController
+
+.data.rel.ro.local._ZTV14AHCIController
+                0x0000007c0010c490       0x20 load address 0x000000000010c490
+ .data.rel.ro.local._ZTV14AHCIController
+                0x0000007c0010c490       0x20 kernel/hw/ata.o
+                0x0000007c0010c490                vtable for AHCIController
+
+.data.rel.ro.local._ZTV22HierarchicalFileSystem
+                0x0000007c0010c4b0       0x20 load address 0x000000000010c4b0
+ .data.rel.ro.local._ZTV22HierarchicalFileSystem
+                0x0000007c0010c4b0       0x20 kernel/fs/hfs.o
+                0x0000007c0010c4b0                vtable for HierarchicalFileSystem
+
+.data.rel.ro.local._ZTV9Partition
+                0x0000007c0010c4d0       0x20 load address 0x000000000010c4d0
+ .data.rel.ro.local._ZTV9Partition
+                0x0000007c0010c4d0       0x20 kernel/fs/gpt.o
+                0x0000007c0010c4d0                vtable for Partition
+
+.data.rel.ro.local._ZTV18GUIDPartitionTable
+                0x0000007c0010c4f0       0x20 load address 0x000000000010c4f0
+ .data.rel.ro.local._ZTV18GUIDPartitionTable
+                0x0000007c0010c4f0       0x20 kernel/fs/gpt.o
+                0x0000007c0010c4f0                vtable for GUIDPartitionTable
+
+.rodata         0x0000007c0010c520    0x2eb60 load address 0x000000000010c520
+ *(.rodata)
+ .rodata        0x0000007c0010c520       0x2c kernel/loader.o
+ *fill*         0x0000007c0010c54c        0x4 
+ .rodata        0x0000007c0010c550       0xba kernel/kstdio.o
+ *fill*         0x0000007c0010c60a        0x6 
+ .rodata        0x0000007c0010c610       0x98 kernel/syscall.o
+ .rodata        0x0000007c0010c6a8      0x13d kernel/kernel.o
+ *fill*         0x0000007c0010c7e5        0x3 
+ .rodata        0x0000007c0010c7e8       0x7a kernel/kmem.o
+ *fill*         0x0000007c0010c862        0x6 
+ .rodata        0x0000007c0010c868      0x100 kernel/vmem.o
+ *fill*         0x0000007c0010c968       0x18 
+ .rodata        0x0000007c0010c980    0x14000 kernel/h2logo.o
+                0x0000007c0010c980                gimp_image
+ .rodata        0x0000007c00120980      0x283 kernel/shell.o
+ *fill*         0x0000007c00120c03        0x5 
+ .rodata        0x0000007c00120c08       0x28 kernel/sched.o
+ .rodata        0x0000007c00120c30       0x56 kernel/font.o
+ *fill*         0x0000007c00120c86       0x1a 
+ .rodata        0x0000007c00120ca0      0x116 kernel/hw/keyboard.o
+                0x0000007c00120ce0                KeyboardController::scanCodesToASCII_base
+                0x0000007c00120d40                KeyboardController::scanCodesToASCII_shift
+ *fill*         0x0000007c00120db6        0xa 
+ .rodata        0x0000007c00120dc0       0x30 kernel/hw/rtc.o
+ .rodata        0x0000007c00120df0       0x48 kernel/hw/timer.o
+ .rodata        0x0000007c00120e38      0x1e4 kernel/hw/isr.o
+ *fill*         0x0000007c0012101c        0x4 
+ .rodata        0x0000007c00121020       0x28 kernel/hw/screen.o
+ .rodata        0x0000007c00121048      0x268 kernel/hw/pci.o
+ .rodata        0x0000007c001212b0       0xa7 kernel/hw/ata.o
+ *fill*         0x0000007c00121357        0x1 
+ .rodata        0x0000007c00121358       0xb9 kernel/fs/hfs.o
+ *fill*         0x0000007c00121411        0x7 
+ .rodata        0x0000007c00121418       0xe4 kernel/fs/gpt.o
+ *fill*         0x0000007c001214fc        0x4 
+ .rodata        0x0000007c00121500     0x5160 kernel/fonts/hack20.o
+                0x0000007c00121500                hack20_glyph_bitmap
+                0x0000007c00125f60                hack20_glyph_dsc
+ .rodata        0x0000007c00126660     0x3640 kernel/fonts/plex16.o
+                0x0000007c00126660                plex16_glyph_bitmap
+                0x0000007c001295a0                plex16_glyph_dsc
+ .rodata        0x0000007c00129ca0     0x3660 kernel/fonts/anon16.o
+                0x0000007c00129ca0                anon16_glyph_bitmap
+                0x0000007c0012cc00                anon16_glyph_dsc
+ .rodata        0x0000007c0012d300     0x51e0 kernel/fonts/plex20.o
+                0x0000007c0012d300                plex20_glyph_bitmap
+                0x0000007c00131de0                plex20_glyph_dsc
+ .rodata        0x0000007c001324e0     0x3d80 kernel/fonts/hack16.o
+                0x0000007c001324e0                hack16_glyph_bitmap
+                0x0000007c00135b60                hack16_glyph_dsc
+ .rodata        0x0000007c00136260     0x4e20 kernel/fonts/anon20.o
+                0x0000007c00136260                anon20_glyph_bitmap
+                0x0000007c0013a980                anon20_glyph_dsc
+
+.eh_frame       0x0000007c0013b080     0x1a1c load address 0x000000000013b080
+ .eh_frame      0x0000007c0013b080       0x98 kernel/kstdio.o
+ .eh_frame      0x0000007c0013b118       0x40 kernel/syscall.o
+                                         0x58 (size before relaxing)
+ .eh_frame      0x0000007c0013b158       0x88 kernel/kernel.o
+                                         0xa0 (size before relaxing)
+ .eh_frame      0x0000007c0013b1e0      0x368 kernel/kmem.o
+                                        0x380 (size before relaxing)
+ .eh_frame      0x0000007c0013b548      0x198 kernel/vmem.o
+                                        0x1b0 (size before relaxing)
+ .eh_frame      0x0000007c0013b6e0       0x60 kernel/shell.o
+                                         0x78 (size before relaxing)
+ .eh_frame      0x0000007c0013b740      0x268 kernel/sched.o
+                                        0x280 (size before relaxing)
+ .eh_frame      0x0000007c0013b9a8      0x1e8 kernel/kstring.o
+                                        0x200 (size before relaxing)
+ .eh_frame      0x0000007c0013bb90       0xe0 kernel/hw/keyboard.o
+                                         0xf8 (size before relaxing)
+ .eh_frame      0x0000007c0013bc70       0x80 kernel/hw/rtc.o
+                                         0x98 (size before relaxing)
+ .eh_frame      0x0000007c0013bcf0       0xe0 kernel/hw/timer.o
+                                         0xf8 (size before relaxing)
+ .eh_frame      0x0000007c0013bdd0       0x40 kernel/hw/wifi.o
+                                         0x58 (size before relaxing)
+ .eh_frame      0x0000007c0013be10       0xa0 kernel/hw/isr.o
+                                         0xb8 (size before relaxing)
+ .eh_frame      0x0000007c0013beb0      0x240 kernel/hw/screen.o
+                                        0x258 (size before relaxing)
+ .eh_frame      0x0000007c0013c0f0      0x100 kernel/hw/pci.o
+                                        0x118 (size before relaxing)
+ .eh_frame      0x0000007c0013c1f0       0x40 kernel/hw/cmos.o
+                                         0x58 (size before relaxing)
+ .eh_frame      0x0000007c0013c230      0x1f8 kernel/hw/ata.o
+                                        0x210 (size before relaxing)
+ .eh_frame      0x0000007c0013c428       0xc0 kernel/hw/port_io.o
+                                         0xd8 (size before relaxing)
+ .eh_frame      0x0000007c0013c4e8       0x40 kernel/hw/idt.o
+                                         0x58 (size before relaxing)
+ .eh_frame      0x0000007c0013c528      0x268 kernel/fs/hfs.o
+                                        0x280 (size before relaxing)
+ .eh_frame      0x0000007c0013c790      0x30c kernel/fs/gpt.o
+                                        0x328 (size before relaxing)
+
+.rela.dyn       0x0000007c0013caa0        0x0 load address 0x000000000013caa0
+ .rela.got      0x0000007c0013caa0        0x0 kernel/loader.o
+ .rela.iplt     0x0000007c0013caa0        0x0 kernel/loader.o
+ .rela.multiboot
+                0x0000007c0013caa0        0x0 kernel/loader.o
+ .rela.text     0x0000007c0013caa0        0x0 kernel/loader.o
+ .rela.text._ZN9PartitionC2ERKS_
+                0x0000007c0013caa0        0x0 kernel/loader.o
+
+.bss            0x0000007c0013d000    0x94000 load address 0x000000000013d000
+                0x0000007c0013d000                bss = .
+ *(.bss)
+ .bss           0x0000007c0013d000    0x8c000 kernel/loader.o
+                0x0000007c0013d000                pml4t
+                0x0000007c0013e000                pdpt
+                0x0000007c00140000                pdt
+                0x0000007c00143000                pt
+ .bss           0x0000007c001c9000        0x0 kernel/kstdio.o
+ .bss           0x0000007c001c9000        0x0 kernel/syscall.o
+ .bss           0x0000007c001c9000      0x122 kernel/kernel.o
+                0x0000007c001c9000                pmm
+                0x0000007c001c9008                vmm
+                0x0000007c001c9020                g_controllers
+                0x0000007c001c9048                g_storage
+                0x0000007c001c9060                rootGUID
+                0x0000007c001c9088                rootPartition
+                0x0000007c001c9090                rootfs
+                0x0000007c001c90a0                bootinfo
+                0x0000007c001c9118                bootTime
+                0x0000007c001c9120                verbose
+                0x0000007c001c9121                debug
+ .bss           0x0000007c001c9122        0x0 kernel/kmem.o
+ .bss           0x0000007c001c9122        0x0 kernel/vmem.o
+ .bss           0x0000007c001c9122        0x0 kernel/h2logo.o
+ *fill*         0x0000007c001c9122       0x1e 
+ .bss           0x0000007c001c9140      0x424 kernel/shell.o
+                0x0000007c001c9140                shifted
+                0x0000007c001c9160                shellBuffer
+                0x0000007c001c9560                shellBufferPos
+ *fill*         0x0000007c001c9564        0xc 
+ .bss           0x0000007c001c9570       0x78 kernel/sched.o
+                0x0000007c001c9570                gdt
+                0x0000007c001c9578                tss
+                0x0000007c001c9580                curTask
+                0x0000007c001c9588                runQ
+                0x0000007c001c9590                runQEnd
+                0x0000007c001c9598                sleepQ
+                0x0000007c001c95a0                termQ
+                0x0000007c001c95a8                waitQ
+                0x0000007c001c95b0                reaper
+                0x0000007c001c95b8                schedulerSpinlock
+                0x0000007c001c95bc                locksHeld
+                0x0000007c001c95c0                taskSwitchDeferred
+                0x0000007c001c95d0                cputime
+ .bss           0x0000007c001c95e8        0x0 kernel/font.o
+ .bss           0x0000007c001c95e8        0x0 kernel/kstring.o
+ .bss           0x0000007c001c95e8        0x0 kernel/hw/keyboard.o
+ .bss           0x0000007c001c95e8        0x0 kernel/hw/rtc.o
+ .bss           0x0000007c001c95e8        0x0 kernel/hw/timer.o
+ .bss           0x0000007c001c95e8        0x0 kernel/hw/wifi.o
+ *fill*         0x0000007c001c95e8       0x18 
+ .bss           0x0000007c001c9600      0x800 kernel/hw/isr.o
+                0x0000007c001c9600                interruptHandlers
+ .bss           0x0000007c001c9e00        0x0 kernel/hw/screen.o
+ .bss           0x0000007c001c9e00        0x0 kernel/hw/pci.o
+ .bss           0x0000007c001c9e00        0x0 kernel/hw/cmos.o
+ .bss           0x0000007c001c9e00        0x0 kernel/hw/ata.o
+ .bss           0x0000007c001c9e00        0x0 kernel/hw/port_io.o
+ .bss           0x0000007c001c9e00     0x100a kernel/hw/idt.o
+                0x0000007c001c9e00                idt
+                0x0000007c001cae00                idt_reg
+ *fill*         0x0000007c001cae0a       0x16 
+ .bss           0x0000007c001cae20     0x6000 kernel/fs/hfs.o
+                0x0000007c001cae20                fdMap
+ .bss           0x0000007c001d0e20        0x0 kernel/fs/gpt.o
+ .bss           0x0000007c001d0e20        0x0 kernel/fonts/hack20.o
+ .bss           0x0000007c001d0e20        0x0 kernel/fonts/plex16.o
+ .bss           0x0000007c001d0e20        0x0 kernel/fonts/anon16.o
+ .bss           0x0000007c001d0e20        0x0 kernel/fonts/plex20.o
+ .bss           0x0000007c001d0e20        0x0 kernel/fonts/hack16.o
+ .bss           0x0000007c001d0e20        0x0 kernel/fonts/anon20.o
+ *(COMMON)
+                0x0000007c001d1000                . = ALIGN (0x1000)
+ *fill*         0x0000007c001d0e20      0x1e0 
+                0x0000007c001d1000                end = .
+
+/DISCARD/
+ *(.comment)
+LOAD kernel/loader.o
+LOAD kernel/kstdio.o
+LOAD kernel/syscall.o
+LOAD kernel/kernel.o
+LOAD kernel/kmem.o
+LOAD kernel/vmem.o
+LOAD kernel/h2logo.o
+LOAD kernel/shell.o
+LOAD kernel/sched.o
+LOAD kernel/font.o
+LOAD kernel/kstring.o
+LOAD kernel/hw/keyboard.o
+LOAD kernel/hw/rtc.o
+LOAD kernel/hw/timer.o
+LOAD kernel/hw/wifi.o
+LOAD kernel/hw/isr.o
+LOAD kernel/hw/screen.o
+LOAD kernel/hw/pci.o
+LOAD kernel/hw/cmos.o
+LOAD kernel/hw/ata.o
+LOAD kernel/hw/port_io.o
+LOAD kernel/hw/idt.o
+LOAD kernel/fs/hfs.o
+LOAD kernel/fs/gpt.o
+LOAD kernel/fonts/hack20.o
+LOAD kernel/fonts/plex16.o
+LOAD kernel/fonts/anon16.o
+LOAD kernel/fonts/plex20.o
+LOAD kernel/fonts/hack16.o
+LOAD kernel/fonts/anon20.o
+LOAD kernel/switchtask.o
+LOAD kernel/switchring3.o
+LOAD kernel/hw/interrupt.o
+OUTPUT(kernel.bin elf64-x86-64)
+
+.debug_info     0x0000000000000000    0x11411
+ .debug_info    0x0000000000000000      0x917 kernel/kstdio.o
+ .debug_info    0x0000000000000917      0xb35 kernel/syscall.o
+ .debug_info    0x000000000000144c      0xd9c kernel/kernel.o
+ .debug_info    0x00000000000021e8     0x11c2 kernel/kmem.o
+ .debug_info    0x00000000000033aa     0x124e kernel/vmem.o
+ .debug_info    0x00000000000045f8       0xba kernel/h2logo.o
+ .debug_info    0x00000000000046b2      0xbd4 kernel/shell.o
+ .debug_info    0x0000000000005286      0xe71 kernel/sched.o
+ .debug_info    0x00000000000060f7      0x212 kernel/font.o
+ .debug_info    0x0000000000006309      0x5ea kernel/kstring.o
+ .debug_info    0x00000000000068f3      0xdd7 kernel/hw/keyboard.o
+ .debug_info    0x00000000000076ca      0x285 kernel/hw/rtc.o
+ .debug_info    0x000000000000794f      0xbdf kernel/hw/timer.o
+ .debug_info    0x000000000000852e      0x155 kernel/hw/wifi.o
+ .debug_info    0x0000000000008683      0x5c6 kernel/hw/isr.o
+ .debug_info    0x0000000000008c49      0xf72 kernel/hw/screen.o
+ .debug_info    0x0000000000009bbb      0xe35 kernel/hw/pci.o
+ .debug_info    0x000000000000a9f0       0xf4 kernel/hw/cmos.o
+ .debug_info    0x000000000000aae4     0x2c7f kernel/hw/ata.o
+ .debug_info    0x000000000000d763      0x218 kernel/hw/port_io.o
+ .debug_info    0x000000000000d97b      0x1eb kernel/hw/idt.o
+ .debug_info    0x000000000000db66     0x1747 kernel/fs/hfs.o
+ .debug_info    0x000000000000f2ad     0x1486 kernel/fs/gpt.o
+ .debug_info    0x0000000000010733      0x225 kernel/fonts/hack20.o
+ .debug_info    0x0000000000010958      0x225 kernel/fonts/plex16.o
+ .debug_info    0x0000000000010b7d      0x225 kernel/fonts/anon16.o
+ .debug_info    0x0000000000010da2      0x225 kernel/fonts/plex20.o
+ .debug_info    0x0000000000010fc7      0x225 kernel/fonts/hack16.o
+ .debug_info    0x00000000000111ec      0x225 kernel/fonts/anon20.o
+
+.debug_abbrev   0x0000000000000000     0x380a
+ .debug_abbrev  0x0000000000000000      0x1d6 kernel/kstdio.o
+ .debug_abbrev  0x00000000000001d6      0x1e5 kernel/syscall.o
+ .debug_abbrev  0x00000000000003bb      0x28f kernel/kernel.o
+ .debug_abbrev  0x000000000000064a      0x421 kernel/kmem.o
+ .debug_abbrev  0x0000000000000a6b      0x383 kernel/vmem.o
+ .debug_abbrev  0x0000000000000dee       0x76 kernel/h2logo.o
+ .debug_abbrev  0x0000000000000e64      0x1d5 kernel/shell.o
+ .debug_abbrev  0x0000000000001039      0x329 kernel/sched.o
+ .debug_abbrev  0x0000000000001362       0xb1 kernel/font.o
+ .debug_abbrev  0x0000000000001413      0x11c kernel/kstring.o
+ .debug_abbrev  0x000000000000152f      0x2f4 kernel/hw/keyboard.o
+ .debug_abbrev  0x0000000000001823       0xf7 kernel/hw/rtc.o
+ .debug_abbrev  0x000000000000191a      0x2e5 kernel/hw/timer.o
+ .debug_abbrev  0x0000000000001bff       0xd5 kernel/hw/wifi.o
+ .debug_abbrev  0x0000000000001cd4      0x1ad kernel/hw/isr.o
+ .debug_abbrev  0x0000000000001e81      0x2e8 kernel/hw/screen.o
+ .debug_abbrev  0x0000000000002169      0x323 kernel/hw/pci.o
+ .debug_abbrev  0x000000000000248c       0xa4 kernel/hw/cmos.o
+ .debug_abbrev  0x0000000000002530      0x447 kernel/hw/ata.o
+ .debug_abbrev  0x0000000000002977       0xb1 kernel/hw/port_io.o
+ .debug_abbrev  0x0000000000002a28      0x109 kernel/hw/idt.o
+ .debug_abbrev  0x0000000000002b31      0x486 kernel/fs/hfs.o
+ .debug_abbrev  0x0000000000002fb7      0x3d3 kernel/fs/gpt.o
+ .debug_abbrev  0x000000000000338a       0xc0 kernel/fonts/hack20.o
+ .debug_abbrev  0x000000000000344a       0xc0 kernel/fonts/plex16.o
+ .debug_abbrev  0x000000000000350a       0xc0 kernel/fonts/anon16.o
+ .debug_abbrev  0x00000000000035ca       0xc0 kernel/fonts/plex20.o
+ .debug_abbrev  0x000000000000368a       0xc0 kernel/fonts/hack16.o
+ .debug_abbrev  0x000000000000374a       0xc0 kernel/fonts/anon20.o
+
+.debug_aranges  0x0000000000000000      0x550
+ .debug_aranges
+                0x0000000000000000       0x30 kernel/kstdio.o
+ .debug_aranges
+                0x0000000000000030       0x30 kernel/syscall.o
+ .debug_aranges
+                0x0000000000000060       0x40 kernel/kernel.o
+ .debug_aranges
+                0x00000000000000a0       0x60 kernel/kmem.o
+ .debug_aranges
+                0x0000000000000100       0x30 kernel/vmem.o
+ .debug_aranges
+                0x0000000000000130       0x20 kernel/h2logo.o
+ .debug_aranges
+                0x0000000000000150       0x30 kernel/shell.o
+ .debug_aranges
+                0x0000000000000180       0x30 kernel/sched.o
+ .debug_aranges
+                0x00000000000001b0       0x20 kernel/font.o
+ .debug_aranges
+                0x00000000000001d0       0x30 kernel/kstring.o
+ .debug_aranges
+                0x0000000000000200       0x30 kernel/hw/keyboard.o
+ .debug_aranges
+                0x0000000000000230       0x50 kernel/hw/rtc.o
+ .debug_aranges
+                0x0000000000000280       0x30 kernel/hw/timer.o
+ .debug_aranges
+                0x00000000000002b0       0x30 kernel/hw/wifi.o
+ .debug_aranges
+                0x00000000000002e0       0x30 kernel/hw/isr.o
+ .debug_aranges
+                0x0000000000000310       0x30 kernel/hw/screen.o
+ .debug_aranges
+                0x0000000000000340       0x30 kernel/hw/pci.o
+ .debug_aranges
+                0x0000000000000370       0x30 kernel/hw/cmos.o
+ .debug_aranges
+                0x00000000000003a0       0x30 kernel/hw/ata.o
+ .debug_aranges
+                0x00000000000003d0       0x30 kernel/hw/port_io.o
+ .debug_aranges
+                0x0000000000000400       0x30 kernel/hw/idt.o
+ .debug_aranges
+                0x0000000000000430       0x30 kernel/fs/hfs.o
+ .debug_aranges
+                0x0000000000000460       0x30 kernel/fs/gpt.o
+ .debug_aranges
+                0x0000000000000490       0x20 kernel/fonts/hack20.o
+ .debug_aranges
+                0x00000000000004b0       0x20 kernel/fonts/plex16.o
+ .debug_aranges
+                0x00000000000004d0       0x20 kernel/fonts/anon16.o
+ .debug_aranges
+                0x00000000000004f0       0x20 kernel/fonts/plex20.o
+ .debug_aranges
+                0x0000000000000510       0x20 kernel/fonts/hack16.o
+ .debug_aranges
+                0x0000000000000530       0x20 kernel/fonts/anon20.o
+
+.debug_line     0x0000000000000000     0x5002
+ .debug_line    0x0000000000000000      0x349 kernel/kstdio.o
+ .debug_line    0x0000000000000349      0x2eb kernel/syscall.o
+ .debug_line    0x0000000000000634      0x396 kernel/kernel.o
+ .debug_line    0x00000000000009ca      0x5db kernel/kmem.o
+ .debug_line    0x0000000000000fa5      0x690 kernel/vmem.o
+ .debug_line    0x0000000000001635       0x4e kernel/h2logo.o
+ .debug_line    0x0000000000001683      0x41b kernel/shell.o
+ .debug_line    0x0000000000001a9e      0x4c4 kernel/sched.o
+ .debug_line    0x0000000000001f62       0xb6 kernel/font.o
+ .debug_line    0x0000000000002018      0x495 kernel/kstring.o
+ .debug_line    0x00000000000024ad      0x2f1 kernel/hw/keyboard.o
+ .debug_line    0x000000000000279e      0x211 kernel/hw/rtc.o
+ .debug_line    0x00000000000029af      0x1e9 kernel/hw/timer.o
+ .debug_line    0x0000000000002b98       0x66 kernel/hw/wifi.o
+ .debug_line    0x0000000000002bfe      0x170 kernel/hw/isr.o
+ .debug_line    0x0000000000002d6e      0x6c1 kernel/hw/screen.o
+ .debug_line    0x000000000000342f      0x34f kernel/hw/pci.o
+ .debug_line    0x000000000000377e       0x83 kernel/hw/cmos.o
+ .debug_line    0x0000000000003801      0x650 kernel/hw/ata.o
+ .debug_line    0x0000000000003e51       0x9e kernel/hw/port_io.o
+ .debug_line    0x0000000000003eef       0xc7 kernel/hw/idt.o
+ .debug_line    0x0000000000003fb6      0x575 kernel/fs/hfs.o
+ .debug_line    0x000000000000452b      0x663 kernel/fs/gpt.o
+ .debug_line    0x0000000000004b8e       0xbe kernel/fonts/hack20.o
+ .debug_line    0x0000000000004c4c       0xbe kernel/fonts/plex16.o
+ .debug_line    0x0000000000004d0a       0xbe kernel/fonts/anon16.o
+ .debug_line    0x0000000000004dc8       0xbe kernel/fonts/plex20.o
+ .debug_line    0x0000000000004e86       0xbe kernel/fonts/hack16.o
+ .debug_line    0x0000000000004f44       0xbe kernel/fonts/anon20.o
+
+.debug_str      0x0000000000000000     0x4c1b
+ .debug_str     0x0000000000000000      0x55f kernel/kstdio.o
+                                        0x625 (size before relaxing)
+ .debug_str     0x000000000000055f      0x1f5 kernel/syscall.o
+                                        0x76e (size before relaxing)
+ .debug_str     0x0000000000000754      0x148 kernel/kernel.o
+                                        0x82f (size before relaxing)
+ .debug_str     0x000000000000089c      0x5ca kernel/kmem.o
+                                        0x9ce (size before relaxing)
+ .debug_str     0x0000000000000e66      0x344 kernel/vmem.o
+                                        0x862 (size before relaxing)
+ .debug_str     0x00000000000011aa       0x42 kernel/h2logo.o
+                                        0x15f (size before relaxing)
+ .debug_str     0x00000000000011ec       0xe1 kernel/shell.o
+                                        0x788 (size before relaxing)
+ .debug_str     0x00000000000012cd      0x336 kernel/sched.o
+                                        0x88d (size before relaxing)
+ .debug_str     0x0000000000001603       0x10 kernel/font.o
+                                        0x2c0 (size before relaxing)
+ .debug_str     0x0000000000001613      0x16a kernel/kstring.o
+                                        0x2ed (size before relaxing)
+ .debug_str     0x000000000000177d      0x279 kernel/hw/keyboard.o
+                                        0x941 (size before relaxing)
+ .debug_str     0x00000000000019f6      0x103 kernel/hw/rtc.o
+                                        0x268 (size before relaxing)
+ .debug_str     0x0000000000001af9      0x173 kernel/hw/timer.o
+                                        0x7d9 (size before relaxing)
+ .debug_str     0x0000000000001c6c       0x97 kernel/hw/wifi.o
+                                        0x211 (size before relaxing)
+ .debug_str     0x0000000000001d03       0xd8 kernel/hw/isr.o
+                                        0x3e5 (size before relaxing)
+ .debug_str     0x0000000000001ddb      0x3e5 kernel/hw/screen.o
+                                        0x95c (size before relaxing)
+ .debug_str     0x00000000000021c0      0x31e kernel/hw/pci.o
+                                        0x88b (size before relaxing)
+ .debug_str     0x00000000000024de       0x48 kernel/hw/cmos.o
+                                        0x194 (size before relaxing)
+ .debug_str     0x0000000000002526     0x167f kernel/hw/ata.o
+                                       0x1d5a (size before relaxing)
+ .debug_str     0x0000000000003ba5       0xc5 kernel/hw/port_io.o
+                                        0x230 (size before relaxing)
+ .debug_str     0x0000000000003c6a       0x40 kernel/hw/idt.o
+                                        0x21c (size before relaxing)
+ .debug_str     0x0000000000003caa      0x8e7 kernel/fs/hfs.o
+                                        0xec5 (size before relaxing)
+ .debug_str     0x0000000000004591      0x5fa kernel/fs/gpt.o
+                                        0xaeb (size before relaxing)
+ .debug_str     0x0000000000004b8b       0x18 kernel/fonts/hack20.o
+                                        0x2c8 (size before relaxing)
+ .debug_str     0x0000000000004ba3       0x18 kernel/fonts/plex16.o
+                                        0x2c8 (size before relaxing)
+ .debug_str     0x0000000000004bbb       0x18 kernel/fonts/anon16.o
+                                        0x2c8 (size before relaxing)
+ .debug_str     0x0000000000004bd3       0x18 kernel/fonts/plex20.o
+                                        0x2c8 (size before relaxing)
+ .debug_str     0x0000000000004beb       0x18 kernel/fonts/hack16.o
+                                        0x2c8 (size before relaxing)
+ .debug_str     0x0000000000004c03       0x18 kernel/fonts/anon20.o
+                                        0x2c8 (size before relaxing)
+
+.note.GNU-stack
+                0x0000000000000000        0x0
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/kstdio.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/syscall.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/kernel.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/kmem.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/vmem.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/h2logo.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/shell.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/sched.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/font.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/kstring.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/hw/keyboard.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/hw/rtc.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/hw/timer.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/hw/wifi.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/hw/isr.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/hw/screen.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/hw/pci.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/hw/cmos.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/hw/ata.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/hw/port_io.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/hw/idt.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/fs/hfs.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/fs/gpt.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/fonts/hack20.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/fonts/plex16.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/fonts/anon16.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/fonts/plex20.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/fonts/hack16.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 kernel/fonts/anon20.o
+
+.debug_ranges   0x0000000000000000      0x1e0
+ .debug_ranges  0x0000000000000000       0x30 kernel/kernel.o
+ .debug_ranges  0x0000000000000030       0x50 kernel/kmem.o
+ .debug_ranges  0x0000000000000080       0xc0 kernel/shell.o
+ .debug_ranges  0x0000000000000140       0x40 kernel/hw/rtc.o
+ .debug_ranges  0x0000000000000180       0x30 kernel/hw/screen.o
+ .debug_ranges  0x00000000000001b0       0x30 kernel/fs/gpt.o

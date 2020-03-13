@@ -1,0 +1,3 @@
+{
+    "C_Cpp.default.includePath": ["kernel/includes", "userspace/hylibc/includes"]
+}

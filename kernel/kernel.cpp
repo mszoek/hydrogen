@@ -1,126 +1,183 @@
-// H2OS Kernel! CodeGrlz rule.
+/*
+ * H2 Kernel
+ * Copyright (C) 2017-2019 Zoe & Alexis Knox. All rights reserved.
+ */
 
+#include <kernel.h>
 #include <hw/port_io.h>
 #include <hw/isr.h>
 #include <hw/idt.h>
 #include <hw/timer.h>
-#include <drivers/keyboard.h>
-#include <drivers/screen.h>
+#include <hw/pci.h>
+#include <hw/ata.h>
+#include <hw/keyboard.h>
+#include <hw/screen.h>
 #include <kstring.h>
-#include <kmem.h>
+#include <kstdio.h>
 #include <kversion.h>
-#include <bootinfo.h>
 #include <shell.h>
+#include <hw/byteswap.h>
+#include <sched.h>
+#include <hw/rtc.h>
 
-#define DEFAULT_TEXT_ATTR 0x07    // grey on black
-#define DEFAULT_STATUS_ATTR 0x5e  // yellow on magenta
+// some global stuff
+PhysicalMemoryManager *pmm = 0;
+VirtualMemoryManager *vmm = 0;
+UInt64 g_controllers[CONTROLLER_MAX];
+StorageList *g_storage = 0;
+char rootGUID[40]; // root filesystem GUID from cmdline
+Partition *rootPartition = 0;
+HierarchicalFileSystem *rootfs = 0;
+struct multiboot_info bootinfo;
+UInt64 bootTime; // POSIX time (seconds since the Epoch)
 
-extern UInt32 tickCounter; // in timer.c
+bool verbose = false;
+bool debug = false;
 
 // Prototypes
 void displayStatusLine();
 void displayStartupMsg(unsigned int size);
 
+void idletask(void)
+{
+  while(1)
+  {
+    if(runQ == 0)
+      asm("hlt");
+  }
+}
+
 // Kernel entry function
 extern "C" void kernelMain(struct multiboot_info *binf, unsigned int size)
 {
-  UInt32 mem = 0;
-  UInt32 mmap = 0, mmapLen = 0;
-  UInt32 pages[16];
+  UInt64 mem = 0, mmap = 0, mmapLen = 0;
   int i = 0;
-  
-  displayStartupMsg(size);
+  char cmdline[256];
+
+  memset(cmdline, 0, sizeof(cmdline));
+  memset(rootGUID, 0, sizeof(rootGUID));
+  memcpy((char *)&bootinfo, (char *)binf, sizeof(bootinfo));
 
   /* Read data from the multiboot structure */
   if(binf->flags & 0x1)
-  {
     mem = binf->memHi + binf->memLo + 1024;
-    kprintf("%d KB memory", mem);
-  }
-  if(binf->flags & 0x40) 
+  if(binf->flags & 0x40)
   {
     mmap = binf->mmapAddr;
     mmapLen = binf->mmapLen;
-    kprintf("; memory map loaded @ 0x%x", mmap);
   }
+  if(binf->flags & 0x4)
+    strcpy(cmdline, (char *)((UInt64)binf->cmdLine));
 
-  kprint("\n\nisrInstall()\n");
-  isrInstall();
-  kprint("initKeyboard()\n");
-  initKeyboard();
-  kprint("initTimer()\n");
-  initTimer(100);
+  /* unmap 1M - 4M now that we're in VMA */
+  for(i = 256; i < 1024; ++i)
+    pt[i] = 0;
+  pdt[1] = 0;
+  pdt[2] = 0;
 
-  /* Start the memory manager */
-  kprint("pmmInit()\n");
-  pmmInit(mem, 0x1000000, size, mmap, mmapLen);
+  PhysicalMemoryManager physMM(mem, KERNEL_VMA+KERNEL_ADDR, size,
+    (PhysicalMemoryManager::RegionInfo *)mmap, mmapLen);
+  pmm = &physMM;
 
-  kprint("Starting shell\n");
-  shellStart();
-  displayStatusLine();
+  VirtualMemoryManager virtMM;
+  vmm = &virtMM;
 
-  asm volatile("sti"); // Start interrupts!
+  new ScreenController();
+  ScreenController *screen = ((ScreenController *)g_controllers[CTRL_SCREEN]);
+  if(!screen)
+    panic();
 
-  memset((char*)pages, 0, sizeof(pages));
-  while(1)
+  char *s = 0;
+  int index = 0;
+  while((s = strtok(cmdline, " ", &index)) != 0)
   {
-      if(tickCounter % 100 == 0)
-      {
-          if(pages[i] != 0)
-          {
-              pmmFree(pages[i]);
-          }
-          void *p = pmmAlloc();
-          if(p != 0)
-          {
-              memset(p, i < 10 ? i+'0' : i-10+'A', PMM_BLOCK_SIZE);
-              pages[i++] = p;
-              if(i > 15)
-              {
-                  i = 0;
-              }
-          }
-          // *((char *)p+1840) = 0;
-          // kprintAt((char *)p, 0, 0, 0x03);
-          displayStatusLine();
-      }
-
-      shellCheckInput();
-
-      asm("hlt"); // sleep until next interrupt
+    if(strcmp(s, "verbose") == 0)
+      verbose = true;
+    if(strcmp(s, "debug") == 0)
+      debug = true;
+    else if(strncmp(s, "rd=", 3) == 0)
+      strcpy(rootGUID, &s[3]);
+    else if(strncmp(s, "font=", 5) == 0)
+      screen->setFont(atoi(&s[5]));
   }
-}
 
-void displayStatusLine()
-{
-  int curpos, i;
-  char attr;
-  char s[25], line[81];
-
-  curpos = getCursorOffset();
-
-  memset(line, 0, sizeof(line));
-  memcpy(line, "Mem Free: ", 10);
-  itoa(pmmMemFreeBlocks(), 10, s);
-  memcpy(line+strlen(line), s, strlen(s));
-  memcpy(line+strlen(line), " blocks Uptime: ", 16);
-  itoa(tickCounter/100, 10, s);
-  memcpy(line+strlen(line), s, strlen(s));
-  i = strlen(line);
-  line[i] = 's';
-  line[i+1] = 0;
-  memset(line+strlen(line), 0x20, sizeof(line)-strlen(line)-2); // space fill to right edge
-  kprintAt(line, 0, 0, DEFAULT_STATUS_ATTR);
-
-  setCursorOffset(curpos);
-}
-
-void displayStartupMsg(unsigned int size)
-{
-  clearScreen(DEFAULT_TEXT_ATTR);
-  defaultTextAttr(0x0f);
-  setCursorOffset(getOffset(0, 2));
-  kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x1000000]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size);
+  screen->clearScreen();
+  screen->drawLogo();
+  screen->setColor(0xE0E0F0);
+  kprintf("H2OS Kernel Started! v%d.%d.%d.%d [%d bytes @ 0x%x]\n", KERN_MAJOR, KERN_MINOR, KERN_SP, KERN_PATCH, size, KERNEL_VMA);
   kprint("Copyright (C) 2017-2019 H2. All Rights Reserved!\n\n");
-  defaultTextAttr(DEFAULT_TEXT_ATTR);
+  screen->setColor(0xB0B0B0);
+  isrInstall();
+
+  TimerController *ctrlTimer = new TimerController();
+  new KeyboardController();
+  PCIController *ctrlPCI = new PCIController();
+  ctrlPCI->pciEnumBuses();
+  asm volatile("sti"); // Start interrupts!
+  ctrlPCI->startDevices();
+
+  bootTime = rtcRead();
+
+  // look for partition tables if we found some disks.
+  // enumerate them all so they get displayed, even if no root UUID to mount
+  for(StorageList *iter = g_storage; iter != 0; iter = iter->next)
+  {
+    GUIDPartitionTable *gpt = 0;
+
+    if(iter->controllerType == CTRL_AHCI)
+      gpt = new GUIDPartitionTable((AHCIController *)iter->controller, iter->port);
+
+    if(rootGUID[0] != 0 && gpt->isValid())
+    {
+      rootPartition = new Partition(*gpt->getPartitionByGUID(rootGUID));
+      free(gpt);
+
+      kprintf("Mounting %s root partition %s\n",
+          (rootPartition->getTypeEntry())->name, rootPartition->getGUIDA());
+      rootfs = new HierarchicalFileSystem(rootPartition);
+      rootfs->mount();
+    }
+  }
+
+  /* Start multitasking! */
+  Scheduler::init();
+
+  TaskControlBlock *idle = Scheduler::createTask(idletask, "idle task");
+  reaper = Scheduler::createTask(Scheduler::taskReaper, "reaper");
+  runQ = reaper;
+
+  if(rootfs->isMounted())
+  {
+    int fd = rootfs->open("Init.bin");
+    if(fd < 0)
+      kprintf("Cannot open Init!\n");
+    else
+    {
+      struct stat stbuf;
+      rootfs->stat("Init.bin", &stbuf);
+      UInt8 *buf = (UInt8*)malloc(stbuf.st_size);
+      rootfs->read(fd, buf, stbuf.st_size);
+      rootfs->close(fd);
+      TaskControlBlock *user = Scheduler::createProcess((UInt64)buf, (UInt64)buf + stbuf.st_size, "Init");
+      runQ = user;
+      user->next = reaper;
+      kprint("Starting Init\n");
+    }
+  }
+
+  curTask = idle;
+  curTask->sp += 128;
+  runQEnd = reaper;
+
+  if(runQ != reaper)
+    asm volatile("jmp initTasks"); // doesn't return
+  panic();
+}
+
+void panic()
+{
+  asm("cli");
+  kprintf("PANIC! at the disco. System halted.\n");
+  // FIXME: dump registers and stack here
+  asm("hlt");
 }

@@ -1,56 +1,228 @@
 ; Kernel loader stub to get the right entry point from bootloader
-; Zoe & Alexis Knox 2019
+; Copyright (C) 2019 Zoe & Alexis Knox. All rights reserved.
 
-[bits 32]
 global start
+global pml4t
+global pdpt
+global pdt
+global pt
 extern kernelMain
+extern code, dataend, end
 
+base    equ 0x7C00000000
 
-start:
-	lgdt [gdt_descriptor] ; Load the GDT descriptor
-	mov ax, 0x10 ; update the segment registers
-	mov ds, ax
-	mov ss, ax
-	mov es, ax
-	mov fs, ax
-	mov gs, ax
-	mov esp, _sys_stack
-	jmp 0x08:stublet
-
+section .multiboot
 align 4
 mboot:
 	multiboot_page_align 	equ 1<<0
 	multiboot_memory_info	equ 1<<1
-	multiboot_aout_kludge	equ 1<<16
+	multiboot_gfx_info		equ 1<<2
 	multiboot_header_magic	equ 0x1badb002
-	multiboot_header_flags	equ multiboot_page_align | multiboot_memory_info | multiboot_aout_kludge
+	multiboot_header_flags	equ multiboot_page_align | multiboot_memory_info | multiboot_gfx_info 
 	multiboot_checksum		equ -(multiboot_header_magic + multiboot_header_flags)
-	extern code, bss, end
 
 	dd multiboot_header_magic
 	dd multiboot_header_flags
 	dd multiboot_checksum
 
 	dd mboot
-	dd code
-	dd bss
-	dd end
+	dd code - base
+	dd dataend - base
+	dd end - base
 	dd start
+	dd 0	; mode = graphical
+	dd 1920	; auto width (no preference)
+	dd 1080	; auto height (no preference)
+	dd 32	; prefer 32bpp
 
-stublet:
-	mov eax, end;
-	sub eax, mboot
-	push eax
-	push ebx				; Pass multiboot info block to kernel
-	call kernelMain			; nu kör vi!!
+section .inittext
+bits 32
+
+binfaddr:
+	dd 0
+	dd 0
+
+start:
+	; save ebx. GRUB put stuff there
+	mov edi, binfaddr
+	mov [edi], ebx
+
+	; set up PAE paging. we need to identity map the first few MB
+	; so the loader can get to stub64. then we remove it.
+	mov edi, pml4t - base
+	mov cr3, edi
+	xor eax, eax
+	mov ecx, 0x1000
+	rep stosd ; clear the memory
+
+	mov edi, cr3
+	mov ebx, pdpt - base
+	or ebx, 3
+	mov DWORD [edi], ebx ; point PML4T to PDPT
+
+	mov edi, pdpt - base
+	xor eax, eax
+	mov ecx, 0x2000
+	rep stosd ; clear memory
+
+	mov edi, pdpt - base
+	mov ebx, pdt - base
+	or ebx, 3
+	mov DWORD [edi], ebx ; point PDPT to PDT
+	add edi, 0xf80
+	add ebx, 0x1000
+	mov DWORD [edi], ebx ; point PDPT[496] to PDT[512];
+
+	mov edi, pdt - base
+	xor eax, eax
+	mov ecx, 0x3000
+	rep stosd ; clear memory
+
+	mov edi, pdt - base
+	mov ebx, pt - base
+	or ebx, 3
+	mov DWORD [edi], ebx ; point PDT[0] to PT[0]
+	add ebx, 0x1000
+	add edi, 8
+	mov DWORD [edi], ebx ; point PDT[1] to PT[512]
+	add ebx, 0x1000
+	add edi, 8
+	mov DWORD [edi], ebx ; point PDT[2] to PT[1024]
+
+	mov edi, pdt - base
+	add edi, 0x1000 ; base of our PDT for this 1GB
+	mov ebx, pt - base
+	add ebx, 0x3000
+	or ebx, 3
+	mov DWORD [edi], ebx ; point PDT[512] to PT[1536]
+	add edi, 8
+	add ebx, 0x1000
+	mov DWORD [edi], ebx ; point PDT[513] to PT[2048]
+	add edi, 8
+	add ebx, 0x1000
+	mov DWORD [edi], ebx ; point PDT[514] to PT[2560]
+	add edi, 8
+
+	; identity map first 6MB (pt[0-1535])
+	mov edi, pt - base
+	mov ebx, 0x7
+	mov ecx, 0x600 ; 1536 entries = 12KB
+setEntry:
+	mov DWORD [edi], ebx
+	add ebx, 0x1000
+	add edi, 8
+	loop setEntry
+
+	; map the same 6MB into 0x7C00000000
+	mov edi, pt - base
+	add edi, 0x3000
+	mov ebx, 0x3
+	mov ecx, 0x600
+setEntry4:
+	mov DWORD [edi], ebx
+	add edi, 8
+	add ebx, 0x1000
+	loop setEntry4
+
+	mov ebx, edx ; restore bootloader info
+
+	; tell the CPU we're using PAE
+	mov eax, cr4
+	or eax, 1<<5
+	mov cr4, eax
+
+	; set the LM bit to enable Long Mode
+	; we will be in 32-bit Compatibility Mode
+	mov ecx, 0xC0000080
+	rdmsr
+	or eax, 1<<8
+	wrmsr
+	; enable paging
+	mov eax, cr0
+	or eax, 1<<31
+	mov cr0, eax
+
+	; now we can enter true 64-bit mode!
+	; load the GDT and jump to stub64
+	lgdt [GDT64.PointerLow - base]
+	mov ax, GDT64.Data
+	mov ds, ax
+	mov es, ax
+	mov ss, ax
+	jmp GDT64.Code:stub64
+
+bits 64
+stub64:
+	mov rax, start64
+	jmp rax
+
+section .text
+start64:
+	; now we're in the virtual address space!
+	; reload the GDT and update selectors again
+	mov rax, GDT64.Pointer
+	lgdt [rax]
+
+	mov ax, GDT64.Data
+	mov ds, ax
+	mov es, ax
+	mov ss, ax
+	jmp okgo
+
+okgo:
+	mov rsp, _sys_stack
+	mov rbp, rsp
+	mov rsi, end
+	mov rdi, base
+	sub rsi, rdi
+	mov rdi, [binfaddr]
+
+	push rdi ; what we saved from GRUB
+	push rsi ; kernel size
+	mov rax, QWORD kernelMain
+	jmp rax ; nu kör vi!!
 	cli
 die: hlt
 	jmp die
 
-%include "utilities/32bit/32bit-gdt.asm"
-
 section .bss
-	resb 8192
+align 4096
+pml4t:	resb 8*512
+pdpt:	resb 8*1024
+pdt:	resb 8*1536
+pt:		resb 8*3072
 
+align 8
+	resb 512*1024
 _sys_stack:
 
+section .rodata
+align 8
+GDT64:                           ; Global Descriptor Table (64-bit).
+    .Null: equ $ - GDT64         ; The null descriptor.
+    dw 0xFFFF                    ; Limit (low).
+    dw 0                         ; Base (low).
+    db 0                         ; Base (middle)
+    db 0                         ; Access.
+    db 1                         ; Granularity.
+    db 0                         ; Base (high).
+    .Code: equ $ - GDT64         ; The code descriptor.
+    dw 0                         ; Limit (low).
+    dw 0                         ; Base (low).
+    db 0                         ; Base (middle)
+    db 10011010b                 ; Access (exec/read).
+    db 10100000b                 ; Granularity, 64 bits flag, limit19:16.
+    db 0                         ; Base (high).
+    .Data: equ $ - GDT64         ; The data descriptor.
+    dw 0                         ; Limit (low).
+    dw 0                         ; Base (low).
+    db 0                         ; Base (middle)
+    db 10010010b                 ; Access (read/write).
+    db 10000000b                 ; Granularity, limit19:16.
+    db 0                         ; Base (high).
+    .Pointer:                    ; The GDT-pointer.
+    dw $ - GDT64 - 1             ; Limit.
+    dq GDT64                     ; Base.
+    .PointerLow:
+    dw GDT64.Pointer - GDT64 - 1
+    dq GDT64 - base
