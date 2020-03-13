@@ -6,6 +6,8 @@ After almost 2 years, Hydrogen (formerly H2OS) is back :)
 
 _Hydrogen: Lighter than air, more essential than water._  
 
+![Hydrogen screenshot](https://github.com/mszoek/hydrogen/raw/master/screenshot.png)
+
 ## License
 
 Copyright 2019. All rights reserved.
